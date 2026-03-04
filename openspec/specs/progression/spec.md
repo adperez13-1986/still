@@ -1,4 +1,7 @@
-## ADDED Requirements
+## Purpose
+Defines the meta-progression systems that persist across runs — the Workshop hub, currencies, upgrades, idle generation, and run history.
+
+## Requirements
 
 ### Requirement: Persistent home base (the Workshop)
 Between runs, the player SHALL return to a home base called the Workshop — a place that grows and changes over time. The Workshop represents accumulated progress and serves as the idle/incremental layer.
@@ -42,11 +45,15 @@ Workshop upgrades SHALL affect Still's starting state in future runs, making eac
 - **THEN** all future runs earn a percentage bonus on shard drops
 
 ### Requirement: Idle resource generation
-The Workshop SHALL passively generate a secondary resource (Fragments) over real time, even when the game is closed.
+The Workshop SHALL passively generate a secondary resource (Fragments) over real time at a rate of 10 per hour, whether the game is open or closed. Accumulation is capped (default 8 hours, extendable via upgrade).
 
 #### Scenario: Fragments accumulate while offline
 - **WHEN** the player returns to the game after being away
-- **THEN** the Workshop displays how many Fragments were generated during the absence, capped at a maximum accumulation amount
+- **THEN** the Workshop displays how many Fragments were generated during the absence, capped at the maximum accumulation amount
+
+#### Scenario: Fragments accumulate while playing
+- **WHEN** the player has the game open
+- **THEN** the fragment counter increments in real time at the same rate as offline accumulation (1 fragment per 6 minutes), without requiring a page reload
 
 #### Scenario: Fragments spent on run bonuses
 - **WHEN** the player spends Fragments before starting a run
