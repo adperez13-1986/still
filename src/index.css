@@ -1,0 +1,108 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+:root {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  color-scheme: dark;
+
+  /* Color palette */
+  --bg-deep:    #0d0d1a;
+  --bg-surface: #16213e;
+  --bg-raised:  #1e1e2e;
+  --accent:     #a29bfe;
+  --gold:       #f1c40f;
+  --health:     #27ae60;
+  --danger:     #e74c3c;
+  --text:       #e8e8e8;
+  --muted:      #888888;
+  --border:     #2c3e50;
+}
+
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background-color: var(--bg-deep);
+  color: var(--text);
+}
+
+button {
+  font-family: inherit;
+  font-size: inherit;
+  transition: opacity 0.15s, transform 0.1s;
+}
+
+button:not(:disabled):active {
+  transform: scale(0.97);
+}
+
+button:not(:disabled):hover {
+  opacity: 0.9;
+}
+
+/* Card hover lift */
+.card-display:not(:disabled):hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(162, 155, 254, 0.2) !important;
+}
+
+.screen {
+  min-height: 100vh;
+}
+
+/* ── Animations ─────────────────────────────────────────────── */
+
+@keyframes damage-flash {
+  0%   { background-color: #e74c3c; box-shadow: 0 0 8px #e74c3c; }
+  100% { background-color: inherit; box-shadow: none; }
+}
+
+@keyframes float-damage {
+  0%   { opacity: 1; transform: translateY(0) scale(1); }
+  20%  { opacity: 1; transform: translateY(-8px) scale(1.1); }
+  100% { opacity: 0; transform: translateY(-36px) scale(0.9); }
+}
+
+@keyframes card-played {
+  0%   { opacity: 1; transform: scale(1) translateY(0); }
+  100% { opacity: 0; transform: scale(0.8) translateY(-16px); }
+}
+
+.health-bar-damaged {
+  animation: damage-flash 0.4s ease-out forwards;
+}
+
+.damage-popup {
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 18px;
+  font-weight: bold;
+  color: #e74c3c;
+  pointer-events: none;
+  animation: float-damage 0.8s ease-out forwards;
+  white-space: nowrap;
+  text-shadow: 0 0 6px rgba(231, 76, 60, 0.6);
+  z-index: 10;
+}
+
+.damage-popup.heal {
+  color: #27ae60;
+  text-shadow: 0 0 6px rgba(39, 174, 96, 0.6);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-deep);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
