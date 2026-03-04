@@ -35,6 +35,7 @@ interface PermanentActions {
   unlockCompanion: (id: string) => void
   setNameDiscovered: () => void
   collectFragments: () => void
+  tickFragments: () => void
   spendFragments: (amount: number) => boolean
   setCarriedPart: (part: CarriedPart) => void
   updateCarriedPart: (updates: Partial<CarriedPart>) => void
@@ -137,6 +138,22 @@ export const usePermanentStore = create<PermanentState & PermanentActions>()(
     collectFragments: () => {
       // No-op: fragments are calculated on load from elapsed time
     },
+
+    tickFragments: () =>
+      set((state) => {
+        const now = Date.now()
+        const elapsedMs = now - state.lastSeenTimestamp
+        const elapsedHours = elapsedMs / (1000 * 60 * 60)
+        const capHours = state.workshopUpgrades['fragment-cap'] ? MAX_FRAGMENT_HOURS * 1.5 : MAX_FRAGMENT_HOURS
+        const earned = Math.floor(elapsedHours * FRAGMENT_RATE_PER_HOUR)
+        if (earned > 0) {
+          state.fragmentsAccumulated = Math.min(
+            state.fragmentsAccumulated + earned,
+            Math.floor(capHours * FRAGMENT_RATE_PER_HOUR)
+          )
+          state.lastSeenTimestamp = now
+        }
+      }),
 
     spendFragments: (amount) => {
       if (get().fragmentsAccumulated < amount) return false

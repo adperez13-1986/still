@@ -8,10 +8,17 @@ import { usePermanentStore } from './store/permanentStore'
 function App() {
   const loadPermanent = usePermanentStore((s) => s.load)
   const savePermanent = usePermanentStore((s) => s.save)
+  const tickFragments = usePermanentStore((s) => s.tickFragments)
 
   useEffect(() => {
     loadPermanent()
   }, [loadPermanent])
+
+  // Tick fragments every 6 minutes while the tab is open (10/hour = 1 per 6 min)
+  useEffect(() => {
+    const id = setInterval(tickFragments, 6 * 60 * 1000)
+    return () => clearInterval(id)
+  }, [tickFragments])
 
   // Save permanent state on page unload.
   // Also write lastSeenTimestamp to localStorage synchronously — the async
