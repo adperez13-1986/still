@@ -3,7 +3,8 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { usePermanentStore } from '../store/permanentStore'
 import { GRACE_LINES } from '../data/narrative'
 import RunEndOverlay from './RunEndOverlay'
-import type { WorkshopUpgradeId } from '../game/types'
+import CarrySelectOverlay from './CarrySelectOverlay'
+import type { WorkshopUpgradeId, PartDefinition } from '../game/types'
 
 const COMPANIONS = [
   {
@@ -34,7 +35,11 @@ export default function WorkshopScreen() {
   const permanent = usePermanentStore()
   const [graceLine] = useState(() => GRACE_LINES[Math.floor(Math.random() * GRACE_LINES.length)])
   const [showHistory, setShowHistory] = useState(false)
-  const runEnd = location.state as { runEnd?: boolean; outcome?: string; message?: string } | null
+  const runEndState = location.state as { runEnd?: boolean; outcome?: string; message?: string; parts?: PartDefinition[] } | null
+  const runEnd = runEndState
+  const runEndParts: PartDefinition[] = runEndState?.parts ?? []
+  const hasPartsToCarry = runEndParts.length > 0 || permanent.carriedPart !== null
+  const [showCarrySelect, setShowCarrySelect] = useState(() => !!(runEndState?.runEnd && hasPartsToCarry))
 
 
   return (
@@ -53,6 +58,32 @@ export default function WorkshopScreen() {
         <RunEndOverlay
           outcome={runEnd.outcome as 'victory' | 'defeat'}
           message={runEnd.message ?? ''}
+        />
+      )}
+
+      {/* Carry select overlay */}
+      {showCarrySelect && (
+        <CarrySelectOverlay
+          runParts={runEndParts}
+          currentCarry={permanent.carriedPart}
+          onSelect={(partId) => {
+            if (partId) {
+              const isExistingCarry = permanent.carriedPart?.partId === partId
+              if (!isExistingCarry) {
+                // New part — fresh durability
+                permanent.setCarriedPart({ partId, durability: 3, maxDurability: 3, repairsLeft: 2 })
+              }
+              // If re-selecting current carry: keep as-is
+            } else {
+              // "Carry nothing" — clear if they chose to abandon
+              // (no-op: we don't clear unless they explicitly had something and chose to drop it)
+            }
+            permanent.save()
+            setShowCarrySelect(false)
+          }}
+          onDismiss={() => {
+            setShowCarrySelect(false)
+          }}
         />
       )}
 

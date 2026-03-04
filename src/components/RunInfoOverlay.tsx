@@ -1,5 +1,7 @@
 import CardDisplay from './CardDisplay'
 import { ALL_CARDS } from '../data/cards'
+import { ALL_PARTS } from '../data/parts'
+import { usePermanentStore } from '../store/permanentStore'
 import type { CardInstance, PartDefinition, EquipableDefinition, EquipSlot } from '../game/types'
 
 interface Props {
@@ -14,6 +16,11 @@ interface Props {
 const SLOTS: EquipSlot[] = ['Head', 'Torso', 'Arms', 'Legs']
 
 export default function RunInfoOverlay({ tab, deck, parts, equipables, onClose, onTabChange }: Props) {
+  const permanent = usePermanentStore()
+  const cp = permanent.carriedPart
+  const carriedPartDef = cp ? (ALL_PARTS[cp.partId] ?? null) : null
+  const isBroken = cp ? cp.durability === 0 : false
+
   const resolveDef = (instance: CardInstance) => {
     const base = ALL_CARDS[instance.definitionId]
     if (!base) return null
@@ -168,6 +175,39 @@ export default function RunInfoOverlay({ tab, deck, parts, equipables, onClose, 
                   })}
                 </div>
               </div>
+
+              {/* Carried part */}
+              {cp && carriedPartDef && (
+                <div>
+                  <div style={{ color: '#888', fontSize: '11px', letterSpacing: '2px', marginBottom: '12px' }}>
+                    CARRIED PART
+                  </div>
+                  <div style={{
+                    backgroundColor: isBroken ? '#1a1a1a' : '#16213e',
+                    border: `1px solid ${isBroken ? '#555' : '#e67e22'}`,
+                    borderRadius: '6px',
+                    padding: '10px 14px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    opacity: isBroken ? 0.6 : 1,
+                  }}>
+                    <div>
+                      <div style={{ fontWeight: 'bold', fontSize: '13px', color: isBroken ? '#888' : '#e67e22' }}>
+                        {carriedPartDef.name}
+                        {isBroken && <span style={{ marginLeft: '8px', fontSize: '10px', color: '#e74c3c', letterSpacing: '1px' }}>[BROKEN]</span>}
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>{carriedPartDef.description}</div>
+                      <div style={{ fontSize: '10px', color: '#666', marginTop: '4px' }}>
+                        {isBroken ? `Repairs left: ${cp.repairsLeft}` : `Durability: ${cp.durability}/${cp.maxDurability}`}
+                      </div>
+                    </div>
+                    <div style={{ fontSize: '10px', color: '#e67e22', letterSpacing: '1px', marginLeft: '12px', whiteSpace: 'nowrap' }}>
+                      CARRY
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Passive parts */}
               <div>

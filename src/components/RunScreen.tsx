@@ -14,6 +14,7 @@ import { initCombat, makeEnemyInstance, makeCardInstance } from '../game/combat'
 import { ACT1_ENEMIES, ACT1_BOSS } from '../data/enemies'
 import { STARTING_CARDS, ACT1_CARD_POOL, yanah, yuri } from '../data/cards'
 import { ALL_PARTS, EQUIPABLES } from '../data/parts'
+import type { PartDefinition } from '../game/types'
 
 function pickEnemiesForRoom(room: Room, _act: number) {
   if (room.type === 'Boss') return [makeEnemyInstance(ACT1_BOSS)]
@@ -30,6 +31,7 @@ export default function RunScreen() {
   // Track whether the current room has been completed — show map when true
   const [roomDone, setRoomDone] = useState(false)
   const [infoTab, setInfoTab] = useState<'deck' | 'equips' | null>(null)
+  const [brokenCarryNotice, setBrokenCarryNotice] = useState<string | null>(null)
 
   // Initialize run if not active
   useEffect(() => {
@@ -38,6 +40,26 @@ export default function RunScreen() {
     const bonuses = (location.state as { bonuses?: FragmentBonus[] })?.bonuses ?? []
     const sumBonus = (type: FragmentBonus['type']) =>
       bonuses.filter((b) => b.type === type).reduce((s, b) => s + b.value, 0)
+
+    // Carried part from previous run
+    const cp = permanent.carriedPart
+    const carriedPartDef: PartDefinition | null = cp ? (ALL_PARTS[cp.partId] ?? null) : null
+    let cpHealthBonus = 0, cpEnergyBonus = 0, cpDrawBonus = 0
+    const initialParts: PartDefinition[] = []
+    if (cp && carriedPartDef) {
+      if (cp.durability > 0) {
+        // Intact: apply stat effects and include in parts
+        for (const effect of carriedPartDef.effects) {
+          if (effect.type === 'maxHealth') cpHealthBonus += effect.value
+          if (effect.type === 'energyCap') cpEnergyBonus += effect.value
+          if (effect.type === 'drawCount') cpDrawBonus += effect.value
+        }
+        initialParts.push(carriedPartDef)
+      } else {
+        // Broken: don't apply effects, show notice
+        setBrokenCarryNotice(`${carriedPartDef.name} is broken — find a Shop to repair it.`)
+      }
+    }
 
     const starterDeck = STARTING_CARDS.map((c) => makeCardInstance(c.id))
     if (permanent.companionsUnlocked.includes('yanah')) starterDeck.push(makeCardInstance(yanah.id))
@@ -66,18 +88,18 @@ export default function RunScreen() {
     }
 
     const map = generateMap(1)
-    const startMaxHealth = 70 + bonusHealth + sumBonus('health') + equipBonusHealth
+    const startMaxHealth = 70 + bonusHealth + sumBonus('health') + equipBonusHealth + cpHealthBonus
 
     run.startRun({
       act: 1,
       map,
       health: startMaxHealth,
       maxHealth: startMaxHealth,
-      energyCap: 3 + sumBonus('energyCap') + equipBonusEnergy,
-      drawCount: 5 + sumBonus('drawCount') + equipBonusDraw,
+      energyCap: 3 + sumBonus('energyCap') + equipBonusEnergy + cpEnergyBonus,
+      drawCount: 5 + sumBonus('drawCount') + equipBonusDraw + cpDrawBonus,
       bonusStrength: 0,
       deck: starterDeck,
-      parts: [],
+      parts: initialParts,
       equipables: startingEquipables as import('../game/types').RunState['equipables'],
       shards: sumBonus('shards'),
       combat: null,
@@ -122,6 +144,32 @@ export default function RunScreen() {
   const mapWithOverlay = (
     <>
       <MapScreen map={run.map} onRoomSelect={handleRoomSelect} />
+      {brokenCarryNotice && (
+        <div style={{
+          position: 'fixed',
+          top: '16px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          backgroundColor: '#2d1f0e',
+          border: '1px solid #e67e22',
+          borderRadius: '6px',
+          padding: '10px 20px',
+          color: '#e67e22',
+          fontSize: '13px',
+          zIndex: 200,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+        }}>
+          <span>{brokenCarryNotice}</span>
+          <button
+            onClick={() => setBrokenCarryNotice(null)}
+            style={{ background: 'none', border: 'none', color: '#e67e22', cursor: 'pointer', fontSize: '16px', lineHeight: 1 }}
+          >
+            ×
+          </button>
+        </div>
+      )}
       {/* Floating info buttons */}
       <div style={{
         position: 'fixed',
@@ -208,6 +256,7 @@ export default function RunScreen() {
     return (
       <ShopScreen
         shards={run.shards}
+        carriedPart={permanent.carriedPart}
         onBuyCard={(cardId, cost) => {
           if (run.shards < cost) return
           run.addShards(-cost)
@@ -219,6 +268,14 @@ export default function RunScreen() {
           if (!part) return
           run.addShards(-cost)
           run.addPart(part)
+        }}
+        onRepair={() => {
+          const cp = permanent.carriedPart
+          if (!cp || cp.durability > 0 || cp.repairsLeft <= 0 || run.shards < 50) return
+          const part = ALL_PARTS[cp.partId]
+          run.addShards(-50)
+          permanent.updateCarriedPart({ durability: cp.maxDurability, repairsLeft: cp.repairsLeft - 1 })
+          if (part) run.restorePart(part)
         }}
         onLeave={finishRoom}
       />

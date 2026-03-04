@@ -28,6 +28,7 @@ export default function CombatScreen() {
   const [log, setLog] = useState<string[]>([])
   const [rewards, setRewards] = useState<ReturnType<typeof resolveDrops> | null>(null)
   const [damagePopups, setDamagePopups] = useState<Record<string, number>>({})
+  const [permanentBreakMessage, setPermanentBreakMessage] = useState<string | null>(null)
 
   const showDamagePopups = (before: CombatState, after: CombatState) => {
     const popups: Record<string, number> = {}
@@ -176,6 +177,28 @@ export default function CombatScreen() {
     // Cards: player chooses one — shown on reward screen
     const cardDrops = drops.filter((d) => d.type === 'card')
 
+    // Carried part durability decrement
+    const cp = permanent.carriedPart
+    if (cp) {
+      const newDurability = cp.durability - 1
+      if (newDurability <= 0) {
+        if (cp.repairsLeft > 0) {
+          // Broken — stays in possession but goes inactive
+          permanent.updateCarriedPart({ durability: 0 })
+          run.removePart(cp.partId)
+        } else {
+          // Final break — permanently destroyed
+          const partDef = ALL_PARTS[cp.partId]
+          const name = partDef?.name ?? 'The part'
+          permanent.clearCarriedPart()
+          run.removePart(cp.partId)
+          setPermanentBreakMessage(`${name} finally gave out. It served you well.`)
+        }
+      } else {
+        permanent.updateCarriedPart({ durability: newDurability })
+      }
+    }
+
     useRunStore.setState((s) => ({ ...s, combat: { ...finalCombat, phase: 'reward' } }))
     setRewards(cardDrops) // may be empty — RewardScreen handles that with a Continue button
   }
@@ -186,14 +209,33 @@ export default function CombatScreen() {
       run.addCardToDeck(instance)
     }
     setRewards(null)
-    useRunStore.setState((s) => ({
-      ...s,
-      combat: null,
-    }))
-    navigate('/run')
+
+    const wasBossFight = combat?.enemies.some((e) => ALL_ENEMIES[e.definitionId]?.isBoss) ?? false
+    if (wasBossFight) {
+      const partsList = [...run.parts]
+      const messages = RUN_END_MESSAGES['victory']
+      const message = messages[Math.floor(Math.random() * messages.length)]
+      const runEntry = {
+        id: Date.now().toString(),
+        date: new Date().toISOString(),
+        actReached: run.act,
+        outcome: 'victory' as const,
+        message,
+        notable: run.parts.map((p) => p.name),
+      }
+      permanent.addRunHistory(runEntry)
+      permanent.addShards(run.shards)
+      permanent.save()
+      run.endRun()
+      navigate('/', { state: { runEnd: true, outcome: 'victory', message, parts: partsList } })
+    } else {
+      useRunStore.setState((s) => ({ ...s, combat: null }))
+      navigate('/run')
+    }
   }
 
   const endRun = (outcome: 'victory' | 'defeat', finalCombat: typeof combat) => {
+    const partsList = [...run.parts] // capture before endRun clears
     const messages = RUN_END_MESSAGES[outcome]
     const message = messages[Math.floor(Math.random() * messages.length)]
     const runEntry = {
@@ -211,8 +253,44 @@ export default function CombatScreen() {
 
     setTimeout(() => {
       run.endRun()
-      navigate('/', { state: { runEnd: true, outcome, message } })
+      navigate('/', { state: { runEnd: true, outcome, message, parts: partsList } })
     }, 200)
+  }
+
+  if (permanentBreakMessage) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        backgroundColor: '#0d0d1a',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: '#e8e8e8',
+        gap: '24px',
+        padding: '40px',
+        textAlign: 'center',
+      }}>
+        <div style={{ fontSize: '32px', color: '#555' }}>—</div>
+        <div style={{ fontSize: '16px', color: '#aaa', maxWidth: '400px', lineHeight: '1.8' }}>
+          {permanentBreakMessage}
+        </div>
+        <button
+          onClick={() => setPermanentBreakMessage(null)}
+          style={{
+            padding: '10px 32px',
+            background: 'none',
+            border: '1px solid #555',
+            color: '#888',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontSize: '13px',
+          }}
+        >
+          Continue
+        </button>
+      </div>
+    )
   }
 
   if (rewards !== null) {

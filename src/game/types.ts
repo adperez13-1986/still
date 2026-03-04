@@ -173,6 +173,15 @@ export interface RunState {
   nameDiscovered: boolean
 }
 
+// ─── Carried Part ─────────────────────────────────────────────────────────────
+
+export interface CarriedPart {
+  partId: string
+  durability: number
+  maxDurability: number
+  repairsLeft: number
+}
+
 // ─── Fragment Bonuses ─────────────────────────────────────────────────────────
 
 export type FragmentBonusType = 'health' | 'shards' | 'energyCap' | 'drawCount'
@@ -220,4 +229,5 @@ export interface PermanentState {
   runHistory: RunHistoryEntry[]
   companionsUnlocked: string[]
   nameEverDiscovered: boolean
+  carriedPart: CarriedPart | null
 }

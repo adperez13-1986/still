@@ -36,6 +36,8 @@ interface RunActions {
 
   // Parts & equipables
   addPart: (part: PartDefinition) => void
+  removePart: (partId: string) => void
+  restorePart: (part: PartDefinition) => void
   equipItem: (item: EquipableDefinition) => EquipableDefinition | null
 
   // Shards
@@ -192,6 +194,19 @@ export const useRunStore = create<RunState & RunActions>()(
           // blockOnTurnStart and strengthBonus are applied per-combat
           // shardBonus is applied at shard calculation time
         }
+      }),
+
+    removePart: (partId) =>
+      set((state) => {
+        const idx = state.parts.findIndex((p) => p.id === partId)
+        if (idx !== -1) state.parts.splice(idx, 1)
+        // Baked-in stats (maxHealth, energyCap, drawCount) are not reversed
+      }),
+
+    restorePart: (part) =>
+      set((state) => {
+        state.parts.push(part)
+        // No stat re-application — stats were already baked in at run start
       }),
 
     equipItem: (item) => {

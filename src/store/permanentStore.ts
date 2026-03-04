@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
-import type { PermanentState, WorkshopUpgradeId, RunHistoryEntry } from '../game/types'
+import type { PermanentState, WorkshopUpgradeId, RunHistoryEntry, CarriedPart } from '../game/types'
 import { savePermanent, loadPermanent } from '../game/persistence'
 
 const PERMANENT_KEY = 'permanent-state'
@@ -22,6 +22,7 @@ const defaultPermanent: PermanentState = {
   runHistory: [],
   companionsUnlocked: [],
   nameEverDiscovered: false,
+  carriedPart: null,
 }
 
 interface PermanentActions {
@@ -35,6 +36,9 @@ interface PermanentActions {
   setNameDiscovered: () => void
   collectFragments: () => void
   spendFragments: (amount: number) => boolean
+  setCarriedPart: (part: CarriedPart) => void
+  updateCarriedPart: (updates: Partial<CarriedPart>) => void
+  clearCarriedPart: () => void
 }
 
 export const usePermanentStore = create<PermanentState & PermanentActions>()(
@@ -76,6 +80,7 @@ export const usePermanentStore = create<PermanentState & PermanentActions>()(
         runHistory: state.runHistory.slice(-20),
         companionsUnlocked: [...state.companionsUnlocked],
         nameEverDiscovered: state.nameEverDiscovered,
+        carriedPart: state.carriedPart ? { ...state.carriedPart } : null,
       }
       await savePermanent(PERMANENT_KEY, toSave)
     },
@@ -140,5 +145,20 @@ export const usePermanentStore = create<PermanentState & PermanentActions>()(
       })
       return true
     },
+
+    setCarriedPart: (part) =>
+      set((state) => {
+        state.carriedPart = { ...part }
+      }),
+
+    updateCarriedPart: (updates) =>
+      set((state) => {
+        if (state.carriedPart) Object.assign(state.carriedPart, updates)
+      }),
+
+    clearCarriedPart: () =>
+      set((state) => {
+        state.carriedPart = null
+      }),
   }))
 )
