@@ -18,42 +18,61 @@ function weightedRandom<T>(items: Array<{ value: T; weight: number }>): T {
   return items[items.length - 1].value
 }
 
-export function resolveDrops(dropPool: DropPool[]): ResolvedDrop[] {
-  const weighted = dropPool.map((d) => ({ value: d, weight: d.weight }))
-  const chosen = weightedRandom(weighted)
+function resolveShardDrop(entry: DropPool): ResolvedDrop {
+  const base = entry.amount ?? 10
+  const variance = Math.floor(base * 0.2)
+  const amount = base + Math.floor(Math.random() * (variance * 2 + 1)) - variance
+  return { type: 'shards', amount }
+}
 
-  if (chosen.type === 'shards') {
-    // Add some variance (±20%)
-    const base = chosen.amount ?? 10
-    const variance = Math.floor(base * 0.2)
-    const amount = base + Math.floor(Math.random() * (variance * 2 + 1)) - variance
-    return [{ type: 'shards', amount }]
-  }
-
-  if (chosen.type === 'card') {
-    // Pick 3 card options for reward screen
-    const pool = chosen.ids
-      ? ACT1_CARD_POOL.filter((c) => chosen.ids!.includes(c.id))
+function resolveBonusDrop(entry: DropPool): ResolvedDrop[] {
+  if (entry.type === 'card') {
+    const pool = entry.ids
+      ? ACT1_CARD_POOL.filter((c) => entry.ids!.includes(c.id))
       : ACT1_CARD_POOL
     const shuffled = [...pool].sort(() => Math.random() - 0.5)
     return shuffled.slice(0, 3).map((c) => ({ type: 'card', cardId: c.id }))
   }
 
-  if (chosen.type === 'part') {
-    const pool = chosen.ids
-      ? PARTS.filter((p) => chosen.ids!.includes(p.id))
+  if (entry.type === 'part') {
+    const pool = entry.ids
+      ? PARTS.filter((p) => entry.ids!.includes(p.id))
       : PARTS
     const picked = pool[Math.floor(Math.random() * pool.length)]
     return [{ type: 'part', partId: picked.id }]
   }
 
-  if (chosen.type === 'equipment') {
-    const pool = chosen.ids
-      ? EQUIPMENT.filter((e) => chosen.ids!.includes(e.id))
+  if (entry.type === 'equipment') {
+    const pool = entry.ids
+      ? EQUIPMENT.filter((e) => entry.ids!.includes(e.id))
       : EQUIPMENT
     const picked = pool[Math.floor(Math.random() * pool.length)]
     return [{ type: 'equipment', equipmentId: picked.id }]
   }
 
-  return [{ type: 'shards', amount: 5 }]
+  return []
+}
+
+export function resolveDrops(dropPool: DropPool[]): ResolvedDrop[] {
+  const shardEntries = dropPool.filter((d) => d.type === 'shards')
+  const bonusEntries = dropPool.filter((d) => d.type !== 'shards')
+
+  const results: ResolvedDrop[] = []
+
+  // Always drop shards — pick highest-weight shard entry
+  if (shardEntries.length > 0) {
+    const best = shardEntries.reduce((a, b) => (b.weight > a.weight ? b : a))
+    results.push(resolveShardDrop(best))
+  } else {
+    results.push({ type: 'shards', amount: 5 })
+  }
+
+  // Roll for a bonus drop from non-shard entries
+  if (bonusEntries.length > 0) {
+    const weighted = bonusEntries.map((d) => ({ value: d, weight: d.weight }))
+    const chosen = weightedRandom(weighted)
+    results.push(...resolveBonusDrop(chosen))
+  }
+
+  return results
 }

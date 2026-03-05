@@ -496,7 +496,7 @@ export const yuri: ModifierCardDefinition = {
 
 export const STARTING_CARDS: ModifierCardDefinition[] = [
   boost, boost, boost,
-  emergencyStrike, emergencyStrike,
+  emergencyStrike, emergencyShield,
   coolantFlush, coolantFlush,
   diagnostics,
 ]
