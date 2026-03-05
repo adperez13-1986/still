@@ -1,8 +1,8 @@
 import { ALL_PARTS } from '../data/parts'
-import type { PartDefinition, CarriedPart } from '../game/types'
+import type { BehavioralPartDefinition, CarriedPart } from '../game/types'
 
 interface Props {
-  runParts: PartDefinition[]
+  runParts: BehavioralPartDefinition[]
   currentCarry: CarriedPart | null
   onSelect: (partId: string | null) => void
   onDismiss: () => void

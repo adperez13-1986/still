@@ -4,7 +4,7 @@ import { usePermanentStore } from '../store/permanentStore'
 import { GRACE_LINES } from '../data/narrative'
 import RunEndOverlay from './RunEndOverlay'
 import CarrySelectOverlay from './CarrySelectOverlay'
-import type { WorkshopUpgradeId, PartDefinition } from '../game/types'
+import type { WorkshopUpgradeId, BehavioralPartDefinition } from '../game/types'
 
 const COMPANIONS = [
   {
@@ -35,9 +35,9 @@ export default function WorkshopScreen() {
   const permanent = usePermanentStore()
   const [graceLine] = useState(() => GRACE_LINES[Math.floor(Math.random() * GRACE_LINES.length)])
   const [showHistory, setShowHistory] = useState(false)
-  const runEndState = location.state as { runEnd?: boolean; outcome?: string; message?: string; parts?: PartDefinition[] } | null
+  const runEndState = location.state as { runEnd?: boolean; outcome?: string; message?: string; parts?: BehavioralPartDefinition[] } | null
   const runEnd = runEndState
-  const runEndParts: PartDefinition[] = runEndState?.parts ?? []
+  const runEndParts: BehavioralPartDefinition[] = runEndState?.parts ?? []
   const hasPartsToCarry = runEndParts.length > 0 || permanent.carriedPart !== null
   const [showCarrySelect, setShowCarrySelect] = useState(() => !!(runEndState?.runEnd && hasPartsToCarry))
 

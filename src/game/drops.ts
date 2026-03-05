@@ -1,11 +1,12 @@
 import type { DropPool } from '../game/types'
 import { ACT1_CARD_POOL } from '../data/cards'
-import { PARTS } from '../data/parts'
+import { PARTS, EQUIPMENT } from '../data/parts'
 
 export type ResolvedDrop =
   | { type: 'shards'; amount: number }
   | { type: 'card'; cardId: string }
   | { type: 'part'; partId: string }
+  | { type: 'equipment'; equipmentId: string }
 
 function weightedRandom<T>(items: Array<{ value: T; weight: number }>): T {
   const total = items.reduce((sum, i) => sum + i.weight, 0)
@@ -44,6 +45,14 @@ export function resolveDrops(dropPool: DropPool[]): ResolvedDrop[] {
       : PARTS
     const picked = pool[Math.floor(Math.random() * pool.length)]
     return [{ type: 'part', partId: picked.id }]
+  }
+
+  if (chosen.type === 'equipment') {
+    const pool = chosen.ids
+      ? EQUIPMENT.filter((e) => chosen.ids!.includes(e.id))
+      : EQUIPMENT
+    const picked = pool[Math.floor(Math.random() * pool.length)]
+    return [{ type: 'equipment', equipmentId: picked.id }]
   }
 
   return [{ type: 'shards', amount: 5 }]

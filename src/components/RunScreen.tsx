@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
-import type { Room, FragmentBonus } from '../game/types'
+import type { Room, FragmentBonus, BehavioralPartDefinition } from '../game/types'
 import { useRunStore } from '../store/runStore'
 import { usePermanentStore } from '../store/permanentStore'
 import MapScreen from './MapScreen'
@@ -10,11 +10,10 @@ import ShopScreen from './ShopScreen'
 import EventScreen from './EventScreen'
 import RunInfoOverlay from './RunInfoOverlay'
 import { generateMap } from '../game/mapGen'
-import { initCombat, makeEnemyInstance, makeCardInstance } from '../game/combat'
+import { makeEnemyInstance, makeCardInstance } from '../game/combat'
 import { ACT1_ENEMIES, ACT1_BOSS } from '../data/enemies'
 import { STARTING_CARDS, ACT1_CARD_POOL, yanah, yuri } from '../data/cards'
-import { ALL_PARTS, EQUIPABLES } from '../data/parts'
-import type { PartDefinition } from '../game/types'
+import { ALL_PARTS, STARTING_TORSO, STARTING_ARMS } from '../data/parts'
 
 function pickEnemiesForRoom(room: Room, _act: number) {
   if (room.type === 'Boss') return [makeEnemyInstance(ACT1_BOSS)]
@@ -28,7 +27,6 @@ export default function RunScreen() {
   const run = useRunStore()
   const permanent = usePermanentStore()
   const location = useLocation()
-  // Track whether the current room has been completed — show map when true
   const [roomDone, setRoomDone] = useState(false)
   const [infoTab, setInfoTab] = useState<'deck' | 'equips' | null>(null)
   const [brokenCarryNotice, setBrokenCarryNotice] = useState<string | null>(null)
@@ -43,20 +41,14 @@ export default function RunScreen() {
 
     // Carried part from previous run
     const cp = permanent.carriedPart
-    const carriedPartDef: PartDefinition | null = cp ? (ALL_PARTS[cp.partId] ?? null) : null
-    let cpHealthBonus = 0, cpEnergyBonus = 0, cpDrawBonus = 0
-    const initialParts: PartDefinition[] = []
+    const carriedPartDef: BehavioralPartDefinition | null = cp ? (ALL_PARTS[cp.partId] ?? null) : null
+    const initialParts: BehavioralPartDefinition[] = []
     if (cp && carriedPartDef) {
       if (cp.durability > 0) {
-        // Intact: apply stat effects and include in parts
-        for (const effect of carriedPartDef.effects) {
-          if (effect.type === 'maxHealth') cpHealthBonus += effect.value
-          if (effect.type === 'energyCap') cpEnergyBonus += effect.value
-          if (effect.type === 'drawCount') cpDrawBonus += effect.value
-        }
+        // Intact: include in parts (behavioral parts grant trigger/effect, not stat bonuses)
         initialParts.push(carriedPartDef)
       } else {
-        // Broken: don't apply effects, show notice
+        // Broken: don't include, show notice
         setBrokenCarryNotice(`${carriedPartDef.name} is broken — find a Shop to repair it.`)
       }
     }
@@ -65,42 +57,37 @@ export default function RunScreen() {
     if (permanent.companionsUnlocked.includes('yanah')) starterDeck.push(makeCardInstance(yanah.id))
     if (permanent.companionsUnlocked.includes('yuri')) starterDeck.push(makeCardInstance(yuri.id))
     if (permanent.workshopUpgrades['practiced-routine']) {
-      const nonBasics = ACT1_CARD_POOL.filter((c) => !['strike', 'brace', 'surge'].includes(c.id))
+      const nonBasics = ACT1_CARD_POOL.filter((c) => !['boost', 'emergency-strike', 'coolant-flush', 'diagnostics'].includes(c.id))
       const picked = nonBasics[Math.floor(Math.random() * nonBasics.length)]
       if (picked) starterDeck.push(makeCardInstance(picked.id))
     }
     const bonusHealth = permanent.workshopUpgrades['reinforced-chassis'] ? 15 : 0
 
-    const startingEquipables: Record<string, import('../game/types').EquipableDefinition | null> = {
-      Head: null, Torso: null, Arms: null, Legs: null,
+    // Starting equipment
+    const startingEquipment: import('../game/types').RunState['equipment'] = {
+      Head: null,
+      Torso: STARTING_TORSO,
+      Arms: null,
+      Legs: null,
     }
-    let equipBonusHealth = 0
-    let equipBonusEnergy = 0
-    let equipBonusDraw = 0
+    // "Extra Slot" workshop upgrade: equip Piston Arm in Arms slot
     if (permanent.workshopUpgrades['starting-slot']) {
-      const equip = EQUIPABLES[Math.floor(Math.random() * EQUIPABLES.length)]
-      startingEquipables[equip.slot] = equip
-      for (const effect of equip.statEffects) {
-        if (effect.type === 'maxHealth') equipBonusHealth += effect.value
-        if (effect.type === 'energyCap') equipBonusEnergy += effect.value
-        if (effect.type === 'drawCount') equipBonusDraw += effect.value
-      }
+      startingEquipment.Arms = STARTING_ARMS
     }
 
     const map = generateMap(1)
-    const startMaxHealth = 70 + bonusHealth + sumBonus('health') + equipBonusHealth + cpHealthBonus
+    const startMaxHealth = 70 + bonusHealth + sumBonus('health')
 
     run.startRun({
       act: 1,
       map,
       health: startMaxHealth,
       maxHealth: startMaxHealth,
-      energyCap: 3 + sumBonus('energyCap') + equipBonusEnergy + cpEnergyBonus,
-      drawCount: 5 + sumBonus('drawCount') + equipBonusDraw + cpDrawBonus,
-      bonusStrength: 0,
+      drawCount: 5 + sumBonus('drawCount'),
+      passiveCoolingBonus: sumBonus('passiveCooling'),
       deck: starterDeck,
       parts: initialParts,
-      equipables: startingEquipables as import('../game/types').RunState['equipables'],
+      equipment: startingEquipment,
       shards: sumBonus('shards'),
       combat: null,
       nameDiscovered: permanent.nameEverDiscovered,
@@ -115,7 +102,7 @@ export default function RunScreen() {
     )
   }
 
-  // Combat active — handled entirely by CombatScreen (uses its own navigation)
+  // Combat active — handled entirely by CombatScreen
   if (run.combat) {
     return <CombatScreen />
   }
@@ -123,19 +110,14 @@ export default function RunScreen() {
   const currentRoom = run.map.rooms[run.map.currentRoomId]
 
   const handleRoomSelect = (roomId: string) => {
-    setRoomDone(false) // entering a new room — reset
+    setRoomDone(false)
     run.moveToRoom(roomId)
     const room = run.map!.rooms[roomId]
     if (!room) return
 
     if (room.type === 'Combat' || room.type === 'Boss') {
       const enemies = pickEnemiesForRoom(room, run.act)
-      const sumPartEffect = (type: string) =>
-        run.parts.reduce((s, p) => s + p.effects.filter(e => e.type === type).reduce((a, e) => a + e.value, 0), 0) +
-        Object.values(run.equipables).filter(Boolean).reduce((s, eq) => s + eq!.statEffects.filter(e => e.type === type).reduce((a, e) => a + e.value, 0), 0)
-      const strengthBonus = sumPartEffect('strengthBonus') + run.bonusStrength
-      const combat = initCombat(run.deck, run.energyCap, run.drawCount, enemies, strengthBonus)
-      useRunStore.setState((s) => ({ ...s, combat }))
+      run.startCombat(enemies)
     }
   }
 
@@ -215,7 +197,7 @@ export default function RunScreen() {
           tab={infoTab}
           deck={run.deck}
           parts={run.parts}
-          equipables={run.equipables}
+          equipment={run.equipment}
           onClose={() => setInfoTab(null)}
           onTabChange={setInfoTab}
         />
@@ -275,7 +257,7 @@ export default function RunScreen() {
           const part = ALL_PARTS[cp.partId]
           run.addShards(-50)
           permanent.updateCarriedPart({ durability: cp.maxDurability, repairsLeft: cp.repairsLeft - 1 })
-          if (part) run.restorePart(part)
+          if (part) run.addPart(part)
         }}
         onLeave={finishRoom}
       />
@@ -290,9 +272,8 @@ export default function RunScreen() {
         onChoice={(outcome) => {
           if (outcome.type === 'health') run.heal(outcome.value)
           if (outcome.type === 'shards') run.addShards(outcome.value)
-          if (outcome.type === 'status') run.addBonusStrength(outcome.value)
           if (outcome.type === 'card') {
-            const nonBasics = ACT1_CARD_POOL.filter((c) => !['strike', 'brace', 'surge'].includes(c.id))
+            const nonBasics = ACT1_CARD_POOL.filter((c) => !['boost', 'emergency-strike', 'coolant-flush', 'diagnostics'].includes(c.id))
             const picked = nonBasics[Math.floor(Math.random() * nonBasics.length)]
             if (picked) run.addCardToDeck(makeCardInstance(picked.id))
           }

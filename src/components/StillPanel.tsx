@@ -1,21 +1,27 @@
 import { useRef, useState, useEffect } from 'react'
-import type { PartDefinition, EquipableDefinition, EquipSlot, StatusEffect } from '../game/types'
+import type { StatusEffect } from '../game/types'
+import { getHeatThreshold, HEAT_MAX } from '../game/types'
 import Sprite from './Sprite'
 import { STILL_SPRITE } from '../data/sprites'
 
 interface Props {
   health: number
   maxHealth: number
-  energy: number
-  energyCap: number
+  heat: number
   block: number
-  parts: PartDefinition[]
-  equipables: Record<EquipSlot, EquipableDefinition | null>
   statusEffects: StatusEffect[]
+  shutdown: boolean
+}
+
+const HEAT_COLORS: Record<string, string> = {
+  Cool: '#27ae60',
+  Warm: '#f1c40f',
+  Hot: '#e67e22',
+  Overheat: '#e74c3c',
 }
 
 export default function StillPanel({
-  health, maxHealth, energy, energyCap, block, statusEffects,
+  health, maxHealth, heat, block, statusEffects, shutdown,
 }: Props) {
   const healthPct = Math.max(0, (health / maxHealth) * 100)
   const healthColor = healthPct > 50 ? '#27ae60' : healthPct > 25 ? '#f39c12' : '#c0392b'
@@ -33,6 +39,9 @@ export default function StillPanel({
     }
     prevHealthRef.current = health
   }, [health])
+
+  const threshold = getHeatThreshold(heat)
+  const heatColor = HEAT_COLORS[threshold]
 
   return (
     <div style={{
@@ -100,22 +109,39 @@ export default function StillPanel({
         </div>
       )}
 
-      {/* Energy pips */}
-      <div style={{ display: 'flex', gap: '6px', marginBottom: '10px' }}>
-        {Array.from({ length: energyCap }, (_, i) => (
-          <div
-            key={i}
-            style={{
-              width: '18px',
-              height: '18px',
-              borderRadius: '50%',
-              backgroundColor: i < energy ? '#f1c40f' : '#2c3e50',
-              border: '1px solid #f1c40f',
-              transition: 'background-color 0.2s',
-            }}
-          />
-        ))}
+      {/* Heat indicator */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        marginBottom: '8px',
+        fontSize: '13px',
+      }}>
+        <span style={{ color: '#aaa' }}>Heat</span>
+        <span style={{ fontWeight: 'bold', fontSize: '16px', color: heatColor }}>
+          {heat}/{HEAT_MAX}
+        </span>
+        <span style={{ fontSize: '11px', color: heatColor }}>
+          {threshold}
+        </span>
       </div>
+
+      {/* Shutdown warning */}
+      {shutdown && (
+        <div style={{
+          backgroundColor: 'rgba(231,76,60,0.15)',
+          border: '1px solid #e74c3c',
+          borderRadius: '4px',
+          padding: '4px 8px',
+          fontSize: '11px',
+          color: '#e74c3c',
+          fontWeight: 'bold',
+          marginBottom: '8px',
+          letterSpacing: '1px',
+        }}>
+          SHUTDOWN
+        </div>
+      )}
 
       {/* Status effects */}
       {statusEffects.length > 0 && (

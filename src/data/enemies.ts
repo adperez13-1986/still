@@ -13,7 +13,7 @@ const wanderingDrone: EnemyDefinition = {
   ],
   dropPool: [
     { type: 'shards', amount: 8, weight: 3 },
-    { type: 'card', ids: ['overload', 'brace'], weight: 1 },
+    { type: 'card', ids: ['overcharge', 'spread-shot'], weight: 1 },
   ],
 }
 
@@ -28,6 +28,7 @@ const rustGuard: EnemyDefinition = {
   dropPool: [
     { type: 'shards', amount: 10, weight: 2 },
     { type: 'part', ids: ['salvaged-plating'], weight: 1 },
+    { type: 'equipment', ids: ['patched-hull'], weight: 1 },
   ],
 }
 
@@ -42,7 +43,7 @@ const corrodedSentry: EnemyDefinition = {
   ],
   dropPool: [
     { type: 'shards', amount: 7, weight: 3 },
-    { type: 'card', ids: ['corrode', 'deflect'], weight: 1 },
+    { type: 'card', ids: ['heat-vent', 'shield-bash'], weight: 1 },
   ],
 }
 
@@ -56,7 +57,7 @@ const fractureMite: EnemyDefinition = {
   ],
   dropPool: [
     { type: 'shards', amount: 5, weight: 4 },
-    { type: 'card', ids: ['surge', 'steady'], weight: 1 },
+    { type: 'card', ids: ['coolant-flush', 'diagnostics'], weight: 1 },
   ],
 }
 
@@ -71,7 +72,8 @@ const ironCrawler: EnemyDefinition = {
   ],
   dropPool: [
     { type: 'shards', amount: 12, weight: 2 },
-    { type: 'card', ids: ['overload', 'fortify'], weight: 1 },
+    { type: 'card', ids: ['overcharge', 'emergency-shield'], weight: 1 },
+    { type: 'equipment', ids: ['piston-arm'], weight: 1 },
   ],
 }
 
@@ -86,7 +88,7 @@ const glitchNode: EnemyDefinition = {
   ],
   dropPool: [
     { type: 'shards', amount: 9, weight: 3 },
-    { type: 'card', ids: ['momentum', 'volley'], weight: 1 },
+    { type: 'card', ids: ['thermal-surge', 'echo-protocol'], weight: 1 },
   ],
 }
 
@@ -117,7 +119,8 @@ const hollowRepeater: EnemyDefinition = {
   ],
   dropPool: [
     { type: 'shards', amount: 8, weight: 3 },
-    { type: 'card', ids: ['volley', 'sweeping-blow'], weight: 1 },
+    { type: 'card', ids: ['spread-shot', 'heat-vent'], weight: 1 },
+    { type: 'equipment', ids: ['welding-torch'], weight: 1 },
   ],
 }
 
@@ -132,7 +135,8 @@ const driftingFrame: EnemyDefinition = {
   ],
   dropPool: [
     { type: 'shards', amount: 13, weight: 2 },
-    { type: 'part', ids: ['scavenger-lens', 'worn-chassis'], weight: 1 },
+    { type: 'part', ids: ['scavenger-lens', 'cooling-fins'], weight: 1 },
+    { type: 'equipment', ids: ['worn-actuators'], weight: 1 },
   ],
 }
 
@@ -148,7 +152,7 @@ const echoConstruct: EnemyDefinition = {
   ],
   dropPool: [
     { type: 'shards', amount: 15, weight: 2 },
-    { type: 'card', ids: ['overclock', 'adaptation'], weight: 1 },
+    { type: 'card', ids: ['quick-scan', 'meltdown'], weight: 1 },
     { type: 'part', ids: ['optical-expander'], weight: 1 },
   ],
 }
@@ -168,7 +172,7 @@ const vaultKeeper: EnemyDefinition = {
   dropPool: [
     { type: 'shards', amount: 25, weight: 1 },
     { type: 'part', ids: ['reinforced-joints', 'tension-spring'], weight: 2 },
-    { type: 'card', ids: ['momentum', 'overload'], weight: 1 },
+    { type: 'equipment', ids: ['basic-scanner', 'patched-hull'], weight: 1 },
   ],
   isElite: true,
 }
@@ -185,7 +189,8 @@ const corruptedOverseer: EnemyDefinition = {
   ],
   dropPool: [
     { type: 'shards', amount: 30, weight: 1 },
-    { type: 'part', ids: ['energy-coil', 'optical-expander'], weight: 2 },
+    { type: 'part', ids: ['heat-sink', 'optical-expander'], weight: 2 },
+    { type: 'card', ids: ['deep-freeze', 'thermal-surge'], weight: 1 },
   ],
   isElite: true,
 }
@@ -203,8 +208,8 @@ const fractureTitan: EnemyDefinition = {
   ],
   dropPool: [
     { type: 'shards', amount: 35, weight: 1 },
-    { type: 'part', ids: ['worn-chassis', 'reactive-frame'], weight: 2 },
-    { type: 'card', ids: ['fortify', 'discharge'], weight: 1 },
+    { type: 'part', ids: ['reactive-frame', 'cooling-fins'], weight: 2 },
+    { type: 'equipment', ids: ['cracked-lens', 'salvaged-treads'], weight: 1 },
   ],
   isElite: true,
 }
@@ -225,8 +230,8 @@ const theFirstWarden: EnemyDefinition = {
   ],
   dropPool: [
     { type: 'shards', amount: 60, weight: 1 },
-    { type: 'part', ids: ['energy-coil', 'tension-spring', 'worn-chassis'], weight: 3 },
-    { type: 'card', ids: ['momentum', 'overclock', 'overload'], weight: 2 },
+    { type: 'part', ids: ['reactive-frame', 'tension-spring', 'cooling-fins'], weight: 3 },
+    { type: 'equipment', ids: ['cracked-lens', 'salvaged-treads', 'welding-torch'], weight: 2 },
   ],
   isBoss: true,
   flavorText: 'It does not remember what it was built to protect. It only remembers the door.',

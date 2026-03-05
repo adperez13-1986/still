@@ -1,21 +1,30 @@
-import type { CardDefinition } from '../game/types'
+import type { ModifierCardDefinition } from '../game/types'
 
 interface Props {
-  card: CardDefinition
+  card: ModifierCardDefinition
   instanceId?: string
   disabled?: boolean
   selected?: boolean
   onClick?: () => void
 }
 
-const TYPE_COLORS: Record<string, string> = {
-  Attack: '#c0392b',
-  Skill: '#2980b9',
-  Power: '#8e44ad',
+const CATEGORY_COLORS: Record<string, string> = {
+  Amplify: '#a29bfe',
+  Redirect: '#74b9ff',
+  Repeat: '#fd79a8',
+  Override: '#e17055',
+  Cooling: '#00cec9',
+  Draw: '#ffeaa7',
+  Conditional: '#fab1a0',
 }
 
 export default function CardDisplay({ card, disabled, selected, onClick }: Props) {
-  const borderColor = selected ? '#f1c40f' : (TYPE_COLORS[card.type] ?? '#555')
+  const category = card.category.type === 'slot' ? card.category.modifier : 'System'
+  const categoryColor = card.category.type === 'slot'
+    ? CATEGORY_COLORS[card.category.modifier] ?? '#888'
+    : '#f1c40f'
+
+  const borderColor = selected ? '#f1c40f' : categoryColor
 
   return (
     <button
@@ -41,7 +50,7 @@ export default function CardDisplay({ card, disabled, selected, onClick }: Props
         boxShadow: selected ? '0 0 8px #f1c40f' : 'none',
       }}
     >
-      {/* Cost pip */}
+      {/* Heat cost */}
       <div style={{
         position: 'absolute',
         top: '6px',
@@ -49,36 +58,36 @@ export default function CardDisplay({ card, disabled, selected, onClick }: Props
         width: '24px',
         height: '24px',
         borderRadius: '50%',
-        backgroundColor: '#f1c40f',
-        color: '#1a1a2e',
+        backgroundColor: card.heatCost > 0 ? '#e74c3c' : card.heatCost < 0 ? '#00cec9' : '#555',
+        color: '#fff',
         fontWeight: 'bold',
-        fontSize: '14px',
+        fontSize: '13px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
       }}>
-        {card.cost}
+        {card.heatCost >= 0 ? `+${card.heatCost}` : card.heatCost}
       </div>
 
-      {/* Type badge */}
+      {/* Category badge */}
       <div style={{
         position: 'absolute',
         top: '6px',
         right: '6px',
-        fontSize: '9px',
-        color: borderColor,
+        fontSize: '8px',
+        color: categoryColor,
         fontWeight: 'bold',
         textTransform: 'uppercase',
         letterSpacing: '0.5px',
       }}>
-        {card.type}
+        {category}
       </div>
 
       {/* Name */}
       <div style={{
         marginTop: '28px',
         fontWeight: 'bold',
-        fontSize: '13px',
+        fontSize: '12px',
         lineHeight: '1.2',
       }}>
         {card.name}
@@ -86,7 +95,7 @@ export default function CardDisplay({ card, disabled, selected, onClick }: Props
 
       {/* Description */}
       <div style={{
-        fontSize: '11px',
+        fontSize: '10px',
         color: '#ccc',
         flex: 1,
         display: 'flex',
@@ -97,12 +106,19 @@ export default function CardDisplay({ card, disabled, selected, onClick }: Props
         {card.description}
       </div>
 
-      {/* Keywords */}
-      {card.keywords.length > 0 && (
-        <div style={{ fontSize: '9px', color: '#f39c12', fontStyle: 'italic' }}>
-          {card.keywords.join(', ')}
-        </div>
-      )}
+      {/* Keywords + Heat condition */}
+      <div style={{ fontSize: '9px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+        {card.keywords.length > 0 && (
+          <div style={{ color: '#f39c12', fontStyle: 'italic' }}>
+            {card.keywords.join(', ')}
+          </div>
+        )}
+        {card.heatCondition && (
+          <div style={{ color: '#e67e22' }}>
+            Req: {card.heatCondition}+
+          </div>
+        )}
+      </div>
     </button>
   )
 }

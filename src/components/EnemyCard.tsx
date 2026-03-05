@@ -16,6 +16,9 @@ const INTENT_ICONS: Record<string, string> = {
   Buff: 'up',
   Debuff: 'down',
   AttackDebuff: 'sword+',
+  HeatAttack: 'fire',
+  DisableSlot: 'lock',
+  Absorb: 'drain',
 }
 
 const INTENT_COLORS: Record<string, string> = {
@@ -24,6 +27,9 @@ const INTENT_COLORS: Record<string, string> = {
   Buff: '#2ecc71',
   Debuff: '#e67e22',
   AttackDebuff: '#c0392b',
+  HeatAttack: '#fd79a8',
+  DisableSlot: '#636e72',
+  Absorb: '#00cec9',
 }
 
 function IntentDisplay({ intent }: { intent: Intent }) {
@@ -68,9 +74,23 @@ export default function EnemyCard({ instance, definition, selected, recentDamage
         minWidth: '150px',
         cursor: instance.isDefeated ? 'default' : 'pointer',
         opacity: instance.isDefeated ? 0.4 : 1,
-        transition: 'border-color 0.15s',
+        transition: 'border-color 0.15s, box-shadow 0.15s',
+        boxShadow: selected ? '0 0 12px rgba(241,196,15,0.4)' : 'none',
       }}
     >
+      {/* Target badge */}
+      {selected && !instance.isDefeated && (
+        <div style={{
+          fontSize: '10px',
+          fontWeight: 'bold',
+          color: '#f1c40f',
+          letterSpacing: '2px',
+          marginBottom: '4px',
+        }}>
+          TARGET
+        </div>
+      )}
+
       {/* Sprite + Name */}
       {(() => {
         const sprite = getEnemySprite(definition.id)

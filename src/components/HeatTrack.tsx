@@ -1,0 +1,88 @@
+import { getHeatThreshold, HEAT_MAX } from '../game/types'
+
+interface Props {
+  heat: number
+  projectedHeat: number
+}
+
+function segmentColor(i: number): string {
+  if (i >= 10) return '#e74c3c'
+  if (i >= 8) return '#e67e22'
+  if (i >= 5) return '#f1c40f'
+  return '#27ae60'
+}
+
+export default function HeatTrack({ heat, projectedHeat }: Props) {
+  const threshold = getHeatThreshold(heat)
+  const projectedThreshold = getHeatThreshold(projectedHeat)
+
+  return (
+    <div style={{
+      backgroundColor: '#16213e',
+      border: '1px solid #2c3e50',
+      borderRadius: '8px',
+      padding: '12px 16px',
+    }}>
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '8px',
+        fontSize: '12px',
+      }}>
+        <span style={{ color: '#aaa' }}>
+          Heat: <span style={{ color: segmentColor(heat), fontWeight: 'bold' }}>{heat}/{HEAT_MAX}</span>
+          <span style={{ color: '#555', marginLeft: '6px' }}>({threshold})</span>
+        </span>
+        {projectedHeat !== heat && (
+          <span style={{ color: '#888', fontSize: '11px' }}>
+            After execute: <span style={{ color: segmentColor(projectedHeat), fontWeight: 'bold' }}>
+              {projectedHeat}
+            </span>
+            <span style={{ color: '#555', marginLeft: '4px' }}>({projectedThreshold})</span>
+          </span>
+        )}
+      </div>
+
+      {/* Bar */}
+      <div style={{ display: 'flex', gap: '2px' }}>
+        {Array.from({ length: HEAT_MAX }, (_, i) => {
+          const idx = i + 1
+          const isFilled = idx <= heat
+          const isProjected = !isFilled && idx <= projectedHeat
+          return (
+            <div
+              key={i}
+              style={{
+                flex: 1,
+                height: '20px',
+                borderRadius: '3px',
+                background: isFilled
+                  ? segmentColor(idx)
+                  : isProjected
+                    ? `${segmentColor(idx)}44`
+                    : '#1a1a2e',
+                border: `1px solid ${isFilled ? segmentColor(idx) : '#2c3e50'}`,
+                transition: 'background 0.15s',
+              }}
+            />
+          )
+        })}
+      </div>
+
+      {/* Threshold labels */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        marginTop: '4px',
+        fontSize: '9px',
+        color: '#555',
+      }}>
+        <span>Cool 0-4</span>
+        <span>Warm 5-7</span>
+        <span>Hot 8-9</span>
+        <span>OVH 10</span>
+      </div>
+    </div>
+  )
+}

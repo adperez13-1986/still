@@ -1,24 +1,93 @@
-// ─── Card System ────────────────────────────────────────────────────────────
+// ─── Heat System ────────────────────────────────────────────────────────────
 
-export type CardType = 'Attack' | 'Skill' | 'Power'
-export type Keyword = 'Exhaust' | 'Innate' | 'Retain'
+export type HeatThreshold = 'Cool' | 'Warm' | 'Hot' | 'Overheat'
 
-export interface CardEffect {
-  type: 'damage' | 'block' | 'draw' | 'energy' | 'applyStatus' | 'heal' | 'removeDebuff'
-  value: number
-  target?: 'enemy' | 'self' | 'all_enemies'
-  status?: StatusEffectType
+export const HEAT_MAX = 10
+export const PASSIVE_COOLING = 2
+export const HOT_DAMAGE = 3
+export const OVERHEAT_RESET = 5
+
+export function getHeatThreshold(heat: number): HeatThreshold {
+  if (heat >= 10) return 'Overheat'
+  if (heat >= 8) return 'Hot'
+  if (heat >= 5) return 'Warm'
+  return 'Cool'
 }
 
-export interface CardDefinition {
+export function getThresholdBonus(heat: number): number {
+  const t = getHeatThreshold(heat)
+  if (t === 'Hot' || t === 'Overheat') return 2
+  if (t === 'Warm') return 1
+  return 0
+}
+
+export function applyPassiveCooling(heat: number, bonus = 0): number {
+  return Math.max(0, heat - PASSIVE_COOLING - bonus)
+}
+
+export function isCool(heat: number): boolean { return heat <= 4 }
+export function isWarm(heat: number): boolean { return heat >= 5 && heat <= 7 }
+export function isHot(heat: number): boolean { return heat >= 8 && heat <= 9 }
+export function isOverheat(heat: number): boolean { return heat >= 10 }
+
+// ─── Body System ────────────────────────────────────────────────────────────
+
+export type BodySlot = 'Head' | 'Torso' | 'Arms' | 'Legs'
+
+export const BODY_SLOTS: BodySlot[] = ['Head', 'Torso', 'Arms', 'Legs']
+
+export type BodyActionType = 'damage' | 'block' | 'heal' | 'draw' | 'coolHeat' | 'foresight'
+export type TargetMode = 'single_enemy' | 'all_enemies' | 'self'
+
+export interface BodyAction {
+  type: BodyActionType
+  baseValue: number
+  targetMode: TargetMode
+}
+
+export interface EquipmentDefinition {
   id: string
   name: string
-  type: CardType
-  cost: number
   description: string
-  effects: CardEffect[]
+  slot: BodySlot
+  action: BodyAction
+  rarity: 'common' | 'uncommon' | 'rare'
+}
+
+// ─── Modifier Cards ─────────────────────────────────────────────────────────
+
+export type Keyword = 'Exhaust' | 'Innate' | 'Retain'
+
+export type ModifierCategory = 'Amplify' | 'Redirect' | 'Repeat' | 'Override'
+export type SystemCategory = 'Cooling' | 'Draw' | 'Conditional'
+
+export type SlotModifierEffect =
+  | { type: 'amplify'; multiplier: number }
+  | { type: 'redirect'; targetMode: TargetMode }
+  | { type: 'repeat'; extraFirings: number }
+  | { type: 'override'; action: BodyAction }
+
+export type SystemEffect =
+  | { type: 'draw'; count: number }
+  | { type: 'heal'; value: number }
+  | { type: 'applyStatus'; status: StatusEffectType; stacks: number; target: 'self' }
+  | { type: 'removeDebuff'; count: number }
+  | { type: 'gainBlock'; value: number }
+  | { type: 'damage'; value: number; targetMode: TargetMode }
+
+export type ModifierCardType =
+  | { type: 'slot'; modifier: ModifierCategory; effect: SlotModifierEffect }
+  | { type: 'system'; modifier: SystemCategory; effects: SystemEffect[] }
+
+export interface ModifierCardDefinition {
+  id: string
+  name: string
+  description: string
+  heatCost: number
+  category: ModifierCardType
   keywords: Keyword[]
-  upgraded?: CardDefinition // upgraded version of this card
+  heatCondition?: HeatThreshold // minimum threshold required to play
+  upgraded?: ModifierCardDefinition
 }
 
 export interface CardInstance {
@@ -36,50 +105,44 @@ export interface StatusEffect {
   stacks: number
 }
 
-// ─── Parts & Equipables ──────────────────────────────────────────────────────
+// ─── Behavioral Parts ───────────────────────────────────────────────────────
 
-export type PartEffectType =
-  | 'maxHealth'
-  | 'energyCap'
-  | 'drawCount'
-  | 'blockOnTurnStart'
-  | 'shardBonus'
-  | 'strengthBonus'
+export type PartTrigger =
+  | { type: 'onSlotFire'; slot: BodySlot }
+  | { type: 'onModifierPlay'; modifier: ModifierCategory }
+  | { type: 'onHeatThreshold'; threshold: HeatThreshold }
+  | { type: 'onTurnStart' }
+  | { type: 'onCombatStart' }
 
-export interface PartDefinition {
+export type PartEffect =
+  | { type: 'bonusBlock'; value: number }
+  | { type: 'bonusDamage'; value: number }
+  | { type: 'reduceHeat'; value: number }
+  | { type: 'extraFiring'; slot: BodySlot }
+  | { type: 'drawCards'; count: number }
+  | { type: 'reduceModifierHeat'; value: number }
+  | { type: 'bonusHealing'; value: number }
+
+export interface BehavioralPartDefinition {
   id: string
   name: string
   description: string
-  effects: Array<{ type: PartEffectType; value: number }>
-  rarity: 'common' | 'uncommon' | 'rare'
-}
-
-export type EquipSlot = 'Head' | 'Torso' | 'Arms' | 'Legs'
-
-export interface EquipableDefinition {
-  id: string
-  name: string
-  description: string
-  slot: EquipSlot
-  statEffects: Array<{ type: PartEffectType; value: number }>
-  skill?: {
-    name: string
-    description: string
-    cooldown: number // turns
-    effect: CardEffect
-  }
+  trigger: PartTrigger
+  effect: PartEffect
   rarity: 'common' | 'uncommon' | 'rare'
 }
 
 // ─── Enemies ─────────────────────────────────────────────────────────────────
 
-export type IntentType = 'Attack' | 'Block' | 'Buff' | 'Debuff' | 'AttackDebuff'
+export type IntentType = 'Attack' | 'Block' | 'Buff' | 'Debuff' | 'AttackDebuff' | 'HeatAttack' | 'DisableSlot' | 'Absorb'
 
 export interface Intent {
   type: IntentType
   value: number
   status?: StatusEffectType
   statusStacks?: number
+  heatValue?: number // for HeatAttack: additional Heat applied to Still
+  targetSlot?: BodySlot // for DisableSlot: which slot to disable
 }
 
 export interface IntentPattern {
@@ -87,11 +150,11 @@ export interface IntentPattern {
   currentIndex: number
 }
 
-export type DropType = 'card' | 'part' | 'shards'
+export type DropType = 'card' | 'part' | 'equipment' | 'shards'
 
 export interface DropPool {
   type: DropType
-  ids?: string[] // card or part ids
+  ids?: string[] // card, part, or equipment ids
   amount?: number // for shards
   weight: number
 }
@@ -141,7 +204,7 @@ export interface MapGraph {
 
 // ─── Run State ───────────────────────────────────────────────────────────────
 
-export type CombatPhase = 'playerTurn' | 'enemyTurn' | 'reward' | 'finished'
+export type CombatPhase = 'planning' | 'executing' | 'enemyTurn' | 'reward' | 'finished'
 
 export interface CombatState {
   phase: CombatPhase
@@ -150,10 +213,13 @@ export interface CombatState {
   drawPile: CardInstance[]
   discardPile: CardInstance[]
   exhaustPile: CardInstance[]
-  energy: number
+  heat: number
+  shutdown: boolean
   block: number
   statusEffects: StatusEffect[]
   roundNumber: number
+  slotModifiers: Record<BodySlot, string | null> // instanceId of assigned modifier card
+  disabledSlots: BodySlot[]
 }
 
 export interface RunState {
@@ -162,12 +228,11 @@ export interface RunState {
   map: MapGraph | null
   health: number
   maxHealth: number
-  energyCap: number
   drawCount: number
-  bonusStrength: number
+  passiveCoolingBonus: number
   deck: CardInstance[]
-  parts: PartDefinition[]
-  equipables: Record<EquipSlot, EquipableDefinition | null>
+  parts: BehavioralPartDefinition[]
+  equipment: Record<BodySlot, EquipmentDefinition | null>
   shards: number
   combat: CombatState | null
   nameDiscovered: boolean
@@ -184,7 +249,7 @@ export interface CarriedPart {
 
 // ─── Fragment Bonuses ─────────────────────────────────────────────────────────
 
-export type FragmentBonusType = 'health' | 'shards' | 'energyCap' | 'drawCount'
+export type FragmentBonusType = 'health' | 'shards' | 'passiveCooling' | 'drawCount'
 
 export interface FragmentBonus {
   id: string

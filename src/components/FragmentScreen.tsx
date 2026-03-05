@@ -21,11 +21,11 @@ const BONUSES: FragmentBonus[] = [
     value: 10,
   },
   {
-    id: 'overcharged',
-    name: 'Overcharged',
-    description: 'Start with +1 max energy.',
+    id: 'cooled-start',
+    name: 'Cooled Start',
+    description: 'Start with +1 passive cooling bonus.',
     cost: 20,
-    type: 'energyCap',
+    type: 'passiveCooling',
     value: 1,
   },
   {

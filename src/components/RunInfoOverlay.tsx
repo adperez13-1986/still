@@ -2,20 +2,19 @@ import CardDisplay from './CardDisplay'
 import { ALL_CARDS } from '../data/cards'
 import { ALL_PARTS } from '../data/parts'
 import { usePermanentStore } from '../store/permanentStore'
-import type { CardInstance, PartDefinition, EquipableDefinition, EquipSlot } from '../game/types'
+import type { CardInstance, BehavioralPartDefinition, EquipmentDefinition, BodySlot } from '../game/types'
+import { BODY_SLOTS } from '../game/types'
 
 interface Props {
   tab: 'deck' | 'equips'
   deck: CardInstance[]
-  parts: PartDefinition[]
-  equipables: Record<EquipSlot, EquipableDefinition | null>
+  parts: BehavioralPartDefinition[]
+  equipment: Record<BodySlot, EquipmentDefinition | null>
   onClose: () => void
   onTabChange: (tab: 'deck' | 'equips') => void
 }
 
-const SLOTS: EquipSlot[] = ['Head', 'Torso', 'Arms', 'Legs']
-
-export default function RunInfoOverlay({ tab, deck, parts, equipables, onClose, onTabChange }: Props) {
+export default function RunInfoOverlay({ tab, deck, parts, equipment, onClose, onTabChange }: Props) {
   const permanent = usePermanentStore()
   const cp = permanent.carriedPart
   const carriedPartDef = cp ? (ALL_PARTS[cp.partId] ?? null) : null
@@ -141,8 +140,8 @@ export default function RunInfoOverlay({ tab, deck, parts, equipables, onClose, 
                   EQUIPPED
                 </div>
                 <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                  {SLOTS.map((slot) => {
-                    const item = equipables[slot]
+                  {BODY_SLOTS.map((slot) => {
+                    const item = equipment[slot]
                     return (
                       <div
                         key={slot}

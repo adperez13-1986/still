@@ -3,53 +3,66 @@ import { immer } from 'zustand/middleware/immer'
 import type {
   RunState,
   CardInstance,
-  PartDefinition,
-  EquipableDefinition,
-  EquipSlot,
-  StatusEffect,
+  BehavioralPartDefinition,
+  EquipmentDefinition,
+  BodySlot,
   EnemyInstance,
   CombatPhase,
+  CombatState,
   MapGraph,
 } from '../game/types'
+
+import {
+  initCombat,
+  playModifierCard,
+  unassignModifier,
+  executeBodyActions,
+  executeEnemyTurn,
+  endTurn,
+  startTurn,
+  projectHeat,
+  allEnemiesDefeated,
+  isStillDefeated,
+  type CombatContext,
+} from '../game/combat'
+
+import { ALL_CARDS } from '../data/cards'
+import { ALL_ENEMIES } from '../data/enemies'
 
 interface RunActions {
   // Run lifecycle
   startRun: (initialState: Omit<RunState, 'active'>) => void
   endRun: () => void
 
-  // Health & stats
+  // Health
   takeDamage: (amount: number) => void
   heal: (amount: number) => void
-  gainBlock: (amount: number) => void
-  resetBlock: () => void
 
   // Card management
-  drawCards: (count: number) => void
-  playCard: (instanceId: string) => void
-  discardHand: () => void
   addCardToDeck: (card: CardInstance) => void
-  exhaustCard: (instanceId: string) => void
+  removeCardFromDeck: (instanceId: string) => void
 
-  // Energy
-  spendEnergy: (amount: number) => void
-  restoreEnergy: () => void
+  // Heat
+  getProjectedHeat: () => number
 
-  // Parts & equipables
-  addPart: (part: PartDefinition) => void
+  // Equipment
+  equipItem: (item: EquipmentDefinition) => EquipmentDefinition | null
+
+  // Parts
+  addPart: (part: BehavioralPartDefinition) => void
   removePart: (partId: string) => void
-  restorePart: (part: PartDefinition) => void
-  equipItem: (item: EquipableDefinition) => EquipableDefinition | null
 
   // Shards
   addShards: (amount: number) => void
-  addBonusStrength: (amount: number) => void
 
-  // Combat
+  // Combat flow
+  startCombat: (enemies: EnemyInstance[]) => void
+  playCard: (instanceId: string, targetSlot?: BodySlot, targetEnemyId?: string) => void
+  unassignSlotModifier: (slot: BodySlot) => void
+  executeTurn: (targetEnemyId?: string) => void
   setCombatPhase: (phase: CombatPhase) => void
   setEnemies: (enemies: EnemyInstance[]) => void
-  damageEnemy: (instanceId: string, amount: number) => void
-  applyStatusToSelf: (effect: StatusEffect) => void
-  advanceEnemyIntents: () => void
+  applyCombatResult: (combat: CombatState, stillHealth: number) => void
 
   // Map
   setMap: (map: MapGraph) => void
@@ -65,24 +78,14 @@ const emptyRunState: RunState = {
   map: null,
   health: 70,
   maxHealth: 70,
-  energyCap: 3,
-  drawCount: 5,
-  bonusStrength: 0,
+  drawCount: 4,
+  passiveCoolingBonus: 0,
   deck: [],
   parts: [],
-  equipables: { Head: null, Torso: null, Arms: null, Legs: null },
+  equipment: { Head: null, Torso: null, Arms: null, Legs: null },
   shards: 0,
   combat: null,
   nameDiscovered: false,
-}
-
-function shuffleArray<T>(arr: T[]): T[] {
-  const a = [...arr]
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[a[i], a[j]] = [a[j], a[i]]
-  }
-  return a
 }
 
 function calcBlockAbsorb(block: number, damage: number): { newBlock: number; healthDamage: number } {
@@ -91,7 +94,7 @@ function calcBlockAbsorb(block: number, damage: number): { newBlock: number; hea
 }
 
 export const useRunStore = create<RunState & RunActions>()(
-  immer((set) => ({
+  immer((set, get) => ({
     ...emptyRunState,
 
     startRun: (initial) =>
@@ -116,116 +119,228 @@ export const useRunStore = create<RunState & RunActions>()(
         state.health = Math.min(state.maxHealth, state.health + amount)
       }),
 
-    gainBlock: (amount) =>
-      set((state) => {
-        if (state.combat) state.combat.block += amount
-      }),
-
-    resetBlock: () =>
-      set((state) => {
-        if (state.combat) state.combat.block = 0
-      }),
-
-    drawCards: (count) =>
-      set((state) => {
-        if (!state.combat) return
-        const handSize = state.combat.hand.length
-        const canDraw = Math.min(count, 10 - handSize)
-        for (let i = 0; i < canDraw; i++) {
-          if (state.combat.drawPile.length === 0) {
-            if (state.combat.discardPile.length === 0) break
-            state.combat.drawPile = shuffleArray(state.combat.discardPile)
-            state.combat.discardPile = []
-          }
-          const card = state.combat.drawPile.pop()!
-          state.combat.hand.push(card)
-        }
-        // Cards beyond 10 while drawing are burned (go to discard)
-      }),
-
-    playCard: (instanceId) =>
-      set((state) => {
-        if (!state.combat) return
-        const idx = state.combat.hand.findIndex((c) => c.instanceId === instanceId)
-        if (idx === -1) return
-        const [card] = state.combat.hand.splice(idx, 1)
-        state.combat.discardPile.push(card)
-      }),
-
-    discardHand: () =>
-      set((state) => {
-        if (!state.combat) return
-        state.combat.discardPile.push(...state.combat.hand)
-        state.combat.hand = []
-      }),
-
     addCardToDeck: (card) =>
       set((state) => {
         state.deck.push(card)
       }),
 
-    exhaustCard: (instanceId) =>
+    removeCardFromDeck: (instanceId) =>
       set((state) => {
-        if (!state.combat) return
-        const fromHand = state.combat.hand.findIndex((c) => c.instanceId === instanceId)
-        if (fromHand !== -1) {
-          const [card] = state.combat.hand.splice(fromHand, 1)
-          state.combat.exhaustPile.push(card)
-        }
+        const idx = state.deck.findIndex(c => c.instanceId === instanceId)
+        if (idx !== -1) state.deck.splice(idx, 1)
       }),
 
-    spendEnergy: (amount) =>
-      set((state) => {
-        if (state.combat) state.combat.energy = Math.max(0, state.combat.energy - amount)
-      }),
+    getProjectedHeat: () => {
+      const state = get()
+      if (!state.combat) return 0
+      return projectHeat(
+        state.combat.heat,
+        state.equipment,
+        state.combat.slotModifiers,
+        ALL_CARDS,
+        state.combat,
+        state.passiveCoolingBonus
+      )
+    },
 
-    restoreEnergy: () =>
+    equipItem: (item) => {
+      let displaced: EquipmentDefinition | null = null
       set((state) => {
-        if (state.combat) state.combat.energy = state.energyCap
-      }),
+        displaced = state.equipment[item.slot]
+        state.equipment[item.slot] = item
+      })
+      return displaced
+    },
 
     addPart: (part) =>
       set((state) => {
         state.parts.push(part)
-        for (const effect of part.effects) {
-          if (effect.type === 'maxHealth') state.maxHealth += effect.value
-          if (effect.type === 'energyCap') state.energyCap += effect.value
-          if (effect.type === 'drawCount') state.drawCount += effect.value
-          // blockOnTurnStart and strengthBonus are applied per-combat
-          // shardBonus is applied at shard calculation time
-        }
       }),
 
     removePart: (partId) =>
       set((state) => {
         const idx = state.parts.findIndex((p) => p.id === partId)
         if (idx !== -1) state.parts.splice(idx, 1)
-        // Baked-in stats (maxHealth, energyCap, drawCount) are not reversed
       }),
-
-    restorePart: (part) =>
-      set((state) => {
-        state.parts.push(part)
-        // No stat re-application — stats were already baked in at run start
-      }),
-
-    equipItem: (item) => {
-      let displaced: EquipableDefinition | null = null
-      set((state) => {
-        displaced = state.equipables[item.slot as EquipSlot]
-        state.equipables[item.slot as EquipSlot] = item
-      })
-      return displaced
-    },
 
     addShards: (amount) =>
       set((state) => {
         state.shards += amount
       }),
 
-    addBonusStrength: (amount) =>
+    // Task 4.3: Combat start
+    startCombat: (enemies) =>
       set((state) => {
-        state.bonusStrength += amount
+        const combat = initCombat(
+          [...state.deck],
+          state.drawCount,
+          enemies,
+          []
+        )
+        state.combat = combat
+
+        // Fire onCombatStart parts
+        for (const part of state.parts) {
+          if (part.trigger.type === 'onCombatStart') {
+            if (part.effect.type === 'drawCards') {
+              // Draw extra cards
+              for (let i = 0; i < part.effect.count; i++) {
+                if (combat.drawPile.length === 0) break
+                if (combat.hand.length >= 10) break
+                combat.hand.push(combat.drawPile.pop()!)
+              }
+            }
+          }
+        }
+      }),
+
+    // Task 4.4: Play modifier card
+    playCard: (instanceId, targetSlot, targetEnemyId) =>
+      set((state) => {
+        if (!state.combat) return
+        if (state.combat.shutdown) return
+        const cardInst = state.combat.hand.find(c => c.instanceId === instanceId)
+        if (!cardInst) return
+        const def = ALL_CARDS[cardInst.definitionId]
+        if (!def) return
+
+        // Get the upgraded or base definition
+        const cardDef = cardInst.isUpgraded && def.upgraded ? def.upgraded : def
+
+        const ctx: CombatContext = {
+          combat: JSON.parse(JSON.stringify(state.combat)),
+          stillHealth: state.health,
+          maxHealth: state.maxHealth,
+          drawCount: state.drawCount,
+          passiveCoolingBonus: state.passiveCoolingBonus,
+          equipment: JSON.parse(JSON.stringify(state.equipment)),
+          parts: JSON.parse(JSON.stringify(state.parts)),
+          cardDefs: ALL_CARDS,
+          enemyDefs: {},
+          targetEnemyId,
+        }
+
+        const result = playModifierCard(ctx, cardDef, instanceId, targetSlot)
+        Object.assign(state.combat, result.combat)
+        state.health = result.stillHealth
+      }),
+
+    // Unassign modifier from slot (return to hand, refund heat)
+    unassignSlotModifier: (slot) =>
+      set((state) => {
+        if (!state.combat) return
+        const modId = state.combat.slotModifiers[slot]
+        if (!modId) return
+
+        // Find the card definition to know heat cost for refund
+        const allCards = [
+          ...state.combat.hand,
+          ...state.combat.drawPile,
+          ...state.combat.discardPile,
+          ...state.combat.exhaustPile,
+        ]
+        const cardInst = allCards.find(c => c.instanceId === modId)
+        if (!cardInst) return
+        const def = ALL_CARDS[cardInst.definitionId]
+        if (!def) return
+        const cardDef = cardInst.isUpgraded && def.upgraded ? def.upgraded : def
+
+        const ctx: CombatContext = {
+          combat: JSON.parse(JSON.stringify(state.combat)),
+          stillHealth: state.health,
+          maxHealth: state.maxHealth,
+          drawCount: state.drawCount,
+          passiveCoolingBonus: state.passiveCoolingBonus,
+          equipment: JSON.parse(JSON.stringify(state.equipment)),
+          parts: JSON.parse(JSON.stringify(state.parts)),
+          cardDefs: ALL_CARDS,
+          enemyDefs: {},
+        }
+
+        const result = unassignModifier(ctx, slot, cardDef)
+        Object.assign(state.combat, result.combat)
+        state.health = result.stillHealth
+      }),
+
+    // Task 4.5: Execute turn (body actions → enemy turn → end of turn)
+    executeTurn: (targetEnemyId) =>
+      set((state) => {
+        if (!state.combat) return
+
+        const baseCtx: CombatContext = {
+          combat: JSON.parse(JSON.stringify(state.combat)),
+          stillHealth: state.health,
+          maxHealth: state.maxHealth,
+          drawCount: state.drawCount,
+          passiveCoolingBonus: state.passiveCoolingBonus,
+          equipment: JSON.parse(JSON.stringify(state.equipment)),
+          parts: JSON.parse(JSON.stringify(state.parts)),
+          cardDefs: ALL_CARDS,
+          enemyDefs: ALL_ENEMIES,
+          targetEnemyId,
+        }
+
+        // Phase 1: Execute body actions
+        state.combat.phase = 'executing'
+        const bodyResult = executeBodyActions(baseCtx)
+        state.health = bodyResult.stillHealth
+
+        // Check win after body actions
+        if (allEnemiesDefeated(bodyResult.combat)) {
+          Object.assign(state.combat, bodyResult.combat)
+          state.combat.phase = 'reward'
+          return
+        }
+
+        // Phase 2: Enemy turn
+        const enemyCtx: CombatContext = {
+          ...baseCtx,
+          combat: bodyResult.combat,
+          stillHealth: bodyResult.stillHealth,
+        }
+        const enemyResult = executeEnemyTurn(enemyCtx)
+        state.health = enemyResult.stillHealth
+
+        // Check loss after enemy turn
+        if (isStillDefeated(enemyResult.stillHealth)) {
+          Object.assign(state.combat, enemyResult.combat)
+          state.combat.phase = 'finished'
+          return
+        }
+
+        // Phase 3: End of turn (hot penalty, status decrement, discard)
+        const endCtx: CombatContext = {
+          ...baseCtx,
+          combat: enemyResult.combat,
+          stillHealth: enemyResult.stillHealth,
+        }
+        const endResult = endTurn(endCtx)
+        state.health = endResult.stillHealth
+
+        // Check loss after hot penalty
+        if (isStillDefeated(endResult.stillHealth)) {
+          Object.assign(state.combat, endResult.combat)
+          state.combat.phase = 'finished'
+          return
+        }
+
+        // Check win (in case end-of-turn effects somehow killed last enemy)
+        if (allEnemiesDefeated(endResult.combat)) {
+          Object.assign(state.combat, endResult.combat)
+          state.combat.phase = 'reward'
+          return
+        }
+
+        // Phase 4: Start next turn (passive cooling, block reset, draw)
+        const inspiredBonus = (endResult as any)._inspiredBonus ?? 0
+        const startCtx: CombatContext = {
+          ...baseCtx,
+          combat: endResult.combat,
+          stillHealth: endResult.stillHealth,
+        }
+        const turnResult = startTurn(startCtx, inspiredBonus)
+        Object.assign(state.combat, turnResult.combat)
+        state.health = turnResult.stillHealth
       }),
 
     setCombatPhase: (phase) =>
@@ -238,32 +353,10 @@ export const useRunStore = create<RunState & RunActions>()(
         if (state.combat) state.combat.enemies = enemies
       }),
 
-    damageEnemy: (instanceId, amount) =>
+    applyCombatResult: (combat, stillHealth) =>
       set((state) => {
-        if (!state.combat) return
-        const enemy = state.combat.enemies.find((e) => e.instanceId === instanceId)
-        if (!enemy) return
-        enemy.currentHealth = Math.max(0, enemy.currentHealth - amount)
-        if (enemy.currentHealth === 0) enemy.isDefeated = true
-      }),
-
-    applyStatusToSelf: (effect) =>
-      set((state) => {
-        if (!state.combat) return
-        const existing = state.combat.statusEffects.find((s) => s.type === effect.type)
-        if (existing) {
-          existing.stacks += effect.stacks
-        } else {
-          state.combat.statusEffects.push({ ...effect })
-        }
-      }),
-
-    advanceEnemyIntents: () =>
-      set((state) => {
-        if (!state.combat) return
-        for (const enemy of state.combat.enemies) {
-          if (!enemy.isDefeated) enemy.intentIndex++
-        }
+        state.combat = combat
+        state.health = stillHealth
       }),
 
     setMap: (map) =>
