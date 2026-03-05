@@ -11,6 +11,7 @@ interface Props {
   block: number
   statusEffects: StatusEffect[]
   shutdown: boolean
+  compact?: boolean
 }
 
 const HEAT_COLORS: Record<string, string> = {
@@ -21,7 +22,7 @@ const HEAT_COLORS: Record<string, string> = {
 }
 
 export default function StillPanel({
-  health, maxHealth, heat, block, statusEffects, shutdown,
+  health, maxHealth, heat, block, statusEffects, shutdown, compact,
 }: Props) {
   const healthPct = Math.max(0, (health / maxHealth) * 100)
   const healthColor = healthPct > 50 ? '#27ae60' : healthPct > 25 ? '#f39c12' : '#c0392b'
@@ -42,6 +43,77 @@ export default function StillPanel({
 
   const threshold = getHeatThreshold(heat)
   const heatColor = HEAT_COLORS[threshold]
+
+  if (compact) {
+    return (
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '10px',
+        backgroundColor: '#16213e',
+        border: '1px solid #2c3e50',
+        borderRadius: '6px',
+        padding: '6px 12px',
+        minHeight: '36px',
+        color: '#e8e8e8',
+        fontSize: '12px',
+        flexWrap: 'wrap',
+      }}>
+        {/* Mini HP bar + value */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <div style={{
+            width: '80px',
+            height: '8px',
+            backgroundColor: '#2c3e50',
+            borderRadius: '4px',
+            overflow: 'hidden',
+          }}>
+            <div
+              className={damaged ? 'health-bar-damaged' : ''}
+              style={{
+                height: '100%',
+                width: `${healthPct}%`,
+                backgroundColor: healthColor,
+                borderRadius: '4px',
+                transition: 'width 0.3s',
+              }}
+            />
+          </div>
+          <span style={{ fontWeight: 'bold', fontSize: '11px' }}>{health}/{maxHealth}</span>
+          {damaged && (
+            <span key={damageKey} className="damage-popup" style={{ top: '-16px', fontSize: '10px' }}>hit</span>
+          )}
+        </div>
+        {/* Heat */}
+        <span style={{ color: heatColor, fontWeight: 'bold' }}>
+          H {heat}/{HEAT_MAX}
+        </span>
+        {/* Block */}
+        {block > 0 && (
+          <span style={{ color: '#74b9ff', fontWeight: 'bold' }}>Blk {block}</span>
+        )}
+        {/* Shutdown */}
+        {shutdown && (
+          <span style={{ color: '#e74c3c', fontWeight: 'bold', letterSpacing: '1px' }}>SHUTDOWN</span>
+        )}
+        {/* Status pills */}
+        {statusEffects.map((s) => (
+          <span
+            key={s.type}
+            style={{
+              fontSize: '10px',
+              backgroundColor: '#2c3e50',
+              borderRadius: '3px',
+              padding: '1px 5px',
+              color: '#dfe6e9',
+            }}
+          >
+            {s.type[0]}{s.stacks}
+          </span>
+        ))}
+      </div>
+    )
+  }
 
   return (
     <div style={{

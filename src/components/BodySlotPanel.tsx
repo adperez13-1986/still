@@ -10,9 +10,10 @@ interface Props {
   projections: SlotProjection[]
   onAssign: (slot: BodySlot) => void
   onUnassign: (slot: BodySlot) => void
+  compact?: boolean
 }
 
-export default function BodySlotPanel({ combat, equipment, selectedCardId, projections, onAssign, onUnassign }: Props) {
+export default function BodySlotPanel({ combat, equipment, selectedCardId, projections, onAssign, onUnassign, compact }: Props) {
   // If a slot modifier card is selected, determine valid slots
   let validSlots: Set<BodySlot> | null = null
   if (selectedCardId) {
@@ -37,12 +38,12 @@ export default function BodySlotPanel({ combat, equipment, selectedCardId, proje
       backgroundColor: '#16213e',
       border: '1px solid #2c3e50',
       borderRadius: '8px',
-      padding: '12px 16px',
+      padding: compact ? '4px 8px' : '12px 16px',
     }}>
-      <div style={{ fontWeight: 'bold', marginBottom: '8px', fontSize: '12px', color: '#aaa', letterSpacing: '1px' }}>
+      <div style={{ fontWeight: 'bold', marginBottom: compact ? '4px' : '8px', fontSize: compact ? '10px' : '12px', color: '#aaa', letterSpacing: '1px' }}>
         BODY SLOTS
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: compact ? '1fr' : '1fr 1fr', gap: compact ? '4px' : '8px' }}>
         {BODY_SLOTS.map(slot => {
           const equip = equipment[slot]
           const modInstanceId = combat.slotModifiers[slot]
@@ -58,6 +59,109 @@ export default function BodySlotPanel({ combat, equipment, selectedCardId, proje
             ]
             const inst = allCards.find(c => c.instanceId === modInstanceId)
             if (inst) modName = ALL_CARDS[inst.definitionId]?.name ?? null
+          }
+
+          const proj = projections.find(p => p.slot === slot)
+
+          if (compact) {
+            return (
+              <div
+                key={slot}
+                onClick={() => {
+                  if (isValid && selectedCardId) onAssign(slot)
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '4px 8px',
+                  backgroundColor: isDisabled
+                    ? 'rgba(231, 76, 60, 0.1)'
+                    : isValid
+                      ? 'rgba(162, 155, 254, 0.15)'
+                      : '#1a1a2e',
+                  border: `1px solid ${
+                    isValid ? '#a29bfe' : isDisabled ? '#e74c3c' : '#2c3e50'
+                  }`,
+                  borderRadius: '4px',
+                  cursor: isValid ? 'pointer' : 'default',
+                  fontSize: '11px',
+                  color: '#e8e8e8',
+                  minHeight: '28px',
+                  flexWrap: 'wrap',
+                }}
+              >
+                <span style={{ fontWeight: 'bold', minWidth: '48px', fontSize: '11px' }}>
+                  {slot}
+                  {isDisabled && <span style={{ color: '#e74c3c', marginLeft: '3px', fontSize: '9px' }}>OFF</span>}
+                </span>
+                <span style={{ color: '#888', fontSize: '11px' }}>
+                  {equip ? equip.name : '(empty)'}
+                </span>
+                {/* Projection inline */}
+                {proj && proj.willFire && (
+                  <>
+                    {proj.damage > 0 && (
+                      <span style={{ color: '#e74c3c', fontWeight: 'bold', fontSize: '10px' }}>
+                        →{proj.damage}dmg{proj.targetMode === 'all' ? ' ALL' : ''}
+                      </span>
+                    )}
+                    {proj.block > 0 && (
+                      <span style={{ color: '#3498db', fontWeight: 'bold', fontSize: '10px' }}>
+                        →{proj.block}blk
+                      </span>
+                    )}
+                    {proj.heal > 0 && (
+                      <span style={{ color: '#2ecc71', fontWeight: 'bold', fontSize: '10px' }}>
+                        →{proj.heal}hp
+                      </span>
+                    )}
+                    {proj.draw > 0 && (
+                      <span style={{ color: '#dfe6e9', fontWeight: 'bold', fontSize: '10px' }}>
+                        draw {proj.draw}
+                      </span>
+                    )}
+                    {proj.heatCost !== 0 && (
+                      <span style={{ color: '#e67e22', fontWeight: 'bold', fontSize: '10px' }}>
+                        {proj.heatCost > 0 ? '+' : ''}{proj.heatCost}H
+                      </span>
+                    )}
+                  </>
+                )}
+                {/* Modifier badge + remove */}
+                {modName && (
+                  <>
+                    <span style={{
+                      fontSize: '9px',
+                      padding: '1px 5px',
+                      background: 'rgba(162,155,254,0.2)',
+                      color: '#a29bfe',
+                      borderRadius: '3px',
+                    }}>
+                      {modName}
+                    </span>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onUnassign(slot) }}
+                      style={{
+                        fontSize: '9px',
+                        padding: '0 4px',
+                        background: 'transparent',
+                        color: '#e74c3c',
+                        border: '1px solid #e74c3c',
+                        borderRadius: '3px',
+                        cursor: 'pointer',
+                        lineHeight: '1',
+                      }}
+                    >
+                      ×
+                    </button>
+                  </>
+                )}
+                {isValid && !modName && (
+                  <span style={{ fontSize: '9px', color: '#a29bfe' }}>Tap</span>
+                )}
+              </div>
+            )
           }
 
           return (
@@ -138,7 +242,6 @@ export default function BodySlotPanel({ combat, equipment, selectedCardId, proje
 
               {/* Projection display */}
               {(() => {
-                const proj = projections.find(p => p.slot === slot)
                 if (!proj || !proj.willFire) return null
                 return (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px', fontSize: '11px' }}>

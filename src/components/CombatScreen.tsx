@@ -9,6 +9,7 @@ import { ALL_PARTS, ALL_EQUIPMENT } from '../data/parts'
 import { ALL_CARDS } from '../data/cards'
 import type { BodySlot } from '../game/types'
 
+import useIsMobile from '../hooks/useIsMobile'
 import StillPanel from './StillPanel'
 import EnemyCard from './EnemyCard'
 import BodySlotPanel from './BodySlotPanel'
@@ -22,6 +23,7 @@ export default function CombatScreen() {
   const permanent = usePermanentStore()
   const combat = run.combat
 
+  const isMobile = useIsMobile()
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
   const [targetEnemyId, setTargetEnemyId] = useState<string | null>(null)
   const projectedHeat = run.getProjectedHeat()
@@ -184,42 +186,76 @@ export default function CombatScreen() {
       color: '#e8e8e8',
       display: 'flex',
       flexDirection: 'column',
-      gap: '12px',
-      padding: '16px',
+      gap: isMobile ? '6px' : '12px',
+      padding: isMobile ? '8px 8px 60px 8px' : '16px',
     }}>
-      {/* Top row: Still panel + Enemies */}
-      <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
-        <StillPanel
-          health={run.health}
-          maxHealth={run.maxHealth}
-          heat={combat.heat}
-          block={combat.block}
-          statusEffects={combat.statusEffects}
-          shutdown={combat.shutdown}
-        />
-        <div style={{ flex: 1, display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
-          {combat.enemies.filter(e => !e.isDefeated).length > 1 && (
-            <div style={{ width: '100%', fontSize: '11px', color: '#f1c40f', marginBottom: '-4px' }}>
-              Click an enemy to set target
-            </div>
-          )}
-          {combat.enemies.map(enemy => {
-            const def = ALL_ENEMIES[enemy.definitionId]
-            if (!def) return null
-            return (
-              <EnemyCard
-                key={enemy.instanceId}
-                instance={enemy}
-                definition={def}
-                selected={effectiveTarget === enemy.instanceId}
-                onClick={() => {
-                  if (!enemy.isDefeated) setTargetEnemyId(enemy.instanceId)
-                }}
-              />
-            )
-          })}
+      {/* Top section: Still panel + Enemies */}
+      {isMobile ? (
+        // Mobile: stack vertically
+        <>
+          <StillPanel
+            health={run.health}
+            maxHealth={run.maxHealth}
+            heat={combat.heat}
+            block={combat.block}
+            statusEffects={combat.statusEffects}
+            shutdown={combat.shutdown}
+            compact
+          />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            {combat.enemies.map(enemy => {
+              const def = ALL_ENEMIES[enemy.definitionId]
+              if (!def) return null
+              return (
+                <EnemyCard
+                  key={enemy.instanceId}
+                  instance={enemy}
+                  definition={def}
+                  selected={effectiveTarget === enemy.instanceId}
+                  onClick={() => {
+                    if (!enemy.isDefeated) setTargetEnemyId(enemy.instanceId)
+                  }}
+                  compact
+                />
+              )
+            })}
+          </div>
+        </>
+      ) : (
+        // Desktop: side-by-side
+        <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+          <StillPanel
+            health={run.health}
+            maxHealth={run.maxHealth}
+            heat={combat.heat}
+            block={combat.block}
+            statusEffects={combat.statusEffects}
+            shutdown={combat.shutdown}
+          />
+          <div style={{ flex: 1, display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+            {combat.enemies.filter(e => !e.isDefeated).length > 1 && (
+              <div style={{ width: '100%', fontSize: '11px', color: '#f1c40f', marginBottom: '-4px' }}>
+                Click an enemy to set target
+              </div>
+            )}
+            {combat.enemies.map(enemy => {
+              const def = ALL_ENEMIES[enemy.definitionId]
+              if (!def) return null
+              return (
+                <EnemyCard
+                  key={enemy.instanceId}
+                  instance={enemy}
+                  definition={def}
+                  selected={effectiveTarget === enemy.instanceId}
+                  onClick={() => {
+                    if (!enemy.isDefeated) setTargetEnemyId(enemy.instanceId)
+                  }}
+                />
+              )
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Body Slot Panel */}
       <BodySlotPanel
@@ -229,27 +265,30 @@ export default function CombatScreen() {
         projections={projections}
         onAssign={handleAssignSlot}
         onUnassign={handleUnassignSlot}
+        compact={isMobile}
       />
 
-      {/* Heat Track */}
-      <HeatTrack
-        heat={combat.heat}
-        projectedHeat={projectedHeat}
-      />
+      {/* Heat Track — hidden on mobile (heat shown in compact StillPanel) */}
+      {!isMobile && (
+        <HeatTrack
+          heat={combat.heat}
+          projectedHeat={projectedHeat}
+        />
+      )}
 
       {/* Hand */}
       <div style={{
         backgroundColor: '#16213e',
         border: '1px solid #2c3e50',
-        borderRadius: '8px',
-        padding: '8px',
+        borderRadius: isMobile ? '6px' : '8px',
+        padding: isMobile ? '4px' : '8px',
       }}>
         <div style={{
-          fontSize: '11px',
+          fontSize: isMobile ? '10px' : '11px',
           color: '#aaa',
           letterSpacing: '1px',
-          marginBottom: '6px',
-          paddingLeft: '8px',
+          marginBottom: isMobile ? '2px' : '6px',
+          paddingLeft: isMobile ? '4px' : '8px',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
@@ -258,61 +297,112 @@ export default function CombatScreen() {
             HAND
             {selectedCardId && (
               <span style={{ color: '#a29bfe', marginLeft: '8px', fontWeight: 'normal' }}>
-                Select a body slot to assign modifier
+                {isMobile ? 'Tap a slot' : 'Select a body slot to assign modifier'}
               </span>
             )}
           </span>
-          <span style={{ color: '#555' }}>
-            Draw: {combat.drawPile.length} | Discard: {combat.discardPile.length} | Exhaust: {combat.exhaustPile.length}
-          </span>
+          {!isMobile && (
+            <span style={{ color: '#555' }}>
+              Draw: {combat.drawPile.length} | Discard: {combat.discardPile.length} | Exhaust: {combat.exhaustPile.length}
+            </span>
+          )}
         </div>
         <Hand
           combat={combat}
           selectedCardId={selectedCardId}
           onSelectSlotCard={handleSelectSlotCard}
           onPlaySystemCard={handlePlaySystemCard}
+          compact={isMobile}
         />
       </div>
 
-      {/* Execute button */}
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '12px' }}>
-        {effectiveTarget && (() => {
-          const targetEnemy = combat.enemies.find(e => e.instanceId === effectiveTarget)
-          if (!targetEnemy || targetEnemy.isDefeated) return null
-          const targetDef = ALL_ENEMIES[targetEnemy.definitionId]
-          return (
-            <span style={{ fontSize: '12px', color: '#f1c40f' }}>
-              Target: {targetDef?.name ?? '???'}
-            </span>
-          )
-        })()}
-        <button
-          onClick={handleExecute}
-          disabled={combat.phase !== 'planning'}
-          style={{
-            padding: '14px 48px',
-            backgroundColor: combat.phase === 'planning' ? '#a29bfe' : '#2c3e50',
-            border: 'none',
-            color: combat.phase === 'planning' ? '#0d0d1a' : '#555',
-            borderRadius: '8px',
-            cursor: combat.phase === 'planning' ? 'pointer' : 'not-allowed',
-            fontSize: '16px',
-            fontWeight: 'bold',
-            letterSpacing: '2px',
-          }}
-        >
-          EXECUTE
-        </button>
-      </div>
-
-      {/* Round info */}
-      <div style={{
-        textAlign: 'center',
-        fontSize: '11px',
-        color: '#555',
-      }}>
-        Round {combat.roundNumber}
-      </div>
+      {/* Execute section */}
+      {isMobile ? (
+        // Sticky bottom bar on mobile
+        <div style={{
+          position: 'sticky',
+          bottom: 0,
+          backgroundColor: '#0d0d1a',
+          borderTop: '1px solid #2c3e50',
+          padding: '8px',
+          zIndex: 10,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+        }}>
+          <span style={{ fontSize: '10px', color: '#555', whiteSpace: 'nowrap' }}>
+            R{combat.roundNumber}
+          </span>
+          {effectiveTarget && (() => {
+            const targetEnemy = combat.enemies.find(e => e.instanceId === effectiveTarget)
+            if (!targetEnemy || targetEnemy.isDefeated) return null
+            const targetDef = ALL_ENEMIES[targetEnemy.definitionId]
+            return (
+              <span style={{ fontSize: '11px', color: '#f1c40f', whiteSpace: 'nowrap' }}>
+                {targetDef?.name ?? '???'}
+              </span>
+            )
+          })()}
+          <button
+            onClick={handleExecute}
+            disabled={combat.phase !== 'planning'}
+            style={{
+              flex: 1,
+              padding: '10px',
+              backgroundColor: combat.phase === 'planning' ? '#a29bfe' : '#2c3e50',
+              border: 'none',
+              color: combat.phase === 'planning' ? '#0d0d1a' : '#555',
+              borderRadius: '6px',
+              cursor: combat.phase === 'planning' ? 'pointer' : 'not-allowed',
+              fontSize: '14px',
+              fontWeight: 'bold',
+              letterSpacing: '2px',
+            }}
+          >
+            EXECUTE
+          </button>
+        </div>
+      ) : (
+        // Desktop: centered button + round info
+        <>
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '12px' }}>
+            {effectiveTarget && (() => {
+              const targetEnemy = combat.enemies.find(e => e.instanceId === effectiveTarget)
+              if (!targetEnemy || targetEnemy.isDefeated) return null
+              const targetDef = ALL_ENEMIES[targetEnemy.definitionId]
+              return (
+                <span style={{ fontSize: '12px', color: '#f1c40f' }}>
+                  Target: {targetDef?.name ?? '???'}
+                </span>
+              )
+            })()}
+            <button
+              onClick={handleExecute}
+              disabled={combat.phase !== 'planning'}
+              style={{
+                padding: '14px 48px',
+                backgroundColor: combat.phase === 'planning' ? '#a29bfe' : '#2c3e50',
+                border: 'none',
+                color: combat.phase === 'planning' ? '#0d0d1a' : '#555',
+                borderRadius: '8px',
+                cursor: combat.phase === 'planning' ? 'pointer' : 'not-allowed',
+                fontSize: '16px',
+                fontWeight: 'bold',
+                letterSpacing: '2px',
+              }}
+            >
+              EXECUTE
+            </button>
+          </div>
+          <div style={{
+            textAlign: 'center',
+            fontSize: '11px',
+            color: '#555',
+          }}>
+            Round {combat.roundNumber}
+          </div>
+        </>
+      )}
     </div>
   )
 }
