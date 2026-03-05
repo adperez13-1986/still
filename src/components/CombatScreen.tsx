@@ -110,7 +110,32 @@ export default function CombatScreen() {
           if (permanent.carriedPart && permanent.carriedPart.durability > 0) {
             permanent.updateCarriedPart({ durability: permanent.carriedPart.durability - 1 })
           }
-          // End combat
+          // Check if boss was defeated — end the run
+          const bossDefeated = defeatedEnemies.some(e => ALL_ENEMIES[e.definitionId]?.isBoss)
+          if (bossDefeated) {
+            permanent.addShards(run.shards)
+            permanent.addRunHistory({
+              id: `run-${Date.now()}`,
+              date: new Date().toISOString(),
+              actReached: run.act,
+              outcome: 'victory',
+              message: 'Cleared the act.',
+              notable: run.parts.map(p => p.name),
+            })
+            permanent.save()
+            run.endRun()
+            navigate('/', {
+              state: {
+                runEnd: true,
+                outcome: 'victory',
+                message: 'Cleared the act.',
+                parts: run.parts,
+                shards: run.shards,
+              },
+            })
+            return
+          }
+          // Normal combat end — return to map
           useRunStore.setState((s) => ({ ...s, combat: null }))
         }}
       />
@@ -136,6 +161,8 @@ export default function CombatScreen() {
         </p>
         <button
           onClick={() => {
+            // Transfer shards to permanent store
+            permanent.addShards(run.shards)
             // Record run history
             permanent.addRunHistory({
               id: `run-${Date.now()}`,
@@ -153,6 +180,7 @@ export default function CombatScreen() {
                 outcome: 'defeat',
                 message: 'Fell in combat.',
                 parts: run.parts,
+                shards: run.shards,
               },
             })
           }}
