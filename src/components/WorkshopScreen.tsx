@@ -2,9 +2,13 @@ import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { usePermanentStore } from '../store/permanentStore'
 import { GRACE_LINES } from '../data/narrative'
+import { encodeSaveCode, decodeSaveCode } from '../game/persistence'
+import { ALL_PARTS } from '../data/parts'
 import RunEndOverlay from './RunEndOverlay'
 import CarrySelectOverlay from './CarrySelectOverlay'
-import type { WorkshopUpgradeId, BehavioralPartDefinition } from '../game/types'
+import type { PermanentState, WorkshopUpgradeId, BehavioralPartDefinition } from '../game/types'
+
+const WORKSHOP_REPAIR_COST = 50
 
 const COMPANIONS = [
   {
@@ -35,6 +39,11 @@ export default function WorkshopScreen() {
   const permanent = usePermanentStore()
   const [graceLine] = useState(() => GRACE_LINES[Math.floor(Math.random() * GRACE_LINES.length)])
   const [showHistory, setShowHistory] = useState(false)
+  const [exportFeedback, setExportFeedback] = useState<string | null>(null)
+  const [showImport, setShowImport] = useState(false)
+  const [importCode, setImportCode] = useState('')
+  const [importError, setImportError] = useState<string | null>(null)
+  const [importConfirm, setImportConfirm] = useState(false)
   const runEndState = location.state as { runEnd?: boolean; outcome?: string; message?: string; parts?: BehavioralPartDefinition[] } | null
   const runEnd = runEndState
   const runEndParts: BehavioralPartDefinition[] = runEndState?.parts ?? []
@@ -273,6 +282,63 @@ export default function WorkshopScreen() {
         </div>
       </div>
 
+      {/* Carried Part Repair */}
+      {permanent.carriedPart && permanent.carriedPart.durability === 0 && permanent.carriedPart.repairsLeft > 0 && (() => {
+        const cp = permanent.carriedPart!
+        const partDef = ALL_PARTS[cp.partId]
+        if (!partDef) return null
+        const canAffordRepair = permanent.totalShards >= WORKSHOP_REPAIR_COST
+        return (
+          <div style={{ width: '100%', maxWidth: '700px' }}>
+            <h3 style={{ color: '#aaa', fontSize: '11px', letterSpacing: '3px', marginBottom: '16px', textAlign: 'center' }}>
+              CARRIED PART
+            </h3>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              backgroundColor: '#1a1a1a',
+              borderRadius: '8px',
+              padding: '12px 16px',
+              border: '1px solid #e67e22',
+            }}>
+              <div>
+                <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#e67e22' }}>
+                  {partDef.name}
+                  <span style={{ marginLeft: '8px', fontSize: '10px', color: '#e74c3c', letterSpacing: '1px' }}>[BROKEN]</span>
+                </div>
+                <div style={{ fontSize: '12px', color: '#888', marginTop: '2px' }}>{partDef.description}</div>
+                <div style={{ fontSize: '10px', color: '#666', marginTop: '4px' }}>
+                  Repairs left: {cp.repairsLeft}
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  if (!canAffordRepair) return
+                  permanent.spendShards(WORKSHOP_REPAIR_COST)
+                  permanent.updateCarriedPart({ durability: cp.maxDurability, repairsLeft: cp.repairsLeft - 1 })
+                  permanent.save()
+                }}
+                disabled={!canAffordRepair}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: canAffordRepair ? '#e67e22' : '#2c3e50',
+                  border: 'none',
+                  borderRadius: '6px',
+                  color: canAffordRepair ? '#fff' : '#555',
+                  fontWeight: 'bold',
+                  cursor: canAffordRepair ? 'pointer' : 'not-allowed',
+                  fontSize: '12px',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                Repair — {WORKSHOP_REPAIR_COST} shards
+              </button>
+            </div>
+          </div>
+        )
+      })()}
+
       {/* Run History */}
       <div style={{ width: '100%', maxWidth: '700px' }}>
         <button
@@ -318,6 +384,168 @@ export default function WorkshopScreen() {
                 </p>
               </div>
             ))}
+          </div>
+        )}
+      </div>
+
+      {/* Save Transfer */}
+      <div style={{ width: '100%', maxWidth: '700px' }}>
+        <h3 style={{ color: '#aaa', fontSize: '11px', letterSpacing: '3px', marginBottom: '16px', textAlign: 'center' }}>
+          SAVE TRANSFER
+        </h3>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button
+            onClick={async () => {
+              try {
+                const { defaultPermanent } = await import('../store/permanentStore')
+                const state: PermanentState = {
+                  totalShards: permanent.totalShards,
+                  fragmentsAccumulated: permanent.fragmentsAccumulated,
+                  lastSeenTimestamp: permanent.lastSeenTimestamp,
+                  workshopUpgrades: { ...defaultPermanent.workshopUpgrades, ...permanent.workshopUpgrades },
+                  runHistory: [...permanent.runHistory],
+                  companionsUnlocked: [...permanent.companionsUnlocked],
+                  nameEverDiscovered: permanent.nameEverDiscovered,
+                  carriedPart: permanent.carriedPart,
+                }
+                const code = await encodeSaveCode(state)
+                await navigator.clipboard.writeText(code)
+                setExportFeedback('Copied!')
+                setTimeout(() => setExportFeedback(null), 2000)
+              } catch {
+                setExportFeedback('Failed to export')
+                setTimeout(() => setExportFeedback(null), 2000)
+              }
+            }}
+            style={{
+              flex: 1,
+              padding: '10px',
+              backgroundColor: 'transparent',
+              border: '1px solid #333',
+              color: '#888',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '12px',
+              letterSpacing: '1px',
+            }}
+          >
+            {exportFeedback ?? 'Export Save'}
+          </button>
+          <button
+            onClick={() => { setShowImport(!showImport); setImportError(null); setImportConfirm(false); setImportCode('') }}
+            style={{
+              flex: 1,
+              padding: '10px',
+              backgroundColor: 'transparent',
+              border: '1px solid #333',
+              color: '#888',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '12px',
+              letterSpacing: '1px',
+            }}
+          >
+            Import Save
+          </button>
+        </div>
+
+        {showImport && (
+          <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <textarea
+              value={importCode}
+              onChange={(e) => { setImportCode(e.target.value); setImportError(null); setImportConfirm(false) }}
+              placeholder="Paste your save code here..."
+              style={{
+                width: '100%',
+                minHeight: '60px',
+                backgroundColor: '#16213e',
+                border: '1px solid #2c3e50',
+                borderRadius: '6px',
+                color: '#e8e8e8',
+                padding: '10px',
+                fontSize: '12px',
+                fontFamily: 'monospace',
+                resize: 'vertical',
+                boxSizing: 'border-box',
+              }}
+            />
+            {importError && (
+              <div style={{ color: '#e74c3c', fontSize: '12px' }}>{importError}</div>
+            )}
+            {!importConfirm ? (
+              <button
+                onClick={() => {
+                  if (!importCode.trim()) { setImportError('Paste a save code first'); return }
+                  setImportConfirm(true)
+                }}
+                disabled={!importCode.trim()}
+                style={{
+                  padding: '10px',
+                  backgroundColor: importCode.trim() ? '#e67e22' : '#2c3e50',
+                  border: 'none',
+                  color: importCode.trim() ? '#fff' : '#555',
+                  borderRadius: '6px',
+                  cursor: importCode.trim() ? 'pointer' : 'not-allowed',
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                  letterSpacing: '1px',
+                }}
+              >
+                Load Save
+              </button>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ color: '#e67e22', fontSize: '12px', fontWeight: 'bold' }}>
+                  This will overwrite your current progress. Are you sure?
+                </div>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    onClick={() => { setImportConfirm(false) }}
+                    style={{
+                      flex: 1,
+                      padding: '10px',
+                      backgroundColor: 'transparent',
+                      border: '1px solid #555',
+                      color: '#888',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontSize: '12px',
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={async () => {
+                      try {
+                        const { defaultPermanent } = await import('../store/permanentStore')
+                        const decoded = await decodeSaveCode<PermanentState>(importCode.trim(), defaultPermanent)
+                        await permanent.importState(decoded)
+                        setShowImport(false)
+                        setImportCode('')
+                        setImportConfirm(false)
+                        setImportError(null)
+                      } catch (err) {
+                        setImportError(err instanceof Error ? err.message : 'Invalid save code')
+                        setImportConfirm(false)
+                      }
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: '10px',
+                      backgroundColor: '#e74c3c',
+                      border: 'none',
+                      color: '#fff',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontSize: '12px',
+                      fontWeight: 'bold',
+                    }}
+                  >
+                    Confirm Import
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

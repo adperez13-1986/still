@@ -8,7 +8,7 @@ const PERMANENT_KEY = 'permanent-state'
 const FRAGMENT_RATE_PER_HOUR = 10
 const MAX_FRAGMENT_HOURS = 8
 
-const defaultPermanent: PermanentState = {
+export const defaultPermanent: PermanentState = {
   totalShards: 0,
   fragmentsAccumulated: 0,
   lastSeenTimestamp: Date.now(),
@@ -40,6 +40,7 @@ interface PermanentActions {
   setCarriedPart: (part: CarriedPart) => void
   updateCarriedPart: (updates: Partial<CarriedPart>) => void
   clearCarriedPart: () => void
+  importState: (state: PermanentState) => Promise<void>
 }
 
 export const usePermanentStore = create<PermanentState & PermanentActions>()(
@@ -177,5 +178,24 @@ export const usePermanentStore = create<PermanentState & PermanentActions>()(
       set((state) => {
         state.carriedPart = null
       }),
+
+    importState: async (imported) => {
+      set((state) => {
+        Object.assign(state, imported)
+        state.lastSeenTimestamp = Date.now()
+      })
+      const s = get()
+      const toSave: PermanentState = {
+        totalShards: s.totalShards,
+        fragmentsAccumulated: s.fragmentsAccumulated,
+        lastSeenTimestamp: s.lastSeenTimestamp,
+        workshopUpgrades: { ...s.workshopUpgrades },
+        runHistory: s.runHistory.slice(-20),
+        companionsUnlocked: [...s.companionsUnlocked],
+        nameEverDiscovered: s.nameEverDiscovered,
+        carriedPart: s.carriedPart ? { ...s.carriedPart } : null,
+      }
+      await savePermanent(PERMANENT_KEY, toSave)
+    },
   }))
 )

@@ -7,7 +7,7 @@ import { resolveDrops } from '../game/drops'
 import { makeCardInstance, projectSlotActions } from '../game/combat'
 import { ALL_PARTS, ALL_EQUIPMENT } from '../data/parts'
 import { ALL_CARDS } from '../data/cards'
-import type { BodySlot } from '../game/types'
+import type { BodySlot, EquipmentDefinition } from '../game/types'
 
 import useIsMobile from '../hooks/useIsMobile'
 import StillPanel from './StillPanel'
@@ -16,6 +16,8 @@ import BodySlotPanel from './BodySlotPanel'
 import HeatTrack from './HeatTrack'
 import Hand from './Hand'
 import RewardScreen from './RewardScreen'
+import EquipCompareOverlay from './EquipCompareOverlay'
+import RunInfoOverlay from './RunInfoOverlay'
 
 export default function CombatScreen() {
   const navigate = useNavigate()
@@ -26,6 +28,9 @@ export default function CombatScreen() {
   const isMobile = useIsMobile()
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
   const [targetEnemyId, setTargetEnemyId] = useState<string | null>(null)
+  const [equipConflicts, setEquipConflicts] = useState<EquipmentDefinition[]>([])
+  const [pendingPostReward, setPendingPostReward] = useState<(() => void) | null>(null)
+  const [infoTab, setInfoTab] = useState<'deck' | 'equips' | null>(null)
   const projectedHeat = run.getProjectedHeat()
 
   const projections = useMemo(() => {
@@ -59,6 +64,33 @@ export default function CombatScreen() {
     setSelectedCardId(null)
     run.executeTurn(targetEnemyId ?? undefined)
   }, [run, combat, targetEnemyId])
+
+  // ─── Equipment conflict resolution ──────────────────────────────
+  if (equipConflicts.length > 0 && pendingPostReward) {
+    const incoming = equipConflicts[0]
+    const current = run.equipment[incoming.slot]!
+
+    const resolveConflict = (equip: boolean) => {
+      if (equip) run.equipItem(incoming)
+      const remaining = equipConflicts.slice(1)
+      if (remaining.length > 0) {
+        setEquipConflicts(remaining)
+      } else {
+        setEquipConflicts([])
+        pendingPostReward()
+        setPendingPostReward(null)
+      }
+    }
+
+    return (
+      <EquipCompareOverlay
+        current={current}
+        incoming={incoming}
+        onKeep={() => resolveConflict(false)}
+        onEquip={() => resolveConflict(true)}
+      />
+    )
+  }
 
   // ─── Reward Phase ─────────────────────────────────────────────────
   if (combat?.phase === 'reward') {
@@ -94,12 +126,18 @@ export default function CombatScreen() {
               if (partDef) run.addPart(partDef)
             }
           }
-          // Auto-equip equipment drops
+          // Split equipment drops: auto-equip empty slots, collect conflicts
           const equipDrops = allDrops.filter(d => d.type === 'equipment')
+          const conflicts: EquipmentDefinition[] = []
           for (const drop of equipDrops) {
             if (drop.type === 'equipment') {
               const equipDef = ALL_EQUIPMENT[drop.equipmentId]
-              if (equipDef) run.equipItem(equipDef)
+              if (!equipDef) continue
+              if (run.equipment[equipDef.slot] === null) {
+                run.equipItem(equipDef)
+              } else {
+                conflicts.push(equipDef)
+              }
             }
           }
           // Add chosen card
@@ -110,33 +148,44 @@ export default function CombatScreen() {
           if (permanent.carriedPart && permanent.carriedPart.durability > 0) {
             permanent.updateCarriedPart({ durability: permanent.carriedPart.durability - 1 })
           }
-          // Check if boss was defeated — end the run
-          const bossDefeated = defeatedEnemies.some(e => ALL_ENEMIES[e.definitionId]?.isBoss)
-          if (bossDefeated) {
-            permanent.addShards(run.shards)
-            permanent.addRunHistory({
-              id: `run-${Date.now()}`,
-              date: new Date().toISOString(),
-              actReached: run.act,
-              outcome: 'victory',
-              message: 'Cleared the act.',
-              notable: run.parts.map(p => p.name),
-            })
-            permanent.save()
-            run.endRun()
-            navigate('/', {
-              state: {
-                runEnd: true,
+
+          // Post-reward: either boss end or return to map
+          const finishReward = () => {
+            const bossDefeated = defeatedEnemies.some(e => ALL_ENEMIES[e.definitionId]?.isBoss)
+            if (bossDefeated) {
+              permanent.addShards(run.shards)
+              permanent.addRunHistory({
+                id: `run-${Date.now()}`,
+                date: new Date().toISOString(),
+                actReached: run.act,
                 outcome: 'victory',
                 message: 'Cleared the act.',
-                parts: run.parts,
-                shards: run.shards,
-              },
-            })
-            return
+                notable: run.parts.map(p => p.name),
+              })
+              permanent.save()
+              run.endRun()
+              navigate('/', {
+                state: {
+                  runEnd: true,
+                  outcome: 'victory',
+                  message: 'Cleared the act.',
+                  parts: run.parts,
+                  shards: run.shards,
+                },
+              })
+              return
+            }
+            // Normal combat end — return to map
+            useRunStore.setState((s) => ({ ...s, combat: null }))
           }
-          // Normal combat end — return to map
-          useRunStore.setState((s) => ({ ...s, combat: null }))
+
+          // If there are equipment conflicts, show comparison overlay(s) before finishing
+          if (conflicts.length > 0) {
+            setEquipConflicts(conflicts)
+            setPendingPostReward(() => finishReward)
+          } else {
+            finishReward()
+          }
         }}
       />
     )
@@ -361,6 +410,21 @@ export default function CombatScreen() {
           <span style={{ fontSize: '10px', color: '#555', whiteSpace: 'nowrap' }}>
             R{combat.roundNumber}
           </span>
+          <button
+            onClick={() => setInfoTab('equips')}
+            style={{
+              background: 'none',
+              border: '1px solid #333',
+              borderRadius: '4px',
+              color: '#74b9ff',
+              fontSize: '10px',
+              cursor: 'pointer',
+              padding: '4px 8px',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Info
+          </button>
           {effectiveTarget && (() => {
             const targetEnemy = combat.enemies.find(e => e.instanceId === effectiveTarget)
             if (!targetEnemy || targetEnemy.isDefeated) return null
@@ -426,10 +490,41 @@ export default function CombatScreen() {
             textAlign: 'center',
             fontSize: '11px',
             color: '#555',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            gap: '12px',
           }}>
-            Round {combat.roundNumber}
+            <span>Round {combat.roundNumber}</span>
+            <button
+              onClick={() => setInfoTab('equips')}
+              style={{
+                background: 'none',
+                border: '1px solid #333',
+                borderRadius: '4px',
+                color: '#74b9ff',
+                fontSize: '11px',
+                cursor: 'pointer',
+                padding: '2px 10px',
+                letterSpacing: '1px',
+              }}
+            >
+              Info
+            </button>
           </div>
         </>
+      )}
+
+      {/* Run Info Overlay */}
+      {infoTab && (
+        <RunInfoOverlay
+          tab={infoTab}
+          deck={run.deck}
+          parts={run.parts}
+          equipment={run.equipment}
+          onClose={() => setInfoTab(null)}
+          onTabChange={setInfoTab}
+        />
       )}
     </div>
   )
