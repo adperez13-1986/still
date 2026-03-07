@@ -282,12 +282,15 @@ export default function WorkshopScreen() {
         </div>
       </div>
 
-      {/* Carried Part Repair */}
-      {permanent.carriedPart && permanent.carriedPart.durability === 0 && permanent.carriedPart.repairsLeft > 0 && (() => {
+      {/* Carried Part */}
+      {permanent.carriedPart && (() => {
         const cp = permanent.carriedPart!
         const partDef = ALL_PARTS[cp.partId]
         if (!partDef) return null
+        const isBroken = cp.durability === 0
+        const canRepair = isBroken && cp.repairsLeft > 0
         const canAffordRepair = permanent.totalShards >= WORKSHOP_REPAIR_COST
+        const borderColor = isBroken ? '#e67e22' : '#27ae60'
         return (
           <div style={{ width: '100%', maxWidth: '700px' }}>
             <h3 style={{ color: '#aaa', fontSize: '11px', letterSpacing: '3px', marginBottom: '16px', textAlign: 'center' }}>
@@ -297,43 +300,48 @@ export default function WorkshopScreen() {
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              backgroundColor: '#1a1a1a',
+              backgroundColor: '#16213e',
               borderRadius: '8px',
               padding: '12px 16px',
-              border: '1px solid #e67e22',
+              border: `1px solid ${borderColor}`,
             }}>
               <div>
-                <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#e67e22' }}>
+                <div style={{ fontSize: '14px', fontWeight: 'bold', color: isBroken ? '#e67e22' : '#e8e8e8' }}>
                   {partDef.name}
-                  <span style={{ marginLeft: '8px', fontSize: '10px', color: '#e74c3c', letterSpacing: '1px' }}>[BROKEN]</span>
+                  {isBroken && (
+                    <span style={{ marginLeft: '8px', fontSize: '10px', color: '#e74c3c', letterSpacing: '1px' }}>[BROKEN]</span>
+                  )}
                 </div>
                 <div style={{ fontSize: '12px', color: '#888', marginTop: '2px' }}>{partDef.description}</div>
                 <div style={{ fontSize: '10px', color: '#666', marginTop: '4px' }}>
-                  Repairs left: {cp.repairsLeft}
+                  Durability: {cp.durability}/{cp.maxDurability}
+                  {cp.repairsLeft > 0 && <span style={{ marginLeft: '8px' }}>Repairs left: {cp.repairsLeft}</span>}
                 </div>
               </div>
-              <button
-                onClick={() => {
-                  if (!canAffordRepair) return
-                  permanent.spendShards(WORKSHOP_REPAIR_COST)
-                  permanent.updateCarriedPart({ durability: cp.maxDurability, repairsLeft: cp.repairsLeft - 1 })
-                  permanent.save()
-                }}
-                disabled={!canAffordRepair}
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: canAffordRepair ? '#e67e22' : '#2c3e50',
-                  border: 'none',
-                  borderRadius: '6px',
-                  color: canAffordRepair ? '#fff' : '#555',
-                  fontWeight: 'bold',
-                  cursor: canAffordRepair ? 'pointer' : 'not-allowed',
-                  fontSize: '12px',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                Repair — {WORKSHOP_REPAIR_COST} shards
-              </button>
+              {canRepair && (
+                <button
+                  onClick={() => {
+                    if (!canAffordRepair) return
+                    permanent.spendShards(WORKSHOP_REPAIR_COST)
+                    permanent.updateCarriedPart({ durability: cp.maxDurability, repairsLeft: cp.repairsLeft - 1 })
+                    permanent.save()
+                  }}
+                  disabled={!canAffordRepair}
+                  style={{
+                    padding: '8px 16px',
+                    backgroundColor: canAffordRepair ? '#e67e22' : '#2c3e50',
+                    border: 'none',
+                    borderRadius: '6px',
+                    color: canAffordRepair ? '#fff' : '#555',
+                    fontWeight: 'bold',
+                    cursor: canAffordRepair ? 'pointer' : 'not-allowed',
+                    fontSize: '12px',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  Repair — {WORKSHOP_REPAIR_COST} shards
+                </button>
+              )}
             </div>
           </div>
         )
