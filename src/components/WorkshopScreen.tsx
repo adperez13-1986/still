@@ -347,6 +347,24 @@ export default function WorkshopScreen() {
         )
       })()}
 
+      {/* Compendium */}
+      <button
+        onClick={() => navigate('/compendium')}
+        style={{
+          padding: '10px 32px',
+          backgroundColor: 'transparent',
+          border: '1px solid #a29bfe',
+          color: '#a29bfe',
+          borderRadius: '8px',
+          cursor: 'pointer',
+          fontSize: '12px',
+          letterSpacing: '2px',
+          fontWeight: 'bold',
+        }}
+      >
+        COMPENDIUM
+      </button>
+
       {/* Run History */}
       <div style={{ width: '100%', maxWidth: '700px' }}>
         <button

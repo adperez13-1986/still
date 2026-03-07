@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import WorkshopScreen from './components/WorkshopScreen'
 import RunScreen from './components/RunScreen'
 import FragmentScreen from './components/FragmentScreen'
+import CompendiumScreen from './components/CompendiumScreen'
 import TestHarness from './components/test/TestHarness'
 import { usePermanentStore } from './store/permanentStore'
 
@@ -39,6 +40,7 @@ function App() {
       <Route path="/" element={<WorkshopScreen />} />
       <Route path="/fragment" element={<FragmentScreen />} />
       <Route path="/run" element={<RunScreen />} />
+      <Route path="/compendium" element={<CompendiumScreen />} />
       <Route path="/test" element={<TestHarness />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
