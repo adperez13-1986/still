@@ -265,7 +265,8 @@ export default function CombatScreen() {
 
   // ─── Main Combat UI ───────────────────────────────────────────────
   const firstAliveEnemy = combat.enemies.find(e => !e.isDefeated)
-  const effectiveTarget = targetEnemyId ?? firstAliveEnemy?.instanceId ?? null
+  const targetAlive = targetEnemyId && combat.enemies.some(e => e.instanceId === targetEnemyId && !e.isDefeated)
+  const effectiveTarget = (targetAlive ? targetEnemyId : null) ?? firstAliveEnemy?.instanceId ?? null
 
   return (
     <div style={{

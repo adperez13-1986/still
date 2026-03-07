@@ -159,8 +159,21 @@ export default function RunScreen() {
         right: '20px',
         display: 'flex',
         gap: '8px',
+        alignItems: 'center',
         zIndex: 50,
       }}>
+        <span style={{
+          padding: '8px 12px',
+          backgroundColor: '#16213e',
+          border: '1px solid #f1c40f',
+          borderRadius: '6px',
+          color: '#f1c40f',
+          fontSize: '12px',
+          fontWeight: 'bold',
+          letterSpacing: '1px',
+        }}>
+          {run.shards} shards
+        </span>
         <button
           onClick={() => setInfoTab('deck')}
           style={{
