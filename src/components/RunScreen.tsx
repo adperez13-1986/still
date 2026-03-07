@@ -33,7 +33,7 @@ export default function RunScreen() {
 
   // Initialize run if not active
   useEffect(() => {
-    if (run.sectorive) return
+    if (run.active) return
 
     const bonuses = (location.state as { bonuses?: FragmentBonus[] })?.bonuses ?? []
     const sumBonus = (type: FragmentBonus['type']) =>
@@ -93,7 +93,7 @@ export default function RunScreen() {
     })
   }, [])
 
-  if (!run.sectorive || !run.map) {
+  if (!run.active || !run.map) {
     return (
       <div style={{ color: '#e8e8e8', textAlign: 'center', marginTop: '40px' }}>
         Preparing...
