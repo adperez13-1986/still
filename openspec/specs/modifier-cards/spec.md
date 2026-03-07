@@ -86,11 +86,11 @@ Yanah and Yuri companion cards SHALL be reworked as system modifier cards compat
 
 #### Scenario: Yanah companion card
 - **WHEN** the player plays the Yanah modifier card
-- **THEN** draw 2 modifier cards and gain 1 Inspired (draw +1 extra card next turn). Heat cost: +1. Category: System (Draw).
+- **THEN** heal 6 HP and remove 1 debuff. Heat cost: +0. Category: System (Cooling).
 
 #### Scenario: Yuri companion card
 - **WHEN** the player plays the Yuri modifier card
-- **THEN** heal 6 HP and remove 1 debuff. Heat cost: +0. Category: System (Cooling).
+- **THEN** gain 1 Strength and gain 1 Inspired (draw +1 extra card next turn). Heat cost: +1. Category: System (Conditional).
 
 #### Scenario: Companion cards added to starting deck when unlocked
 - **WHEN** a companion is unlocked via Workshop milestones and a new run begins

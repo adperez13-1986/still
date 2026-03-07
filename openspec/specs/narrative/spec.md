@@ -5,11 +5,11 @@ Yanah and Yuri SHALL be unlockable companion modifier cards — system cards tha
 
 #### Scenario: Yanah companion modifier card
 - **WHEN** the player plays the Yanah modifier card during the planning phase
-- **THEN** Still draws 2 modifier cards and gains 1 Inspired (draw +1 extra card next turn). Heat cost: +1. Category: System (Draw).
+- **THEN** Still heals 6 HP and removes 1 debuff (Weak or Vulnerable, priority order). Heat cost: +0. Category: System (Cooling).
 
 #### Scenario: Yuri companion modifier card
 - **WHEN** the player plays the Yuri modifier card during the planning phase
-- **THEN** Still heals 6 HP and removes 1 debuff (Weak or Vulnerable, priority order). Heat cost: +0. Category: System (Cooling).
+- **THEN** Still gains 1 Strength and gains 1 Inspired (draw +1 extra card next turn). Heat cost: +1. Category: System (Conditional).
 
 #### Scenario: Unlocking companion modifier cards
 - **WHEN** the player reaches certain Workshop milestones
