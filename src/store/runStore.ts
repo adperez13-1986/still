@@ -282,14 +282,20 @@ export const useRunStore = create<RunState & RunActions>()(
           targetEnemyId,
         }
 
+        // Accumulate combat events across all phases
+        const allEvents: import('../game/types').CombatEvent[] = []
+
         // Phase 1: Execute body actions
         state.combat.phase = 'executing'
         const bodyResult = executeBodyActions(baseCtx)
         state.health = bodyResult.stillHealth
+        allEvents.push(...bodyResult.combat.combatLog)
+        bodyResult.combat.combatLog = []
 
         // Check win after body actions
         if (allEnemiesDefeated(bodyResult.combat)) {
           Object.assign(state.combat, bodyResult.combat)
+          state.combat.combatLog = allEvents
           state.combat.phase = 'reward'
           return
         }
@@ -302,10 +308,13 @@ export const useRunStore = create<RunState & RunActions>()(
         }
         const enemyResult = executeEnemyTurn(enemyCtx)
         state.health = enemyResult.stillHealth
+        allEvents.push(...enemyResult.combat.combatLog)
+        enemyResult.combat.combatLog = []
 
         // Check loss after enemy turn
         if (isStillDefeated(enemyResult.stillHealth)) {
           Object.assign(state.combat, enemyResult.combat)
+          state.combat.combatLog = allEvents
           state.combat.phase = 'finished'
           return
         }
@@ -318,10 +327,13 @@ export const useRunStore = create<RunState & RunActions>()(
         }
         const endResult = endTurn(endCtx)
         state.health = endResult.stillHealth
+        allEvents.push(...endResult.combat.combatLog)
+        endResult.combat.combatLog = []
 
         // Check loss after hot penalty
         if (isStillDefeated(endResult.stillHealth)) {
           Object.assign(state.combat, endResult.combat)
+          state.combat.combatLog = allEvents
           state.combat.phase = 'finished'
           return
         }
@@ -329,6 +341,7 @@ export const useRunStore = create<RunState & RunActions>()(
         // Check win (in case end-of-turn effects somehow killed last enemy)
         if (allEnemiesDefeated(endResult.combat)) {
           Object.assign(state.combat, endResult.combat)
+          state.combat.combatLog = allEvents
           state.combat.phase = 'reward'
           return
         }
@@ -342,6 +355,7 @@ export const useRunStore = create<RunState & RunActions>()(
         }
         const turnResult = startTurn(startCtx, inspiredBonus)
         Object.assign(state.combat, turnResult.combat)
+        state.combat.combatLog = allEvents
         state.health = turnResult.stillHealth
       }),
 

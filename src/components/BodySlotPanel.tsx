@@ -52,9 +52,10 @@ interface Props {
   onAssign: (slot: BodySlot) => void
   onUnassign: (slot: BodySlot) => void
   compact?: boolean
+  activeSlot?: BodySlot | null
 }
 
-export default function BodySlotPanel({ combat, equipment, selectedCardId, projections, onAssign, onUnassign, compact }: Props) {
+export default function BodySlotPanel({ combat, equipment, selectedCardId, projections, onAssign, onUnassign, compact, activeSlot }: Props) {
   // If a slot modifier card is selected, determine valid slots
   let validSlots: Set<BodySlot> | null = null
   if (selectedCardId) {
@@ -116,20 +117,25 @@ export default function BodySlotPanel({ combat, equipment, selectedCardId, proje
                   alignItems: 'center',
                   gap: '8px',
                   padding: '4px 8px',
-                  backgroundColor: isDisabled
-                    ? 'rgba(231, 76, 60, 0.1)'
-                    : isValid
-                      ? 'rgba(162, 155, 254, 0.15)'
-                      : '#1a1a2e',
+                  backgroundColor: activeSlot === slot
+                    ? 'rgba(162, 155, 254, 0.25)'
+                    : isDisabled
+                      ? 'rgba(231, 76, 60, 0.1)'
+                      : isValid
+                        ? 'rgba(162, 155, 254, 0.15)'
+                        : '#1a1a2e',
                   border: `1px solid ${
-                    isValid ? '#a29bfe' : isDisabled ? '#e74c3c' : '#2c3e50'
+                    activeSlot === slot ? '#a29bfe' : isValid ? '#a29bfe' : isDisabled ? '#e74c3c' : '#2c3e50'
                   }`,
+                  boxShadow: activeSlot === slot ? '0 0 8px #a29bfe66' : 'none',
                   borderRadius: '4px',
                   cursor: isValid ? 'pointer' : 'default',
                   fontSize: '11px',
                   color: '#e8e8e8',
                   minHeight: '28px',
                   flexWrap: 'wrap',
+                  opacity: activeSlot && activeSlot !== slot ? 0.4 : 1,
+                  transition: 'opacity 0.2s, border-color 0.2s, box-shadow 0.2s',
                 }}
               >
                 <span style={{ fontWeight: 'bold', minWidth: '48px', fontSize: '11px' }}>
@@ -202,17 +208,21 @@ export default function BodySlotPanel({ combat, equipment, selectedCardId, proje
               }}
               style={{
                 padding: '10px',
-                backgroundColor: isDisabled
-                  ? 'rgba(231, 76, 60, 0.1)'
-                  : isValid
-                    ? 'rgba(162, 155, 254, 0.15)'
-                    : '#1a1a2e',
+                backgroundColor: activeSlot === slot
+                  ? 'rgba(162, 155, 254, 0.25)'
+                  : isDisabled
+                    ? 'rgba(231, 76, 60, 0.1)'
+                    : isValid
+                      ? 'rgba(162, 155, 254, 0.15)'
+                      : '#1a1a2e',
                 border: `2px solid ${
-                  isValid ? '#a29bfe' : isDisabled ? '#e74c3c' : '#2c3e50'
+                  activeSlot === slot ? '#a29bfe' : isValid ? '#a29bfe' : isDisabled ? '#e74c3c' : '#2c3e50'
                 }`,
+                boxShadow: activeSlot === slot ? '0 0 10px #a29bfe66' : 'none',
                 borderRadius: '8px',
                 cursor: isValid ? 'pointer' : 'default',
-                transition: 'all 0.15s',
+                opacity: activeSlot && activeSlot !== slot ? 0.4 : 1,
+                transition: 'all 0.2s',
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

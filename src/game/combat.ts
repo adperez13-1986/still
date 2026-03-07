@@ -12,6 +12,7 @@ import type {
   TargetMode,
   BodyAction,
   HeatThreshold,
+  CombatEvent,
 } from '../game/types'
 
 import {
@@ -144,6 +145,7 @@ export function initCombat(
     disabledSlots: [],
     heatChangeThisTurn: 0,
     thresholdCrossedThisTurn: false,
+    combatLog: [],
   }
 }
 
@@ -459,6 +461,7 @@ export function executeBodyActions(ctx: CombatContext): CombatResult {
     }
 
     // Apply damage to enemies
+    const perEnemyDamage: Array<{ enemyId: string; amount: number }> = []
     for (const dmg of actionResult.damage) {
       const targets = dmg.enemyId === '__all__'
         ? result.combat.enemies.filter(e => !e.isDefeated)
@@ -477,19 +480,32 @@ export function executeBodyActions(ctx: CombatContext): CombatResult {
         const actual = dealt - absorbed
         enemy.currentHealth = Math.max(0, enemy.currentHealth - actual)
         if (enemy.currentHealth === 0) enemy.isDefeated = true
+        if (actual > 0) perEnemyDamage.push({ enemyId: enemy.instanceId, amount: actual })
         result.log.push(`${slot}: dealt ${actual} damage to ${enemy.definitionId}${absorbed > 0 ? ` (${absorbed} blocked)` : ''}`)
       }
     }
 
     // Apply card draw from body actions
     if (actionResult.cardsDrawn > 0) {
-      const actualDrawn = drawCards(result.combat, actionResult.cardsDrawn)
-      result.log.push(`${slot}: drew ${actualDrawn}/${actionResult.cardsDrawn} card(s)`)
+      drawCards(result.combat, actionResult.cardsDrawn)
     }
+
+    // Emit combat event for animation
+    const targetMode = equip?.action.targetMode ?? 'single_enemy' as const
+    const slotEvent: CombatEvent = {
+      type: 'slotFire',
+      slot,
+      damages: perEnemyDamage.length > 0 ? perEnemyDamage : undefined,
+      block: actionResult.blockGained > 0 ? actionResult.blockGained : undefined,
+      heal: actionResult.healAmount > 0 ? actionResult.healAmount : undefined,
+      targetMode,
+    }
+    result.combat.combatLog.push(slotEvent)
 
     // Check Overheat after each action (Task 2.9)
     if (result.combat.heat >= HEAT_MAX) {
       result.combat.shutdown = true
+      result.combat.combatLog.push({ type: 'overheatShutdown' })
       result.log.push('OVERHEAT — shutdown next turn')
     }
 
@@ -772,6 +788,11 @@ export function executeEnemyTurn(ctx: CombatContext): CombatResult {
     if (!def) continue
     const intent = def.intentPattern[enemy.intentIndex % def.intentPattern.length]
 
+    let eventDamage: number | undefined
+    let eventBlocked: number | undefined
+    let eventBlock: number | undefined
+    let eventStatus: StatusEffectType | undefined
+
     switch (intent.type) {
       case 'Attack':
       case 'AttackDebuff': {
@@ -785,19 +806,24 @@ export function executeEnemyTurn(ctx: CombatContext): CombatResult {
         dealt = Math.max(0, dealt)
         const absorbed = Math.min(result.combat.block, dealt)
         result.combat.block -= absorbed
-        result.stillHealth = Math.max(0, result.stillHealth - (dealt - absorbed))
-        result.log.push(`${def.name} attacks for ${dealt - absorbed} (${absorbed} blocked)`)
+        const actual = dealt - absorbed
+        result.stillHealth = Math.max(0, result.stillHealth - actual)
+        eventDamage = actual
+        eventBlocked = absorbed
+        result.log.push(`${def.name} attacks for ${actual} (${absorbed} blocked)`)
         if (intent.type === 'AttackDebuff' && intent.status) {
           result.combat.statusEffects = addStatus(
             result.combat.statusEffects,
             intent.status,
             intent.statusStacks ?? 1
           )
+          eventStatus = intent.status
         }
         break
       }
       case 'Block': {
         enemy.block += intent.value
+        eventBlock = intent.value
         result.log.push(`${def.name} braces (gains ${intent.value} Block)`)
         break
       }
@@ -815,6 +841,7 @@ export function executeEnemyTurn(ctx: CombatContext): CombatResult {
             intent.status,
             intent.statusStacks ?? intent.value
           )
+          eventStatus = intent.status
         }
         result.log.push(`${def.name} debuffs Still`)
         break
@@ -829,10 +856,22 @@ export function executeEnemyTurn(ctx: CombatContext): CombatResult {
       case 'Absorb': {
         const blockGain = Math.floor(result.combat.heat * (intent.value / 100))
         enemy.block += blockGain
+        eventBlock = blockGain
         result.log.push(`${def.name} absorbs ${blockGain} Block from Still's Heat`)
         break
       }
     }
+
+    result.combat.combatLog.push({
+      type: 'enemyAction',
+      enemyId: enemy.instanceId,
+      enemyName: def.name,
+      intentType: intent.type,
+      damage: eventDamage,
+      blocked: eventBlocked,
+      block: eventBlock,
+      statusApplied: eventStatus,
+    })
 
     enemy.intentIndex++
     enemy.statusEffects = decrementStatuses(enemy.statusEffects)
@@ -853,6 +892,7 @@ export function endTurn(ctx: CombatContext): CombatResult {
   // Step 8a: Hot penalty (3 damage if Heat 8-9)
   if (isHot(result.combat.heat)) {
     result.stillHealth = Math.max(0, result.stillHealth - HOT_DAMAGE)
+    result.combat.combatLog.push({ type: 'hotPenalty', damage: HOT_DAMAGE })
     result.log.push(`Hot penalty: took ${HOT_DAMAGE} damage`)
   }
 

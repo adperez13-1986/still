@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useRunStore } from '../store/runStore'
 import { usePermanentStore } from '../store/permanentStore'
@@ -7,7 +7,7 @@ import { resolveDrops } from '../game/drops'
 import { makeCardInstance, projectSlotActions } from '../game/combat'
 import { ALL_PARTS, ALL_EQUIPMENT } from '../data/parts'
 import { ALL_CARDS } from '../data/cards'
-import type { BodySlot, EquipmentDefinition } from '../game/types'
+import type { BodySlot, EquipmentDefinition, CombatEvent } from '../game/types'
 import { HEAT_MAX, OVERHEAT_RESET, applyPassiveCooling } from '../game/types'
 
 import useIsMobile from '../hooks/useIsMobile'
@@ -19,6 +19,7 @@ import Hand from './Hand'
 import RewardScreen from './RewardScreen'
 import EquipCompareOverlay from './EquipCompareOverlay'
 import RunInfoOverlay from './RunInfoOverlay'
+import DamageNumber from './DamageNumber'
 
 export default function CombatScreen() {
   const navigate = useNavigate()
@@ -32,6 +33,138 @@ export default function CombatScreen() {
   const [equipConflicts, setEquipConflicts] = useState<EquipmentDefinition[]>([])
   const [pendingPostReward, setPendingPostReward] = useState<(() => void) | null>(null)
   const [infoTab, setInfoTab] = useState<'deck' | 'equips' | null>(null)
+
+  // ─── Animation Replay State ──────────────────────────────────────
+  const [animating, setAnimating] = useState(false)
+  const [activeSlot, setActiveSlot] = useState<BodySlot | null>(null)
+  const [screenFlash, setScreenFlash] = useState(false)
+  const [damageNumbers, setDamageNumbers] = useState<Array<{
+    id: number; value: number; color: string
+    target: 'still' | string // 'still' or enemyInstanceId
+  }>>([])
+  const dmgIdRef = useRef(0)
+  const animLogRef = useRef<CombatEvent[]>([])
+
+  // ─── Display State (intermediate values during animation) ───────
+  const [displayHealth, setDisplayHealth] = useState<number | null>(null)
+  const [displayBlock, setDisplayBlock] = useState<number | null>(null)
+  const [displayEnemyHealth, setDisplayEnemyHealth] = useState<Record<string, number> | null>(null)
+
+  // When combat log has events, start animation replay
+  useEffect(() => {
+    if (!combat || combat.combatLog.length === 0 || animating) return
+    // Capture the log and clear it from state
+    const events = [...combat.combatLog]
+    animLogRef.current = events
+    useRunStore.setState((s) => {
+      if (s.combat) s.combat.combatLog = []
+    })
+    setAnimating(true)
+
+    const applyEvent = (event: CombatEvent) => {
+      if (event.type === 'slotFire') {
+        // Update enemy HP display
+        if (event.damages) {
+          setDisplayEnemyHealth(prev => {
+            if (!prev) return prev
+            const next = { ...prev }
+            for (const d of event.damages!) {
+              if (next[d.enemyId] !== undefined) {
+                next[d.enemyId] = Math.max(0, next[d.enemyId] - d.amount)
+              }
+            }
+            return next
+          })
+          // Show damage numbers per enemy
+          for (const d of event.damages) {
+            const id = ++dmgIdRef.current
+            setDamageNumbers(prev => [...prev, { id, value: -d.amount, color: '#e74c3c', target: d.enemyId }])
+          }
+        }
+        if (event.block) {
+          setDisplayBlock(prev => (prev ?? 0) + event.block!)
+          const id = ++dmgIdRef.current
+          setDamageNumbers(prev => [...prev, { id, value: event.block!, color: '#3498db', target: 'still' }])
+        }
+        if (event.heal) {
+          setDisplayHealth(prev => Math.min(run.maxHealth, (prev ?? run.health) + event.heal!))
+          const id = ++dmgIdRef.current
+          setDamageNumbers(prev => [...prev, { id, value: event.heal!, color: '#27ae60', target: 'still' }])
+        }
+      } else if (event.type === 'enemyAction') {
+        // Reduce display block by blocked amount
+        if (event.blocked && event.blocked > 0) {
+          setDisplayBlock(prev => Math.max(0, (prev ?? 0) - event.blocked!))
+        }
+        if (event.damage && event.damage > 0) {
+          setScreenFlash(true)
+          setTimeout(() => setScreenFlash(false), 250)
+          setDisplayHealth(prev => Math.max(0, (prev ?? run.health) - event.damage!))
+          const id = ++dmgIdRef.current
+          setDamageNumbers(prev => [...prev, { id, value: -event.damage!, color: '#e74c3c', target: 'still' }])
+        } else if (event.blocked && event.blocked > 0) {
+          // All damage was blocked — show blue "blocked" number
+          const id = ++dmgIdRef.current
+          setDamageNumbers(prev => [...prev, { id, value: event.blocked!, color: '#3498db', target: 'still' }])
+        }
+      } else if (event.type === 'hotPenalty') {
+        setScreenFlash(true)
+        setTimeout(() => setScreenFlash(false), 250)
+        setDisplayHealth(prev => Math.max(0, (prev ?? run.health) - event.damage))
+        const id = ++dmgIdRef.current
+        setDamageNumbers(prev => [...prev, { id, value: -event.damage, color: '#e67e22', target: 'still' }])
+      }
+    }
+
+    let idx = 0
+    const playNext = () => {
+      if (idx >= events.length) {
+        // Brief pause at end before clearing display overrides
+        setTimeout(() => {
+          setAnimating(false)
+          setActiveSlot(null)
+          setDamageNumbers([])
+          setDisplayHealth(null)
+          setDisplayBlock(null)
+          setDisplayEnemyHealth(null)
+        }, 300)
+        return
+      }
+
+      const event = events[idx]
+      idx++
+
+      if (event.type === 'slotFire') {
+        // Step 1: Highlight the slot
+        setActiveSlot(event.slot)
+        // Step 2: After a beat, apply effects and show numbers
+        setTimeout(() => {
+          applyEvent(event)
+          // Step 3: Hold so the player can read it, then next
+          setTimeout(playNext, 600)
+        }, 350)
+      } else if (event.type === 'enemyAction') {
+        setActiveSlot(null)
+        setTimeout(() => {
+          applyEvent(event)
+          setTimeout(playNext, 550)
+        }, 250)
+      } else if (event.type === 'hotPenalty') {
+        setActiveSlot(null)
+        setTimeout(() => {
+          applyEvent(event)
+          setTimeout(playNext, 500)
+        }, 200)
+      } else if (event.type === 'overheatShutdown') {
+        setTimeout(playNext, 400)
+      } else {
+        setTimeout(playNext, 300)
+      }
+    }
+
+    // Pause before starting replay so Execute click registers visually
+    setTimeout(playNext, 300)
+  }, [combat?.combatLog.length])
 
   const projections = useMemo(() => {
     if (!combat || combat.shutdown) return []
@@ -51,19 +184,21 @@ export default function CombatScreen() {
 
   // ─── Card Interaction ─────────────────────────────────────────────
   const handleSelectSlotCard = useCallback((instanceId: string | null) => {
+    if (animating) return
     setSelectedCardId(instanceId)
-  }, [])
+  }, [animating])
 
   const handlePlaySystemCard = useCallback((instanceId: string) => {
+    if (animating) return
     run.playCard(instanceId, undefined, targetEnemyId ?? undefined)
     setSelectedCardId(null)
-  }, [run, targetEnemyId])
+  }, [run, targetEnemyId, animating])
 
   const handleAssignSlot = useCallback((slot: BodySlot) => {
-    if (!selectedCardId) return
+    if (animating || !selectedCardId) return
     run.playCard(selectedCardId, slot, targetEnemyId ?? undefined)
     setSelectedCardId(null)
-  }, [run, selectedCardId, targetEnemyId])
+  }, [run, selectedCardId, targetEnemyId, animating])
 
   const handleUnassignSlot = useCallback((slot: BodySlot) => {
     run.unassignSlotModifier(slot)
@@ -71,10 +206,20 @@ export default function CombatScreen() {
 
   // ─── Execute Turn ─────────────────────────────────────────────────
   const handleExecute = useCallback(() => {
-    if (!combat || combat.phase !== 'planning') return
+    if (animating || !combat || combat.phase !== 'planning') return
     setSelectedCardId(null)
+
+    // Snapshot current values BEFORE execution so we can animate incrementally
+    setDisplayHealth(run.health)
+    setDisplayBlock(combat.block)
+    const enemySnap: Record<string, number> = {}
+    for (const enemy of combat.enemies) {
+      enemySnap[enemy.instanceId] = enemy.currentHealth
+    }
+    setDisplayEnemyHealth(enemySnap)
+
     run.executeTurn(targetEnemyId ?? undefined)
-  }, [run, combat, targetEnemyId])
+  }, [run, combat, targetEnemyId, animating])
 
   // ─── Equipment conflict resolution ──────────────────────────────
   if (equipConflicts.length > 0 && pendingPostReward) {
@@ -104,7 +249,7 @@ export default function CombatScreen() {
   }
 
   // ─── Reward Phase ─────────────────────────────────────────────────
-  if (combat?.phase === 'reward') {
+  if (!animating && combat?.phase === 'reward') {
     // Calculate drops from defeated enemies
     const defeatedEnemies = combat.enemies.filter(e => e.isDefeated)
     let anyEquipDropped = false
@@ -217,7 +362,7 @@ export default function CombatScreen() {
   }
 
   // ─── Defeat ───────────────────────────────────────────────────────
-  if (combat?.phase === 'finished' || (combat && run.health <= 0)) {
+  if (!animating && (combat?.phase === 'finished' || (combat && run.health <= 0))) {
     return (
       <div style={{
         minHeight: '100vh',
@@ -296,32 +441,43 @@ export default function CombatScreen() {
       {isMobile ? (
         // Mobile: stack vertically
         <>
-          <StillPanel
-            health={run.health}
-            maxHealth={run.maxHealth}
-            heat={combat.heat}
-            block={combat.block}
-            statusEffects={combat.statusEffects}
-            shutdown={combat.shutdown}
-            compact
-            projectedHeat={projectedHeat}
-            nextRoundHeat={nextRoundHeat}
-          />
+          <div style={{ position: 'relative' }}>
+            <StillPanel
+              health={displayHealth ?? run.health}
+              maxHealth={run.maxHealth}
+              heat={combat.heat}
+              block={displayBlock ?? combat.block}
+              statusEffects={combat.statusEffects}
+              shutdown={combat.shutdown}
+              compact
+              projectedHeat={projectedHeat}
+              nextRoundHeat={nextRoundHeat}
+            />
+            {damageNumbers.filter(dn => dn.target === 'still').map(dn => (
+              <DamageNumber key={dn.id} value={dn.value} color={dn.color} x="50%" y="0%" />
+            ))}
+          </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
             {combat.enemies.map(enemy => {
               const def = ALL_ENEMIES[enemy.definitionId]
               if (!def) return null
+              const dispHp = displayEnemyHealth?.[enemy.instanceId]
+              const inst = dispHp != null ? { ...enemy, currentHealth: dispHp } : enemy
               return (
-                <EnemyCard
-                  key={enemy.instanceId}
-                  instance={enemy}
-                  definition={def}
-                  selected={effectiveTarget === enemy.instanceId}
-                  onClick={() => {
-                    if (!enemy.isDefeated) setTargetEnemyId(enemy.instanceId)
-                  }}
-                  compact
-                />
+                <div key={enemy.instanceId} style={{ position: 'relative' }}>
+                  <EnemyCard
+                    instance={inst}
+                    definition={def}
+                    selected={effectiveTarget === enemy.instanceId}
+                    onClick={() => {
+                      if (!enemy.isDefeated) setTargetEnemyId(enemy.instanceId)
+                    }}
+                    compact
+                  />
+                  {damageNumbers.filter(dn => dn.target === enemy.instanceId).map(dn => (
+                    <DamageNumber key={dn.id} value={dn.value} color={dn.color} x="70%" y="30%" />
+                  ))}
+                </div>
               )
             })}
           </div>
@@ -329,14 +485,19 @@ export default function CombatScreen() {
       ) : (
         // Desktop: side-by-side
         <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
-          <StillPanel
-            health={run.health}
-            maxHealth={run.maxHealth}
-            heat={combat.heat}
-            block={combat.block}
-            statusEffects={combat.statusEffects}
-            shutdown={combat.shutdown}
-          />
+          <div style={{ position: 'relative' }}>
+            <StillPanel
+              health={displayHealth ?? run.health}
+              maxHealth={run.maxHealth}
+              heat={combat.heat}
+              block={displayBlock ?? combat.block}
+              statusEffects={combat.statusEffects}
+              shutdown={combat.shutdown}
+            />
+            {damageNumbers.filter(dn => dn.target === 'still').map(dn => (
+              <DamageNumber key={dn.id} value={dn.value} color={dn.color} x="50%" y="20%" />
+            ))}
+          </div>
           <div style={{ flex: 1, display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
             {combat.enemies.filter(e => !e.isDefeated).length > 1 && (
               <div style={{ width: '100%', fontSize: '11px', color: '#f1c40f', marginBottom: '-4px' }}>
@@ -346,16 +507,22 @@ export default function CombatScreen() {
             {combat.enemies.map(enemy => {
               const def = ALL_ENEMIES[enemy.definitionId]
               if (!def) return null
+              const dispHp = displayEnemyHealth?.[enemy.instanceId]
+              const inst = dispHp != null ? { ...enemy, currentHealth: dispHp } : enemy
               return (
-                <EnemyCard
-                  key={enemy.instanceId}
-                  instance={enemy}
-                  definition={def}
-                  selected={effectiveTarget === enemy.instanceId}
-                  onClick={() => {
-                    if (!enemy.isDefeated) setTargetEnemyId(enemy.instanceId)
-                  }}
-                />
+                <div key={enemy.instanceId} style={{ position: 'relative' }}>
+                  <EnemyCard
+                    instance={inst}
+                    definition={def}
+                    selected={effectiveTarget === enemy.instanceId}
+                    onClick={() => {
+                      if (!enemy.isDefeated) setTargetEnemyId(enemy.instanceId)
+                    }}
+                  />
+                  {damageNumbers.filter(dn => dn.target === enemy.instanceId).map(dn => (
+                    <DamageNumber key={dn.id} value={dn.value} color={dn.color} x="50%" y="40%" />
+                  ))}
+                </div>
               )
             })}
           </div>
@@ -371,6 +538,7 @@ export default function CombatScreen() {
         onAssign={handleAssignSlot}
         onUnassign={handleUnassignSlot}
         compact={isMobile}
+        activeSlot={activeSlot}
       />
 
       {/* Heat Track — hidden on mobile (heat shown in compact StillPanel) */}
@@ -466,15 +634,15 @@ export default function CombatScreen() {
           })()}
           <button
             onClick={handleExecute}
-            disabled={combat.phase !== 'planning'}
+            disabled={animating || combat.phase !== 'planning'}
             style={{
               flex: 1,
               padding: '10px',
-              backgroundColor: combat.phase === 'planning' ? '#a29bfe' : '#2c3e50',
+              backgroundColor: !animating && combat.phase === 'planning' ? '#a29bfe' : '#2c3e50',
               border: 'none',
-              color: combat.phase === 'planning' ? '#0d0d1a' : '#555',
+              color: !animating && combat.phase === 'planning' ? '#0d0d1a' : '#555',
               borderRadius: '6px',
-              cursor: combat.phase === 'planning' ? 'pointer' : 'not-allowed',
+              cursor: !animating && combat.phase === 'planning' ? 'pointer' : 'not-allowed',
               fontSize: '14px',
               fontWeight: 'bold',
               letterSpacing: '2px',
@@ -499,14 +667,14 @@ export default function CombatScreen() {
             })()}
             <button
               onClick={handleExecute}
-              disabled={combat.phase !== 'planning'}
+              disabled={animating || combat.phase !== 'planning'}
               style={{
                 padding: '14px 48px',
-                backgroundColor: combat.phase === 'planning' ? '#a29bfe' : '#2c3e50',
+                backgroundColor: !animating && combat.phase === 'planning' ? '#a29bfe' : '#2c3e50',
                 border: 'none',
-                color: combat.phase === 'planning' ? '#0d0d1a' : '#555',
+                color: !animating && combat.phase === 'planning' ? '#0d0d1a' : '#555',
                 borderRadius: '8px',
-                cursor: combat.phase === 'planning' ? 'pointer' : 'not-allowed',
+                cursor: !animating && combat.phase === 'planning' ? 'pointer' : 'not-allowed',
                 fontSize: '16px',
                 fontWeight: 'bold',
                 letterSpacing: '2px',
@@ -555,6 +723,27 @@ export default function CombatScreen() {
           onTabChange={setInfoTab}
         />
       )}
+
+      {/* Screen flash on damage */}
+      {screenFlash && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(231, 76, 60, 0.15)',
+          pointerEvents: 'none',
+          zIndex: 200,
+          animation: 'screenFlash 200ms ease-out forwards',
+        }}>
+          <style>{`
+            @keyframes screenFlash {
+              0% { opacity: 1; }
+              100% { opacity: 0; }
+            }
+          `}</style>
+        </div>
+      )}
+
+      {/* Damage numbers are now rendered inline with their target elements */}
     </div>
   )
 }

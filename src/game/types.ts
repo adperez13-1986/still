@@ -223,6 +223,14 @@ export interface GridMaze {
 
 export type CombatPhase = 'planning' | 'executing' | 'enemyTurn' | 'reward' | 'finished'
 
+// ─── Combat Animation Events ────────────────────────────────────────────────
+
+export type CombatEvent =
+  | { type: 'slotFire'; slot: BodySlot; damages?: Array<{ enemyId: string; amount: number }>; block?: number; heal?: number; targetMode: TargetMode }
+  | { type: 'enemyAction'; enemyId: string; enemyName: string; intentType: IntentType; damage?: number; blocked?: number; block?: number; statusApplied?: StatusEffectType }
+  | { type: 'hotPenalty'; damage: number }
+  | { type: 'overheatShutdown' }
+
 export interface CombatState {
   phase: CombatPhase
   enemies: EnemyInstance[]
@@ -239,6 +247,7 @@ export interface CombatState {
   disabledSlots: BodySlot[]
   heatChangeThisTurn: number // cumulative absolute heat change this turn
   thresholdCrossedThisTurn: boolean // whether a threshold boundary was crossed
+  combatLog: CombatEvent[] // events from last execution for animation replay
 }
 
 export interface RunState {
