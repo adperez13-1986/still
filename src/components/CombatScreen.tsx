@@ -200,7 +200,7 @@ export default function CombatScreen() {
                 const tile = s.map.grid[s.map.playerY][s.map.playerX]
                 if (tile) tile.cleared = true
               }
-              return { ...s, combat: null }
+              s.combat = null
             })
           }
 
