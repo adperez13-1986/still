@@ -12,6 +12,8 @@ interface Props {
   statusEffects: StatusEffect[]
   shutdown: boolean
   compact?: boolean
+  projectedHeat?: number
+  nextRoundHeat?: number
 }
 
 const HEAT_COLORS: Record<string, string> = {
@@ -22,7 +24,7 @@ const HEAT_COLORS: Record<string, string> = {
 }
 
 export default function StillPanel({
-  health, maxHealth, heat, block, statusEffects, shutdown, compact,
+  health, maxHealth, heat, block, statusEffects, shutdown, compact, projectedHeat, nextRoundHeat,
 }: Props) {
   const healthPct = Math.max(0, (health / maxHealth) * 100)
   const healthColor = healthPct > 50 ? '#27ae60' : healthPct > 25 ? '#f39c12' : '#c0392b'
@@ -85,8 +87,16 @@ export default function StillPanel({
           )}
         </div>
         {/* Heat */}
-        <span style={{ color: heatColor, fontWeight: 'bold' }}>
-          H {heat}/{HEAT_MAX}
+        <span style={{ fontWeight: 'bold' }}>
+          <span style={{ color: heatColor }}>H {heat}/{HEAT_MAX}</span>
+          {projectedHeat != null && projectedHeat !== heat && (
+            <span style={{ color: '#888', fontWeight: 'normal', fontSize: '10px' }}>
+              {' '}→<span style={{ color: HEAT_COLORS[getHeatThreshold(projectedHeat)], fontWeight: 'bold' }}>{projectedHeat}</span>
+              {nextRoundHeat != null && (
+                <span> →<span style={{ color: HEAT_COLORS[getHeatThreshold(nextRoundHeat)], fontWeight: 'bold' }}>{nextRoundHeat}</span></span>
+              )}
+            </span>
+          )}
         </span>
         {/* Block */}
         {block > 0 && (

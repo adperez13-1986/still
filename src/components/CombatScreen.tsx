@@ -289,6 +289,8 @@ export default function CombatScreen() {
             statusEffects={combat.statusEffects}
             shutdown={combat.shutdown}
             compact
+            projectedHeat={projectedHeat}
+            nextRoundHeat={nextRoundHeat}
           />
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
             {combat.enemies.map(enemy => {
