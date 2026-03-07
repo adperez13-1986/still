@@ -179,7 +179,7 @@ export default function RunInfoOverlay({ tab, deck, parts, equipment, onClose, o
               {cp && carriedPartDef && (
                 <div>
                   <div style={{ color: '#888', fontSize: '11px', letterSpacing: '2px', marginBottom: '12px' }}>
-                    CARRIED PART
+                    CARRIED MOD
                   </div>
                   <div style={{
                     backgroundColor: isBroken ? '#1a1a1a' : '#16213e',
@@ -211,7 +211,7 @@ export default function RunInfoOverlay({ tab, deck, parts, equipment, onClose, o
               {/* Passive parts */}
               <div>
                 <div style={{ color: '#888', fontSize: '11px', letterSpacing: '2px', marginBottom: '12px' }}>
-                  PARTS ({parts.length})
+                  MODS ({parts.length})
                 </div>
                 {parts.length === 0 ? (
                   <div style={{ fontSize: '12px', color: '#444', fontStyle: 'italic' }}>None salvaged yet.</div>

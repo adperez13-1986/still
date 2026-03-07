@@ -294,7 +294,7 @@ export default function WorkshopScreen() {
         return (
           <div style={{ width: '100%', maxWidth: '700px' }}>
             <h3 style={{ color: '#aaa', fontSize: '11px', letterSpacing: '3px', marginBottom: '16px', textAlign: 'center' }}>
-              CARRIED PART
+              CARRIED MOD
             </h3>
             <div style={{
               display: 'flex',

@@ -42,7 +42,7 @@ export default function CarrySelectOverlay({ runParts, currentCarry, onSelect, o
           CARRY FORWARD
         </h2>
         <p style={{ color: '#666', fontSize: '13px', marginBottom: '28px', lineHeight: '1.6' }}>
-          Choose one part to carry into the next run. It will wear with use, but it is yours to keep.
+          Choose one mod to carry into the next run. It will wear with use, but it is yours to keep.
         </p>
 
         {!hasAnything && (

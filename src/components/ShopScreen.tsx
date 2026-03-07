@@ -80,7 +80,7 @@ export default function ShopScreen({ shards, onBuyCard, onBuyPart, onRepair, car
 
       {/* Parts */}
       <div>
-        <h3 style={{ color: '#aaa', fontSize: '12px', letterSpacing: '2px', marginBottom: '12px' }}>PARTS</h3>
+        <h3 style={{ color: '#aaa', fontSize: '12px', letterSpacing: '2px', marginBottom: '12px' }}>MODS</h3>
         <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', justifyContent: 'center' }}>
           {SHOP_PARTS.map((part) => {
             const cost = PART_COSTS[part.rarity]

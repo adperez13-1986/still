@@ -6,7 +6,7 @@ export const RUN_END_MESSAGES = {
     'Further than before. That counts.',
     'The maze remembers you. Come back.',
     'You didn\'t stop. You just paused.',
-    'Every part you found stays with you, in some way.',
+    'Every mod you found stays with you, in some way.',
     'Still here. Still going.',
     'The floor is not the end. It\'s a rest.',
     'You showed up. That was the hardest part.',
@@ -147,7 +147,7 @@ export const ACT2_EVENTS: EventVignette[] = [
     body: 'It is sitting against the wall. Not moving. Its frame is similar to mine — same rough proportions, same kind of joints. A different model, maybe. Or the same one, older.\n\nI stay longer than I need to. I don\'t know what I\'m looking for.',
     choices: [
       {
-        text: 'Salvage its parts',
+        text: 'Salvage its mods',
         outcome: { type: 'shards', value: 18, description: 'Recovered useful components. Gained 18 shards.' },
       },
       {
@@ -174,7 +174,7 @@ export const ACT2_EVENTS: EventVignette[] = [
   {
     id: 'weight-of-things',
     title: 'The Weight of Things',
-    body: 'I take stock of what I\'m carrying. Parts from the ones I\'ve passed through. Each one came from somewhere. Each one was part of something before it was part of me.\n\nI wonder if they remember. I wonder if I do.',
+    body: 'I take stock of what I\'m carrying. Mods from the ones I\'ve passed through. Each one came from somewhere. Each one was part of something before it was part of me.\n\nI wonder if they remember. I wonder if I do.',
     choices: [
       {
         text: 'Redistribute the load',
