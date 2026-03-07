@@ -142,6 +142,8 @@ export function initCombat(
     roundNumber: 1,
     slotModifiers: { Head: null, Torso: null, Arms: null, Legs: null },
     disabledSlots: [],
+    heatChangeThisTurn: 0,
+    thresholdCrossedThisTurn: false,
   }
 }
 
@@ -225,6 +227,18 @@ export function resolveBodyAction(
   const { value, targetMode } = applyStatusToAction(action, slot, combat.statusEffects, isOverride)
   let finalValue = value + thresholdBonus
 
+  // Apply equipment-specific heat bonus (Task 5.5)
+  if (equipment?.heatBonusThreshold && equipment?.heatBonusValue) {
+    if (getHeatThreshold(heat) === equipment.heatBonusThreshold) {
+      finalValue += equipment.heatBonusValue
+    }
+  }
+
+  // Apply extra heat generation from equipment (Task 5.5)
+  if (equipment?.extraHeatGenerated) {
+    result.heatGenerated += equipment.extraHeatGenerated
+  }
+
   // Apply modifier effects (non-override)
   let repeatCount = 1
   let finalTargetMode = targetMode
@@ -249,6 +263,8 @@ export function resolveBodyAction(
   // Apply part bonuses for onSlotFire
   for (const part of parts) {
     if (part.trigger.type === 'onSlotFire' && part.trigger.slot === slot) {
+      // Check heat condition (e.g., Overheater: only while Hot)
+      if (part.heatCondition && getHeatThreshold(heat) !== part.heatCondition) continue
       switch (part.effect.type) {
         case 'bonusDamage':
           if (action.type === 'damage') finalValue += part.effect.value
@@ -344,6 +360,33 @@ function isThresholdMet(current: HeatThreshold, required: HeatThreshold): boolea
   return order.indexOf(current) >= order.indexOf(required)
 }
 
+// ─── Heat Tracking (Tasks 5.1-5.3) ─────────────────────────────────────────
+
+function applyHeatChange(combat: CombatState, delta: number): boolean {
+  const oldHeat = combat.heat
+  const oldThreshold = getHeatThreshold(oldHeat)
+  combat.heat = Math.min(HEAT_MAX, Math.max(0, oldHeat + delta))
+  const newThreshold = getHeatThreshold(combat.heat)
+  combat.heatChangeThisTurn += Math.abs(combat.heat - oldHeat)
+  const crossed = oldThreshold !== newThreshold
+  if (crossed) {
+    combat.thresholdCrossedThisTurn = true
+  }
+  return crossed
+}
+
+function fireThresholdCrossTriggers(
+  parts: BehavioralPartDefinition[],
+  result: CombatResult,
+  ctx: CombatContext
+): void {
+  for (const part of parts) {
+    if (part.trigger.type === 'onThresholdCross') {
+      applyPartEffect(part, result, ctx)
+    }
+  }
+}
+
 // ─── Execute Body Actions (Task 2.5) ─────────────────────────────────────────
 
 export function executeBodyActions(ctx: CombatContext): CombatResult {
@@ -384,11 +427,24 @@ export function executeBodyActions(ctx: CombatContext): CombatResult {
       ctx.parts
     )
 
-    // Apply Heat generation
-    result.combat.heat = Math.min(HEAT_MAX, result.combat.heat + actionResult.heatGenerated)
+    // Apply Heat generation (with threshold tracking)
+    const crossedOnGen = applyHeatChange(result.combat, actionResult.heatGenerated)
+    if (crossedOnGen) fireThresholdCrossTriggers(ctx.parts, result, ctx)
 
     // Apply Heat reduction from coolHeat actions
-    result.combat.heat = Math.max(0, result.combat.heat - actionResult.heatReduced)
+    const heatBeforeReduce = result.combat.heat
+    const crossedOnReduce = applyHeatChange(result.combat, -actionResult.heatReduced)
+    if (crossedOnReduce) fireThresholdCrossTriggers(ctx.parts, result, ctx)
+
+    // Bonus block per heat lost (e.g., Adaptive Treads)
+    if (equip?.bonusBlockPerHeatLost && actionResult.heatReduced > 0) {
+      const actualReduced = heatBeforeReduce - result.combat.heat
+      if (actualReduced > 0) {
+        const bonusBlock = actualReduced * equip.bonusBlockPerHeatLost
+        result.combat.block += bonusBlock
+        result.log.push(`${slot}: gained ${bonusBlock} Block from heat lost`)
+      }
+    }
 
     // Apply block
     if (actionResult.blockGained > 0) {
@@ -489,8 +545,9 @@ export function playModifierCard(
     }
   }
 
-  // Apply Heat cost
-  result.combat.heat = Math.min(HEAT_MAX, Math.max(0, result.combat.heat + card.heatCost))
+  // Apply Heat cost (with threshold tracking)
+  const crossedOnPlay = applyHeatChange(result.combat, card.heatCost)
+  if (crossedOnPlay) fireThresholdCrossTriggers(ctx.parts, result, ctx)
 
   if (card.category.type === 'slot') {
     // Slot modifier — assign to target slot
@@ -531,7 +588,12 @@ export function playModifierCard(
       cardInst = result.combat.hand.splice(handIdx, 1)[0]
     }
 
-    for (const effect of card.category.effects) {
+    // Use heatBonus effects if threshold met (Task 5.4)
+    const effectsToApply = (card.heatBonus && getHeatThreshold(result.combat.heat) === card.heatBonus.threshold)
+      ? card.heatBonus.effects
+      : card.category.effects
+
+    for (const effect of effectsToApply) {
       switch (effect.type) {
         case 'draw': {
           const actualDrawn = drawCards(result.combat, effect.count)
@@ -596,6 +658,40 @@ export function playModifierCard(
           break
         }
       }
+    }
+
+    // Thermal Flux: deal damage = heatChangeThisTurn (Task 5.4)
+    if (card.id === 'thermal-flux') {
+      const fluxDmg = result.combat.heatChangeThisTurn
+      if (fluxDmg > 0) {
+        const targets = ctx.targetEnemyId
+          ? result.combat.enemies.filter(e => !e.isDefeated && e.instanceId === ctx.targetEnemyId)
+          : result.combat.enemies.filter(e => !e.isDefeated).slice(0, 1)
+        for (const enemy of targets) {
+          let dealt = fluxDmg
+          if (getStatus(enemy.statusEffects, 'Vulnerable') > 0) {
+            dealt = Math.floor(dealt * 1.5)
+          }
+          const absorbed = Math.min(enemy.block, dealt)
+          enemy.block -= absorbed
+          const actual = dealt - absorbed
+          enemy.currentHealth = Math.max(0, enemy.currentHealth - actual)
+          if (enemy.currentHealth === 0) enemy.isDefeated = true
+          result.log.push(`Thermal Flux dealt ${actual} damage to ${enemy.definitionId}`)
+        }
+        // Upgraded: also gain Block = half of damage
+        if (cardInst?.isUpgraded) {
+          const bonusBlock = Math.floor(fluxDmg / 2)
+          result.combat.block += bonusBlock
+          result.log.push(`Thermal Flux: gained ${bonusBlock} Block`)
+        }
+      }
+    }
+
+    // Overclock: +1 extra Strength if threshold was crossed this turn (Task 5.4)
+    if (card.id === 'overclock' && result.combat.thresholdCrossedThisTurn) {
+      result.combat.statusEffects = addStatus(result.combat.statusEffects, 'Strength', 1)
+      result.log.push('Overclock: threshold crossed — +1 extra Strength')
     }
 
     // Move to exhaust or discard
@@ -723,21 +819,6 @@ export function executeEnemyTurn(ctx: CombatContext): CombatResult {
         result.log.push(`${def.name} debuffs Still`)
         break
       }
-      case 'HeatAttack': {
-        // Damage + Heat applied to Still
-        let dealt = intent.value
-        dealt += getStatus(enemy.statusEffects, 'Strength')
-        if (getStatus(enemy.statusEffects, 'Weak') > 0) dealt = Math.floor(dealt * 0.75)
-        if (getStatus(result.combat.statusEffects, 'Vulnerable') > 0) dealt = Math.floor(dealt * 1.5)
-        dealt = Math.max(0, dealt)
-        const absorbed = Math.min(result.combat.block, dealt)
-        result.combat.block -= absorbed
-        result.stillHealth = Math.max(0, result.stillHealth - (dealt - absorbed))
-        const heatAdded = intent.heatValue ?? 0
-        result.combat.heat = Math.min(HEAT_MAX, result.combat.heat + heatAdded)
-        result.log.push(`${def.name} heat attacks for ${dealt - absorbed} (+${heatAdded} Heat)`)
-        break
-      }
       case 'DisableSlot': {
         if (intent.targetSlot && !result.combat.disabledSlots.includes(intent.targetSlot)) {
           result.combat.disabledSlots.push(intent.targetSlot)
@@ -841,6 +922,10 @@ export function startTurn(ctx: CombatContext, inspiredBonus = 0): CombatResult {
   // Step 1: Passive cooling
   result.combat.heat = applyPassiveCooling(result.combat.heat, ctx.passiveCoolingBonus)
   result.log.push(`Passive cooling: Heat → ${result.combat.heat}`)
+
+  // Reset per-turn heat tracking (Tasks 5.2-5.3)
+  result.combat.heatChangeThisTurn = 0
+  result.combat.thresholdCrossedThisTurn = false
 
   // Step 2: Block resets to 0
   result.combat.block = 0
@@ -1038,8 +1123,13 @@ function drawCards(combat: CombatState, count: number): number {
 function applyPartEffect(
   part: BehavioralPartDefinition,
   result: CombatResult,
-  _ctx: CombatContext
+  ctx: CombatContext
 ): void {
+  // Check heat condition (e.g., Frost Core: only while Cool)
+  if (part.heatCondition && getHeatThreshold(result.combat.heat) !== part.heatCondition) {
+    return
+  }
+
   switch (part.effect.type) {
     case 'bonusBlock':
       result.combat.block += part.effect.value
@@ -1048,10 +1138,12 @@ function applyPartEffect(
     case 'bonusDamage':
       // Applied during resolveBodyAction, not here
       break
-    case 'reduceHeat':
-      result.combat.heat = Math.max(0, result.combat.heat - part.effect.value)
+    case 'reduceHeat': {
+      const crossed = applyHeatChange(result.combat, -part.effect.value)
       result.log.push(`${part.name}: -${part.effect.value} Heat`)
+      if (crossed) fireThresholdCrossTriggers(ctx.parts, result, ctx)
       break
+    }
     case 'drawCards': {
       const actualDrawn = drawCards(result.combat, part.effect.count)
       result.log.push(`${part.name}: drew ${actualDrawn}/${part.effect.count} card(s)`)

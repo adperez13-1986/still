@@ -17,7 +17,6 @@ const INTENT_ICONS: Record<string, string> = {
   Buff: 'up',
   Debuff: 'down',
   AttackDebuff: 'sword+',
-  HeatAttack: 'fire',
   DisableSlot: 'lock',
   Absorb: 'drain',
 }
@@ -28,7 +27,6 @@ const INTENT_COLORS: Record<string, string> = {
   Buff: '#2ecc71',
   Debuff: '#e67e22',
   AttackDebuff: '#c0392b',
-  HeatAttack: '#fd79a8',
   DisableSlot: '#636e72',
   Absorb: '#00cec9',
 }

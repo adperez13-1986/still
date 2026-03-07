@@ -182,7 +182,6 @@ function IntentSummary({ enemy }: { enemy: EnemyDefinition }) {
     if (intent.type === 'Buff') return `Buff ${intent.status} ${intent.value}`
     if (intent.type === 'Debuff') return `${intent.status} ${intent.value}`
     if (intent.type === 'AttackDebuff') return `Atk ${intent.value}+${intent.status}`
-    if (intent.type === 'HeatAttack') return `Atk ${intent.value}+Heat`
     return intent.type
   })
   return (

@@ -428,6 +428,191 @@ const targetLock: ModifierCardDefinition = {
   },
 }
 
+// ─── Archetype Cards ────────────────────────────────────────────────────────
+
+// Cool Runner
+const precisionStrike: ModifierCardDefinition = {
+  id: 'precision-strike',
+  name: 'Precision Strike',
+  description: 'Deal 8 damage. While Cool: deal 12.',
+  heatCost: 0,
+  category: {
+    type: 'system',
+    modifier: 'Conditional',
+    effects: [{ type: 'damage', value: 8, targetMode: 'single_enemy' }],
+  },
+  keywords: [],
+  heatBonus: {
+    threshold: 'Cool',
+    effects: [{ type: 'damage', value: 12, targetMode: 'single_enemy' }],
+  },
+  upgraded: {
+    id: 'precision-strike',
+    name: 'Precision Strike+',
+    description: 'Deal 10 damage. While Cool: deal 15.',
+    heatCost: 0,
+    category: {
+      type: 'system',
+      modifier: 'Conditional',
+      effects: [{ type: 'damage', value: 10, targetMode: 'single_enemy' }],
+    },
+    keywords: [],
+    heatBonus: {
+      threshold: 'Cool',
+      effects: [{ type: 'damage', value: 15, targetMode: 'single_enemy' }],
+    },
+  },
+}
+
+const coldEfficiency: ModifierCardDefinition = {
+  id: 'cold-efficiency',
+  name: 'Cold Efficiency',
+  description: 'Draw 2 cards. While Cool: draw 3.',
+  heatCost: 0,
+  category: {
+    type: 'system',
+    modifier: 'Draw',
+    effects: [{ type: 'draw', count: 2 }],
+  },
+  keywords: [],
+  heatBonus: {
+    threshold: 'Cool',
+    effects: [{ type: 'draw', count: 3 }],
+  },
+  upgraded: {
+    id: 'cold-efficiency',
+    name: 'Cold Efficiency+',
+    description: 'Draw 3 cards. While Cool: draw 4.',
+    heatCost: 0,
+    category: {
+      type: 'system',
+      modifier: 'Draw',
+      effects: [{ type: 'draw', count: 3 }],
+    },
+    keywords: [],
+    heatBonus: {
+      threshold: 'Cool',
+      effects: [{ type: 'draw', count: 4 }],
+    },
+  },
+}
+
+// Pyromaniac
+const fuelTheFire: ModifierCardDefinition = {
+  id: 'fuel-the-fire',
+  name: 'Fuel the Fire',
+  description: 'Deal 6 damage. While Hot: also gain 4 Block.',
+  heatCost: 1,
+  category: {
+    type: 'system',
+    modifier: 'Conditional',
+    effects: [{ type: 'damage', value: 6, targetMode: 'single_enemy' }],
+  },
+  keywords: [],
+  heatBonus: {
+    threshold: 'Hot',
+    effects: [
+      { type: 'damage', value: 6, targetMode: 'single_enemy' },
+      { type: 'gainBlock', value: 4 },
+    ],
+  },
+  upgraded: {
+    id: 'fuel-the-fire',
+    name: 'Fuel the Fire+',
+    description: 'Deal 8 damage. While Hot: also gain 6 Block.',
+    heatCost: 1,
+    category: {
+      type: 'system',
+      modifier: 'Conditional',
+      effects: [{ type: 'damage', value: 8, targetMode: 'single_enemy' }],
+    },
+    keywords: [],
+    heatBonus: {
+      threshold: 'Hot',
+      effects: [
+        { type: 'damage', value: 8, targetMode: 'single_enemy' },
+        { type: 'gainBlock', value: 6 },
+      ],
+    },
+  },
+}
+
+const recklessCharge: ModifierCardDefinition = {
+  id: 'reckless-charge',
+  name: 'Reckless Charge',
+  description: 'Deal 18 damage. Exhaust.',
+  heatCost: 3,
+  category: {
+    type: 'system',
+    modifier: 'Conditional',
+    effects: [{ type: 'damage', value: 18, targetMode: 'single_enemy' }],
+  },
+  keywords: ['Exhaust'],
+  upgraded: {
+    id: 'reckless-charge',
+    name: 'Reckless Charge+',
+    description: 'Deal 24 damage. Exhaust.',
+    heatCost: 3,
+    category: {
+      type: 'system',
+      modifier: 'Conditional',
+      effects: [{ type: 'damage', value: 24, targetMode: 'single_enemy' }],
+    },
+    keywords: ['Exhaust'],
+  },
+}
+
+// Oscillator
+const thermalFlux: ModifierCardDefinition = {
+  id: 'thermal-flux',
+  name: 'Thermal Flux',
+  description: 'Reduce Heat by 2. Deal damage equal to heat change this turn.',
+  heatCost: -2,
+  category: {
+    type: 'system',
+    modifier: 'Cooling',
+    effects: [], // damage resolved dynamically from heatChangeThisTurn
+  },
+  keywords: [],
+  upgraded: {
+    id: 'thermal-flux',
+    name: 'Thermal Flux+',
+    description: 'Reduce Heat by 2. Deal damage equal to heat change this turn. Gain Block equal to half.',
+    heatCost: -2,
+    category: {
+      type: 'system',
+      modifier: 'Cooling',
+      effects: [], // damage + block resolved dynamically
+    },
+    keywords: [],
+  },
+}
+
+const overclock: ModifierCardDefinition = {
+  id: 'overclock',
+  name: 'Overclock',
+  description: 'Gain 1 Strength. If a threshold was crossed this turn: gain 2 instead.',
+  heatCost: 2,
+  category: {
+    type: 'system',
+    modifier: 'Conditional',
+    effects: [{ type: 'applyStatus', status: 'Strength', stacks: 1, target: 'self' }],
+  },
+  keywords: [],
+  upgraded: {
+    id: 'overclock',
+    name: 'Overclock+',
+    description: 'Gain 2 Strength. If a threshold was crossed this turn: gain 3 instead.',
+    heatCost: 2,
+    category: {
+      type: 'system',
+      modifier: 'Conditional',
+      effects: [{ type: 'applyStatus', status: 'Strength', stacks: 2, target: 'self' }],
+    },
+    keywords: [],
+  },
+}
+
 // ─── Companion Cards (Task 3.11) ────────────────────────────────────────────
 
 export const yanah: ModifierCardDefinition = {
@@ -505,6 +690,8 @@ export const ACT1_CARD_POOL: ModifierCardDefinition[] = [
   overcharge, spreadShot, echoProtocol, shieldBash, emergencyShield,
   deepFreeze, heatVent, quickScan, thermalSurge, meltdown,
   fieldRepair, targetLock,
+  precisionStrike, coldEfficiency, fuelTheFire, recklessCharge,
+  thermalFlux, overclock,
 ]
 
 const allCardList: ModifierCardDefinition[] = [
@@ -512,6 +699,8 @@ const allCardList: ModifierCardDefinition[] = [
   overcharge, spreadShot, echoProtocol, shieldBash, emergencyShield,
   deepFreeze, heatVent, quickScan, thermalSurge, meltdown,
   fieldRepair, targetLock,
+  precisionStrike, coldEfficiency, fuelTheFire, recklessCharge,
+  thermalFlux, overclock,
   yanah, yuri,
 ]
 

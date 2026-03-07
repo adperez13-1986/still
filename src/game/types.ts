@@ -52,6 +52,10 @@ export interface EquipmentDefinition {
   slot: BodySlot
   action: BodyAction
   rarity: 'common' | 'uncommon' | 'rare'
+  heatBonusThreshold?: HeatThreshold
+  heatBonusValue?: number // extra value added to action when at threshold
+  extraHeatGenerated?: number // extra heat produced when this equipment fires
+  bonusBlockPerHeatLost?: number // block gained per point of heat actually cooled
 }
 
 // ─── Modifier Cards ─────────────────────────────────────────────────────────
@@ -79,6 +83,11 @@ export type ModifierCardType =
   | { type: 'slot'; modifier: ModifierCategory; effect: SlotModifierEffect }
   | { type: 'system'; modifier: SystemCategory; effects: SystemEffect[] }
 
+export interface HeatBonus {
+  threshold: HeatThreshold
+  effects: SystemEffect[]
+}
+
 export interface ModifierCardDefinition {
   id: string
   name: string
@@ -87,6 +96,7 @@ export interface ModifierCardDefinition {
   category: ModifierCardType
   keywords: Keyword[]
   heatCondition?: HeatThreshold // minimum threshold required to play
+  heatBonus?: HeatBonus // bonus effects when at threshold
   upgraded?: ModifierCardDefinition
 }
 
@@ -111,6 +121,7 @@ export type PartTrigger =
   | { type: 'onSlotFire'; slot: BodySlot }
   | { type: 'onModifierPlay'; modifier: ModifierCategory }
   | { type: 'onHeatThreshold'; threshold: HeatThreshold }
+  | { type: 'onThresholdCross' }
   | { type: 'onTurnStart' }
   | { type: 'onCombatStart' }
 
@@ -130,18 +141,18 @@ export interface BehavioralPartDefinition {
   trigger: PartTrigger
   effect: PartEffect
   rarity: 'common' | 'uncommon' | 'rare'
+  heatCondition?: HeatThreshold
 }
 
 // ─── Enemies ─────────────────────────────────────────────────────────────────
 
-export type IntentType = 'Attack' | 'Block' | 'Buff' | 'Debuff' | 'AttackDebuff' | 'HeatAttack' | 'DisableSlot' | 'Absorb'
+export type IntentType = 'Attack' | 'Block' | 'Buff' | 'Debuff' | 'AttackDebuff' | 'DisableSlot' | 'Absorb'
 
 export interface Intent {
   type: IntentType
   value: number
   status?: StatusEffectType
   statusStacks?: number
-  heatValue?: number // for HeatAttack: additional Heat applied to Still
   targetSlot?: BodySlot // for DisableSlot: which slot to disable
 }
 
@@ -220,6 +231,8 @@ export interface CombatState {
   roundNumber: number
   slotModifiers: Record<BodySlot, string | null> // instanceId of assigned modifier card
   disabledSlots: BodySlot[]
+  heatChangeThisTurn: number // cumulative absolute heat change this turn
+  thresholdCrossedThisTurn: boolean // whether a threshold boundary was crossed
 }
 
 export interface RunState {

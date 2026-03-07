@@ -12,7 +12,6 @@ function intentLabel(intent: Intent): string {
     case 'Buff': return `Buff ${intent.status ?? ''} +${intent.value}`
     case 'Debuff': return `Debuff ${intent.status ?? ''} ${intent.statusStacks ?? intent.value}`
     case 'AttackDebuff': return `Atk ${intent.value} + ${intent.status ?? ''}`
-    case 'HeatAttack': return `Atk ${intent.value} + ${intent.heatValue ?? 0}H`
     case 'DisableSlot': return `Disable ${intent.targetSlot ?? '?'}`
     case 'Absorb': return `Absorb ${intent.value}%`
   }
@@ -22,7 +21,6 @@ function intentColor(intent: Intent): string {
   switch (intent.type) {
     case 'Attack':
     case 'AttackDebuff':
-    case 'HeatAttack':
       return 'var(--danger)'
     case 'Block':
     case 'Absorb':

@@ -78,6 +78,50 @@ const salvagedTreads: EquipmentDefinition = {
   rarity: 'uncommon',
 }
 
+// ─── Archetype Equipment ────────────────────────────────────────────────────
+
+const calibratedOptics: EquipmentDefinition = {
+  id: 'calibrated-optics',
+  name: 'Calibrated Optics',
+  description: 'Draw 1 card. While Cool: draw 2.',
+  slot: 'Head',
+  action: { type: 'draw', baseValue: 1, targetMode: 'self' },
+  rarity: 'uncommon',
+  heatBonusThreshold: 'Cool',
+  heatBonusValue: 1,
+}
+
+const thermalPlating: EquipmentDefinition = {
+  id: 'thermal-plating',
+  name: 'Thermal Plating',
+  description: 'Gain 3 Block. While Hot: gain 5.',
+  slot: 'Torso',
+  action: { type: 'block', baseValue: 3, targetMode: 'self' },
+  rarity: 'uncommon',
+  heatBonusThreshold: 'Hot',
+  heatBonusValue: 2,
+}
+
+const overclockedPistons: EquipmentDefinition = {
+  id: 'overclocked-pistons',
+  name: 'Overclocked Pistons',
+  description: 'Deal 8 damage. Generates +1 Heat.',
+  slot: 'Arms',
+  action: { type: 'damage', baseValue: 8, targetMode: 'single_enemy' },
+  rarity: 'uncommon',
+  extraHeatGenerated: 1,
+}
+
+const adaptiveTreads: EquipmentDefinition = {
+  id: 'adaptive-treads',
+  name: 'Adaptive Treads',
+  description: 'Lose 2 Heat. Gain 1 Block per heat lost.',
+  slot: 'Legs',
+  action: { type: 'coolHeat', baseValue: 2, targetMode: 'self' },
+  rarity: 'uncommon',
+  bonusBlockPerHeatLost: 1,
+}
+
 // ─── Behavioral Parts (Task 3.7) ────────────────────────────────────────────
 
 const salvagedPlating: BehavioralPartDefinition = {
@@ -152,18 +196,50 @@ const heatSink: BehavioralPartDefinition = {
   rarity: 'uncommon',
 }
 
+// ─── Archetype Mods ─────────────────────────────────────────────────────────
+
+const frostCore: BehavioralPartDefinition = {
+  id: 'frost-core',
+  name: 'Frost Core',
+  description: 'At turn start, while Cool: gain +2 Block.',
+  trigger: { type: 'onTurnStart' },
+  effect: { type: 'bonusBlock', value: 2 },
+  rarity: 'uncommon',
+  heatCondition: 'Cool',
+}
+
+const overheater: BehavioralPartDefinition = {
+  id: 'overheater',
+  name: 'Overheater',
+  description: 'When ARMS fires, while Hot: +3 bonus damage.',
+  trigger: { type: 'onSlotFire', slot: 'Arms' },
+  effect: { type: 'bonusDamage', value: 3 },
+  rarity: 'uncommon',
+  heatCondition: 'Hot',
+}
+
+const fluxCapacitor: BehavioralPartDefinition = {
+  id: 'flux-capacitor',
+  name: 'Flux Capacitor',
+  description: 'When heat crosses a threshold, draw 1 card.',
+  trigger: { type: 'onThresholdCross' },
+  effect: { type: 'drawCards', count: 1 },
+  rarity: 'rare',
+}
+
 // ─── Exports ────────────────────────────────────────────────────────────────
 
 export const EQUIPMENT: EquipmentDefinition[] = [
-  basicScanner, crackedLens,
-  scrapPlating, patchedHull,
-  pistonArm, weldingTorch,
-  wornActuators, salvagedTreads,
+  basicScanner, crackedLens, calibratedOptics,
+  scrapPlating, patchedHull, thermalPlating,
+  pistonArm, weldingTorch, overclockedPistons,
+  wornActuators, salvagedTreads, adaptiveTreads,
 ]
 
 export const BEHAVIORAL_PARTS: BehavioralPartDefinition[] = [
   salvagedPlating, tensionSpring, reactiveFrame, opticalExpander,
   coolingFins, reinforcedJoints, scavengerLens, heatSink,
+  frostCore, overheater, fluxCapacitor,
 ]
 
 export const ALL_EQUIPMENT: Record<string, EquipmentDefinition> = Object.fromEntries(

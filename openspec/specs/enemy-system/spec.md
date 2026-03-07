@@ -1,11 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: Enemies can interact with Still's Heat
-Some enemies SHALL have intents or abilities that directly affect Still's Heat, creating encounters where thermal management is part of the challenge.
-
-#### Scenario: Enemy generates Heat on Still
-- **WHEN** an enemy executes a Heat-generating intent (e.g., "Ignite")
-- **THEN** Still's Heat increases by the intent's value in addition to any damage dealt
+Some enemies SHALL have intents or abilities that react to Still's Heat state. Enemies SHALL NOT directly modify Still's Heat value — heat is the player's resource to manage. Enemies may read heat and adjust their behavior accordingly.
 
 #### Scenario: Enemy penalizes high Heat
 - **WHEN** an enemy has a conditional intent that activates based on Still's Heat threshold
@@ -23,11 +19,7 @@ Some enemies SHALL have abilities that temporarily disable one of Still's equipm
 - **THEN** it recovers automatically at the start of the following turn (one turn of downtime)
 
 ### Requirement: Enemy intent types expanded for body-driven combat
-The enemy intent system SHALL include new intent types that interact with the body-action and Heat systems. The drop resolution function SHALL accept an optional pity parameter to modify equipment drop weights.
-
-#### Scenario: HeatAttack intent
-- **WHEN** an enemy has a HeatAttack intent
-- **THEN** it deals damage to Still AND adds Heat (e.g., "Attack 8 + Heat 2")
+The enemy intent system SHALL include new intent types that interact with the body-action systems. The drop resolution function SHALL accept an optional pity parameter to modify equipment drop weights. The HeatAttack intent type is removed — enemies SHALL NOT add Heat to Still.
 
 #### Scenario: DisableSlot intent
 - **WHEN** an enemy has a DisableSlot intent
@@ -63,7 +55,7 @@ Enemy types and difficulty SHALL scale across acts, reflecting both the narrativ
 
 #### Scenario: Act 2 enemy Heat interaction
 - **WHEN** Still encounters an Act 2 enemy
-- **THEN** the enemy may have HeatAttack intents, slot-disabling abilities, or conditional behaviors based on Still's Heat state
+- **THEN** the enemy may have slot-disabling abilities, conditional behaviors based on Still's Heat state, or Absorb intents
 
 #### Scenario: Act 3 enemy complexity
 - **WHEN** Still encounters an Act 3 enemy

@@ -1,6 +1,8 @@
+import { useState, useRef } from 'react'
 import type { CombatState } from '../game/types'
 import { ALL_CARDS } from '../data/cards'
 import { getHeatThreshold } from '../game/types'
+import CardDisplay from './CardDisplay'
 
 interface Props {
   combat: CombatState
@@ -25,72 +27,125 @@ export default function Hand({ combat, selectedCardId, onSelectSlotCard, onPlayS
 
   const canPlay = combat.phase === 'planning' && !combat.shutdown
 
+  // Long-press preview for compact mode
+  const [previewCardId, setPreviewCardId] = useState<string | null>(null)
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const didLongPress = useRef(false)
+
   if (compact) {
+    let previewDef = null as import('../game/types').ModifierCardDefinition | null
+    if (previewCardId) {
+      const pc = visibleHand.find(c => c.instanceId === previewCardId)
+      if (pc) {
+        const bd = ALL_CARDS[pc.definitionId]
+        if (bd) previewDef = pc.isUpgraded && bd.upgraded ? bd.upgraded : bd
+      }
+    }
+
     return (
-      <div style={{
-        display: 'flex',
-        flexWrap: 'wrap',
-        gap: '6px',
-        justifyContent: 'center',
-        padding: '6px',
-        minHeight: '30px',
-        alignItems: 'center',
-      }}>
-        {visibleHand.map(card => {
-          const baseDef = ALL_CARDS[card.definitionId]
-          if (!baseDef) return null
-          const def = card.isUpgraded && baseDef.upgraded ? baseDef.upgraded : baseDef
+      <>
+        <div style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '6px',
+          justifyContent: 'center',
+          padding: '6px',
+          minHeight: '30px',
+          alignItems: 'center',
+        }}>
+          {visibleHand.map(card => {
+            const baseDef = ALL_CARDS[card.definitionId]
+            if (!baseDef) return null
+            const def = card.isUpgraded && baseDef.upgraded ? baseDef.upgraded : baseDef
 
-          const isSlot = def.category.type === 'slot'
-          const isSystem = def.category.type === 'system'
-          const isSelected = selectedCardId === card.instanceId
-          const heatMet = !def.heatCondition || isThresholdMet(combat.heat, def.heatCondition)
-          const playable = canPlay && heatMet
+            const isSlot = def.category.type === 'slot'
+            const isSystem = def.category.type === 'system'
+            const isSelected = selectedCardId === card.instanceId
+            const heatMet = !def.heatCondition || isThresholdMet(combat.heat, def.heatCondition)
+            const playable = canPlay && heatMet
 
-          return (
-            <div
-              key={card.instanceId}
-              onClick={() => {
-                if (!playable) return
-                if (isSlot) {
-                  onSelectSlotCard(isSelected ? null : card.instanceId)
-                } else if (isSystem) {
-                  onPlaySystemCard(card.instanceId)
-                }
-              }}
-              style={{
-                padding: '4px 10px',
-                borderRadius: '12px',
-                backgroundColor: isSelected ? '#a29bfe' : '#1a1a2e',
-                border: `1px solid ${isSelected ? '#a29bfe' : !heatMet ? '#e74c3c' : '#2c3e50'}`,
-                cursor: playable ? 'pointer' : 'default',
-                opacity: playable ? 1 : 0.5,
-                fontSize: '11px',
-                color: isSelected ? '#fff' : '#e8e8e8',
-                fontWeight: 'bold',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {def.name}
-              <span style={{
-                fontSize: '9px',
-                color: isSelected ? 'rgba(255,255,255,0.8)' : (def.heatCost > 0 ? '#e74c3c' : def.heatCost < 0 ? '#00cec9' : '#888'),
-                fontWeight: 'bold',
-              }}>
-                {def.heatCost >= 0 ? '+' : ''}{def.heatCost}H
-              </span>
+            return (
+              <div
+                key={card.instanceId}
+                onTouchStart={() => {
+                  didLongPress.current = false
+                  longPressTimer.current = setTimeout(() => {
+                    didLongPress.current = true
+                    setPreviewCardId(card.instanceId)
+                  }, 400)
+                }}
+                onTouchEnd={() => {
+                  if (longPressTimer.current) clearTimeout(longPressTimer.current)
+                }}
+                onTouchMove={() => {
+                  if (longPressTimer.current) clearTimeout(longPressTimer.current)
+                }}
+                onContextMenu={(e) => e.preventDefault()}
+                onClick={() => {
+                  if (didLongPress.current) {
+                    didLongPress.current = false
+                    return
+                  }
+                  if (!playable) return
+                  if (isSlot) {
+                    onSelectSlotCard(isSelected ? null : card.instanceId)
+                  } else if (isSystem) {
+                    onPlaySystemCard(card.instanceId)
+                  }
+                }}
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: '12px',
+                  backgroundColor: isSelected ? '#a29bfe' : '#1a1a2e',
+                  border: `1px solid ${isSelected ? '#a29bfe' : !heatMet ? '#e74c3c' : '#2c3e50'}`,
+                  cursor: playable ? 'pointer' : 'default',
+                  opacity: playable ? 1 : 0.5,
+                  fontSize: '11px',
+                  color: isSelected ? '#fff' : '#e8e8e8',
+                  fontWeight: 'bold',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  whiteSpace: 'nowrap',
+                  userSelect: 'none',
+                  WebkitUserSelect: 'none',
+                }}
+              >
+                {def.name}
+                <span style={{
+                  fontSize: '9px',
+                  color: isSelected ? 'rgba(255,255,255,0.8)' : (def.heatCost > 0 ? '#e74c3c' : def.heatCost < 0 ? '#00cec9' : '#888'),
+                  fontWeight: 'bold',
+                }}>
+                  {def.heatCost >= 0 ? '+' : ''}{def.heatCost}H
+                </span>
+              </div>
+            )
+          })}
+          {visibleHand.length === 0 && (
+            <div style={{ color: '#555', fontSize: '11px' }}>
+              {combat.shutdown ? 'SHUTDOWN' : 'Empty'}
             </div>
-          )
-        })}
-        {visibleHand.length === 0 && (
-          <div style={{ color: '#555', fontSize: '11px' }}>
-            {combat.shutdown ? 'SHUTDOWN' : 'Empty'}
+          )}
+        </div>
+
+        {previewDef && (
+          <div
+            onClick={() => setPreviewCardId(null)}
+            style={{
+              position: 'fixed',
+              top: 0, left: 0, right: 0, bottom: 0,
+              backgroundColor: 'rgba(0,0,0,0.7)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 100,
+            }}
+          >
+            <CardDisplay card={previewDef} />
           </div>
         )}
-      </div>
+      </>
     )
   }
 
