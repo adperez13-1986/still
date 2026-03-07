@@ -11,13 +11,13 @@ import EventScreen from './EventScreen'
 import RunInfoOverlay from './RunInfoOverlay'
 import { generateMap } from '../game/mapGen'
 import { makeEnemyInstance, makeCardInstance } from '../game/combat'
-import { ACT1_ENEMIES, ACT1_BOSS } from '../data/enemies'
-import { STARTING_CARDS, ACT1_CARD_POOL, yanah, yuri } from '../data/cards'
+import { SECTOR1_ENEMIES, SECTOR1_BOSS } from '../data/enemies'
+import { STARTING_CARDS, SECTOR1_CARD_POOL, yanah, yuri } from '../data/cards'
 import { ALL_PARTS, STARTING_TORSO, STARTING_ARMS } from '../data/parts'
 
-function pickEnemiesForRoom(room: Room, _act: number) {
-  if (room.type === 'Boss') return [makeEnemyInstance(ACT1_BOSS)]
-  const pool = ACT1_ENEMIES
+function pickEnemiesForRoom(room: Room, _sector: number) {
+  if (room.type === 'Boss') return [makeEnemyInstance(SECTOR1_BOSS)]
+  const pool = SECTOR1_ENEMIES
   const count = Math.random() < 0.3 ? 2 : 1
   const picked = [...pool].sort(() => Math.random() - 0.5).slice(0, count)
   return picked.map(makeEnemyInstance)
@@ -33,7 +33,7 @@ export default function RunScreen() {
 
   // Initialize run if not active
   useEffect(() => {
-    if (run.active) return
+    if (run.sectorive) return
 
     const bonuses = (location.state as { bonuses?: FragmentBonus[] })?.bonuses ?? []
     const sumBonus = (type: FragmentBonus['type']) =>
@@ -57,7 +57,7 @@ export default function RunScreen() {
     if (permanent.companionsUnlocked.includes('yanah')) starterDeck.push(makeCardInstance(yanah.id))
     if (permanent.companionsUnlocked.includes('yuri')) starterDeck.push(makeCardInstance(yuri.id))
     if (permanent.workshopUpgrades['practiced-routine']) {
-      const nonBasics = ACT1_CARD_POOL.filter((c) => !['boost', 'emergency-strike', 'coolant-flush', 'diagnostics'].includes(c.id))
+      const nonBasics = SECTOR1_CARD_POOL.filter((c) => !['boost', 'emergency-strike', 'coolant-flush', 'diagnostics'].includes(c.id))
       const picked = nonBasics[Math.floor(Math.random() * nonBasics.length)]
       if (picked) starterDeck.push(makeCardInstance(picked.id))
     }
@@ -77,7 +77,7 @@ export default function RunScreen() {
     const startMaxHealth = 70 + sumBonus('health')
 
     run.startRun({
-      act: 1,
+      sector: 1,
       map,
       health: startMaxHealth,
       maxHealth: startMaxHealth,
@@ -93,7 +93,7 @@ export default function RunScreen() {
     })
   }, [])
 
-  if (!run.active || !run.map) {
+  if (!run.sectorive || !run.map) {
     return (
       <div style={{ color: '#e8e8e8', textAlign: 'center', marginTop: '40px' }}>
         Preparing...
@@ -115,7 +115,7 @@ export default function RunScreen() {
     if (!room) return
 
     if (room.type === 'Combat' || room.type === 'Boss') {
-      const enemies = pickEnemiesForRoom(room, run.act)
+      const enemies = pickEnemiesForRoom(room, run.sector)
       run.startCombat(enemies)
     }
   }
@@ -285,7 +285,7 @@ export default function RunScreen() {
           if (outcome.type === 'health') run.heal(outcome.value)
           if (outcome.type === 'shards') run.addShards(outcome.value)
           if (outcome.type === 'card') {
-            const nonBasics = ACT1_CARD_POOL.filter((c) => !['boost', 'emergency-strike', 'coolant-flush', 'diagnostics'].includes(c.id))
+            const nonBasics = SECTOR1_CARD_POOL.filter((c) => !['boost', 'emergency-strike', 'coolant-flush', 'diagnostics'].includes(c.id))
             const picked = nonBasics[Math.floor(Math.random() * nonBasics.length)]
             if (picked) run.addCardToDeck(makeCardInstance(picked.id))
           }

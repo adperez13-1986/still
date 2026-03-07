@@ -21,19 +21,19 @@ Some modifier cards SHALL have bonus effects that activate when Still is at a sp
 - **WHEN** a modifier card with a heat bonus is played while Still is below the bonus threshold
 - **THEN** the base version of the effect activates (card is still playable)
 
-### Requirement: Act 1 card pool includes archetype-seeding cards
-The Act 1 modifier card pool SHALL include cards that reward specific heat zones, seeding the Cool Runner, Pyromaniac, and Oscillator archetypes.
+### Requirement: Sector 1 card pool includes archetype-seeding cards
+The Sector 1 modifier card pool SHALL include cards that reward specific heat zones, seeding the Cool Runner, Pyromaniac, and Oscillator archetypes.
 
-#### Scenario: Cool Runner cards in Act 1 pool
-- **WHEN** the Act 1 card pool is assembled
+#### Scenario: Cool Runner cards in Sector 1 pool
+- **WHEN** the Sector 1 card pool is assembled
 - **THEN** it SHALL include Precision Strike (0 heat, deal 8 damage, 12 while Cool) and Cold Efficiency (0 heat, draw 2, draw 3 while Cool)
 
-#### Scenario: Pyromaniac cards in Act 1 pool
-- **WHEN** the Act 1 card pool is assembled
+#### Scenario: Pyromaniac cards in Sector 1 pool
+- **WHEN** the Sector 1 card pool is assembled
 - **THEN** it SHALL include Fuel the Fire (+1 heat, deal 6 damage, gain 4 Block while Hot) and Reckless Charge (+3 heat, deal 18 damage, Exhaust)
 
-#### Scenario: Oscillator cards in Act 1 pool
-- **WHEN** the Act 1 card pool is assembled
+#### Scenario: Oscillator cards in Sector 1 pool
+- **WHEN** the Sector 1 card pool is assembled
 - **THEN** it SHALL include Thermal Flux (-2 heat, deal damage equal to total heat change this turn) and Overclock (+2 heat, gain 1 Strength, gain 2 instead if a threshold was crossed this turn)
 
 ## MODIFIED Requirements
@@ -54,7 +54,7 @@ The card system SHALL maintain four distinct card zones for modifier cards. Card
 - **THEN** additional drawn cards are discarded immediately (burned)
 
 ### Requirement: Card acquisition from enemies
-After defeating enemies, the player SHALL be offered a modifier card reward from a pool relevant to the current act.
+After defeating enemies, the player SHALL be offered a modifier card reward from a pool relevant to the current sector.
 
 #### Scenario: Post-combat card reward
 - **WHEN** a combat room is cleared

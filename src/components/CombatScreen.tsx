@@ -176,9 +176,9 @@ export default function CombatScreen() {
               permanent.addRunHistory({
                 id: `run-${Date.now()}`,
                 date: new Date().toISOString(),
-                actReached: run.act,
+                sectorReached: run.sector,
                 outcome: 'victory',
-                message: 'Cleared the act.',
+                message: 'Cleared the sector.',
                 notable: run.parts.map(p => p.name),
               })
               permanent.save()
@@ -187,7 +187,7 @@ export default function CombatScreen() {
                 state: {
                   runEnd: true,
                   outcome: 'victory',
-                  message: 'Cleared the act.',
+                  message: 'Cleared the sector.',
                   parts: run.parts,
                   shards: run.shards,
                 },
@@ -235,7 +235,7 @@ export default function CombatScreen() {
             permanent.addRunHistory({
               id: `run-${Date.now()}`,
               date: new Date().toISOString(),
-              actReached: run.act,
+              sectorReached: run.sector,
               outcome: 'defeat',
               message: 'Fell in combat.',
               notable: run.parts.map(p => p.name),

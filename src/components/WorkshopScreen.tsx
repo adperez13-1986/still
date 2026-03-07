@@ -398,7 +398,7 @@ export default function WorkshopScreen() {
                     color: run.outcome === 'victory' ? '#27ae60' : '#e74c3c',
                     fontWeight: 'bold',
                   }}>
-                    {run.outcome.toUpperCase()} — Act {run.actReached}
+                    {run.outcome.toUpperCase()} — Sector {run.sectorReached}
                   </span>
                   <span style={{ fontSize: '11px', color: '#555' }}>
                     {new Date(run.date).toLocaleDateString()}

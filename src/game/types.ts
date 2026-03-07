@@ -199,7 +199,7 @@ export type RoomType = 'Combat' | 'Rest' | 'Shop' | 'Event' | 'Boss'
 export interface Room {
   id: string
   type: RoomType
-  act: 1 | 2 | 3
+  sector: 1 | 2 | 3
   enemyIds?: string[] // for Combat/Boss rooms
   eventId?: string   // for Event rooms
   connections: string[] // ids of next rooms
@@ -237,7 +237,7 @@ export interface CombatState {
 
 export interface RunState {
   active: boolean
-  act: 1 | 2 | 3
+  sector: 1 | 2 | 3
   map: MapGraph | null
   health: number
   maxHealth: number
@@ -293,7 +293,7 @@ export interface WorkshopUpgrade {
 export interface RunHistoryEntry {
   id: string
   date: string
-  actReached: 1 | 2 | 3
+  sectorReached: 1 | 2 | 3
   outcome: 'victory' | 'defeat'
   message: string
   notable: string[] // key parts/cards acquired

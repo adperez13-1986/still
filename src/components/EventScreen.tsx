@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ACT1_EVENTS, ACT2_EVENTS, NAME_DISCOVERY_EVENT } from '../data/narrative'
+import { SECTOR1_EVENTS, SECTOR2_EVENTS, NAME_DISCOVERY_EVENT } from '../data/narrative'
 import type { Room } from '../game/types'
 import type { EventChoice } from '../data/narrative'
 
@@ -11,9 +11,9 @@ interface Props {
 
 export default function EventScreen({ room, nameDiscovered, onChoice }: Props) {
   const [event] = useState(() => {
-    const pool = room.act >= 2 ? ACT2_EVENTS : ACT1_EVENTS
-    // In Act 2+, name discovery takes priority if not yet found
-    return (room.act >= 2 && !nameDiscovered && Math.random() < 0.3)
+    const pool = room.sector >= 2 ? SECTOR2_EVENTS : SECTOR1_EVENTS
+    // In Sector 2+, name discovery takes priority if not yet found
+    return (room.sector >= 2 && !nameDiscovered && Math.random() < 0.3)
       ? NAME_DISCOVERY_EVENT
       : pool[Math.floor(Math.random() * pool.length)]
   })

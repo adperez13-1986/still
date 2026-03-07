@@ -1,6 +1,6 @@
 import type { EnemyDefinition } from '../game/types'
 
-// ─── Act 1 Standard Enemies ──────────────────────────────────────────────────
+// ─── Sector 1 Standard Enemies ──────────────────────────────────────────────────
 
 const wanderingDrone: EnemyDefinition = {
   id: 'wandering-drone',
@@ -157,7 +157,7 @@ const echoConstruct: EnemyDefinition = {
   ],
 }
 
-// ─── Act 1 Elite Enemies ─────────────────────────────────────────────────────
+// ─── Sector 1 Elite Enemies ─────────────────────────────────────────────────────
 
 const vaultKeeper: EnemyDefinition = {
   id: 'vault-keeper',
@@ -214,7 +214,7 @@ const fractureTitan: EnemyDefinition = {
   isElite: true,
 }
 
-// ─── Act 1 Boss ──────────────────────────────────────────────────────────────
+// ─── Sector 1 Boss ──────────────────────────────────────────────────────────────
 
 const theFirstWarden: EnemyDefinition = {
   id: 'the-first-warden',
@@ -239,17 +239,17 @@ const theFirstWarden: EnemyDefinition = {
 
 // ─── Exports ─────────────────────────────────────────────────────────────────
 
-export const ACT1_ENEMIES: EnemyDefinition[] = [
+export const SECTOR1_ENEMIES: EnemyDefinition[] = [
   wanderingDrone, rustGuard, corrodedSentry, fractureMite, ironCrawler,
   glitchNode, sentinelShard, hollowRepeater, driftingFrame, echoConstruct,
 ]
 
-export const ACT1_ELITES: EnemyDefinition[] = [
+export const SECTOR1_ELITES: EnemyDefinition[] = [
   vaultKeeper, corruptedOverseer, fractureTitan,
 ]
 
-export const ACT1_BOSS: EnemyDefinition = theFirstWarden
+export const SECTOR1_BOSS: EnemyDefinition = theFirstWarden
 
 export const ALL_ENEMIES: Record<string, EnemyDefinition> = Object.fromEntries(
-  [...ACT1_ENEMIES, ...ACT1_ELITES, ACT1_BOSS].map((e) => [e.id, e])
+  [...SECTOR1_ENEMIES, ...SECTOR1_ELITES, SECTOR1_BOSS].map((e) => [e.id, e])
 )

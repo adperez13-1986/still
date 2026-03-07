@@ -1,5 +1,5 @@
 import type { DropPool } from '../game/types'
-import { ACT1_CARD_POOL } from '../data/cards'
+import { SECTOR1_CARD_POOL } from '../data/cards'
 import { PARTS, EQUIPMENT } from '../data/parts'
 
 export type ResolvedDrop =
@@ -28,8 +28,8 @@ function resolveShardDrop(entry: DropPool): ResolvedDrop {
 function resolveBonusDrop(entry: DropPool): ResolvedDrop[] {
   if (entry.type === 'card') {
     const pool = entry.ids
-      ? ACT1_CARD_POOL.filter((c) => entry.ids!.includes(c.id))
-      : ACT1_CARD_POOL
+      ? SECTOR1_CARD_POOL.filter((c) => entry.ids!.includes(c.id))
+      : SECTOR1_CARD_POOL
     const shuffled = [...pool].sort(() => Math.random() - 0.5)
     return shuffled.slice(0, 3).map((c) => ({ type: 'card', cardId: c.id }))
   }

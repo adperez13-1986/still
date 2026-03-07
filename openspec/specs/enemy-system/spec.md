@@ -36,7 +36,7 @@ The enemy intent system SHALL include new intent types that interact with the bo
 ## MODIFIED Requirements
 
 ### Requirement: Boss enemies are named and memorable
-Each act SHALL end with a unique named boss. Bosses have distinct visual identities, multi-phase patterns, and special reward drops.
+Each sector SHALL end with a unique named boss. Bosses have distinct visual identities, multi-phase patterns, and special reward drops.
 
 #### Scenario: Boss encounter begins
 - **WHEN** Still enters a boss room
@@ -44,19 +44,19 @@ Each act SHALL end with a unique named boss. Bosses have distinct visual identit
 
 #### Scenario: Boss defeated
 - **WHEN** a boss is defeated
-- **THEN** the player receives a guaranteed high-quality reward (a rare behavioral part, rare modifier card, or equipment item) and the act is marked complete
+- **THEN** the player receives a guaranteed high-quality reward (a rare behavioral part, rare modifier card, or equipment item) and the sector is marked complete
 
-### Requirement: Enemy types scale with acts
-Enemy types and difficulty SHALL scale across acts, reflecting both the narrative arc and interaction with Still's body and Heat systems. Act 1 enemies are basic. Act 2 enemies interact with Heat and slots. Act 3 enemies challenge the full body-heat-modifier system.
+### Requirement: Enemy types scale with sectors
+Enemy types and difficulty SHALL scale across sectors, reflecting both the narrative arc and interaction with Still's body and Heat systems. Sector 1 enemies are basic. Sector 2 enemies interact with Heat and slots. Sector 3 enemies challenge the full body-heat-modifier system.
 
-#### Scenario: Act 1 enemy simplicity
-- **WHEN** Still encounters an Act 1 enemy
+#### Scenario: Sector 1 enemy simplicity
+- **WHEN** Still encounters a Sector 1 enemy
 - **THEN** the enemy has simple 1-2 step patterns, moderate health, clear intent, and does not interact with Heat or slots directly
 
-#### Scenario: Act 2 enemy Heat interaction
-- **WHEN** Still encounters an Act 2 enemy
+#### Scenario: Sector 2 enemy Heat interaction
+- **WHEN** Still encounters a Sector 2 enemy
 - **THEN** the enemy may have slot-disabling abilities, conditional behaviors based on Still's Heat state, or Absorb intents
 
-#### Scenario: Act 3 enemy complexity
-- **WHEN** Still encounters an Act 3 enemy
+#### Scenario: Sector 3 enemy complexity
+- **WHEN** Still encounters a Sector 3 enemy
 - **THEN** the enemy has multi-step patterns, high health or defense, potentially multiple intents per round, and sophisticated interactions with Still's body configuration and Heat state

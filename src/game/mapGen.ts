@@ -6,8 +6,8 @@ function uuid() {
 
 type ExtendedRoomType = RoomType | 'Elite'
 
-// Guaranteed room type distribution per act
-const ACT_ROOM_DISTRIBUTION: ExtendedRoomType[][] = [
+// Guaranteed room type distribution per sector
+const SECTOR_ROOM_DISTRIBUTION: ExtendedRoomType[][] = [
   // Layer 0: always Start (combat)
   ['Combat'],
   // Layers 1-2
@@ -27,13 +27,13 @@ const ACT_ROOM_DISTRIBUTION: ExtendedRoomType[][] = [
 const LAYER_WIDTHS = [1, 2, 3, 2, 2, 2, 1]
 
 function pickRoomType(layer: number, slot: number): RoomType {
-  const dist = ACT_ROOM_DISTRIBUTION[layer] ?? ['Combat']
+  const dist = SECTOR_ROOM_DISTRIBUTION[layer] ?? ['Combat']
   const t = dist[slot % dist.length]
   // Treat 'Elite' as Combat room (elite flag set on enemy, not room)
   return t === 'Elite' ? 'Combat' : t
 }
 
-export function generateMap(act: 1 | 2 | 3): MapGraph {
+export function generateMap(sector: 1 | 2 | 3): MapGraph {
   const rooms: Record<string, Room> = {}
   const layers: string[][] = []
 
@@ -47,7 +47,7 @@ export function generateMap(act: 1 | 2 | 3): MapGraph {
       rooms[id] = {
         id,
         type,
-        act,
+        sector,
         connections: [],
         visited: false,
       }

@@ -1,5 +1,5 @@
 import CardDisplay from './CardDisplay'
-import { ACT1_CARD_POOL } from '../data/cards'
+import { SECTOR1_CARD_POOL } from '../data/cards'
 import { PARTS, ALL_PARTS } from '../data/parts'
 import type { ModifierCardDefinition, BehavioralPartDefinition, CarriedPart } from '../game/types'
 
@@ -18,7 +18,7 @@ function shuffle<T>(arr: T[]): T[] {
   return [...arr].sort(() => Math.random() - 0.5)
 }
 
-const SHOP_CARDS: ModifierCardDefinition[] = shuffle(ACT1_CARD_POOL).slice(0, 3)
+const SHOP_CARDS: ModifierCardDefinition[] = shuffle(SECTOR1_CARD_POOL).slice(0, 3)
 const SHOP_PARTS: BehavioralPartDefinition[] = shuffle(PARTS).slice(0, 2)
 
 const CARD_COSTS: Record<string, number> = {

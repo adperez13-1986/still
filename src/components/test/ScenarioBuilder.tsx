@@ -3,7 +3,7 @@ import type { BodySlot, EquipmentDefinition, BehavioralPartDefinition } from '..
 import { BODY_SLOTS } from '../../game/types'
 import { EQUIPMENT, BEHAVIORAL_PARTS } from '../../data/parts'
 import { ALL_CARDS } from '../../data/cards'
-import { ACT1_ENEMIES, ACT1_ELITES, ACT1_BOSS } from '../../data/enemies'
+import { SECTOR1_ENEMIES, SECTOR1_ELITES, SECTOR1_BOSS } from '../../data/enemies'
 
 interface ScenarioBuilderProps {
   scenario: ScenarioConfig
@@ -48,7 +48,7 @@ export default function ScenarioBuilder({ scenario, onChange, onStart }: Scenari
   const equipmentBySlot = (slot: BodySlot): EquipmentDefinition[] =>
     EQUIPMENT.filter(e => e.slot === slot)
 
-  const allEnemyDefs = [...ACT1_ENEMIES, ...ACT1_ELITES, ACT1_BOSS]
+  const allEnemyDefs = [...SECTOR1_ENEMIES, ...SECTOR1_ELITES, SECTOR1_BOSS]
   const allCardDefs = Object.values(ALL_CARDS)
 
   const setEquipment = (slot: BodySlot, id: string | null) => {
@@ -66,7 +66,7 @@ export default function ScenarioBuilder({ scenario, onChange, onStart }: Scenari
 
   const addEnemy = () => {
     if (scenario.enemies.length >= 3) return
-    onChange({ ...scenario, enemies: [...scenario.enemies, ACT1_ENEMIES[0]] })
+    onChange({ ...scenario, enemies: [...scenario.enemies, SECTOR1_ENEMIES[0]] })
   }
 
   const removeEnemy = (index: number) => {
@@ -131,17 +131,17 @@ export default function ScenarioBuilder({ scenario, onChange, onStart }: Scenari
               style={{ ...selectStyle, flex: 1 }}
             >
               <optgroup label="Standard">
-                {ACT1_ENEMIES.map(e => (
+                {SECTOR1_ENEMIES.map(e => (
                   <option key={e.id} value={e.id}>{e.name} (HP {e.maxHealth})</option>
                 ))}
               </optgroup>
               <optgroup label="Elite">
-                {ACT1_ELITES.map(e => (
+                {SECTOR1_ELITES.map(e => (
                   <option key={e.id} value={e.id}>{e.name} (HP {e.maxHealth})</option>
                 ))}
               </optgroup>
               <optgroup label="Boss">
-                <option value={ACT1_BOSS.id}>{ACT1_BOSS.name} (HP {ACT1_BOSS.maxHealth})</option>
+                <option value={SECTOR1_BOSS.id}>{SECTOR1_BOSS.name} (HP {SECTOR1_BOSS.maxHealth})</option>
               </optgroup>
             </select>
             {scenario.enemies.length > 1 && (

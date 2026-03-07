@@ -34,19 +34,19 @@ The maze SHALL contain distinct room types that create varied pacing and decisio
 - **WHEN** Still enters a boss room
 - **THEN** a uniquely named enemy with high health, multiple phases or abilities, and a special reward pool is encountered
 
-### Requirement: Act structure maps to narrative arc
-The maze SHALL be divided into acts that correspond to the game's narrative arc. Act 1 is survival-focused. Act 2 introduces wonder and curiosity. Act 3 is purposeful.
+### Requirement: Sector structure maps to narrative arc
+The maze SHALL be divided into sectors that correspond to the game's narrative arc. Sector 1 is survival-focused. Sector 2 introduces wonder and curiosity. Sector 3 is purposeful.
 
-#### Scenario: Act 1 tone
-- **WHEN** the player is in Act 1
+#### Scenario: Sector 1 tone
+- **WHEN** the player is in Sector 1
 - **THEN** the environment feels disorienting — sparse, grey, unknown — and enemy types are basic
 
-#### Scenario: Act 2 tone
-- **WHEN** the player reaches Act 2
+#### Scenario: Sector 2 tone
+- **WHEN** the player reaches Sector 2
 - **THEN** the environment begins to show signs of life — dim light, occasional warmth — and still begins to observe its surroundings in brief narrative moments
 
-#### Scenario: Act 3 tone
-- **WHEN** the player reaches Act 3
+#### Scenario: Sector 3 tone
+- **WHEN** the player reaches Sector 3
 - **THEN** the environment has changed — not safe, but meaningful — and Still moves with intention rather than just survival
 
 ### Requirement: Fog of war on the map

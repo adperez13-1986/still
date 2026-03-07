@@ -5,7 +5,7 @@ Workshop upgrades SHALL affect Still's starting state in future runs, adapted fo
 
 #### Scenario: Starting deck upgrade
 - **WHEN** the player purchases a "Practiced Routine" upgrade
-- **THEN** all future runs begin with one additional modifier card from the Act 1 pool already in the starting deck (randomly selected at run start)
+- **THEN** all future runs begin with one additional modifier card from the Sector 1 pool already in the starting deck (randomly selected at run start)
 
 #### Scenario: Shard bonus upgrade
 - **WHEN** the player purchases a "Sharp Eye" upgrade

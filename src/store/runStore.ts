@@ -74,7 +74,7 @@ interface RunActions {
 
 const emptyRunState: RunState = {
   active: false,
-  act: 1,
+  sector: 1,
   map: null,
   health: 70,
   maxHealth: 70,

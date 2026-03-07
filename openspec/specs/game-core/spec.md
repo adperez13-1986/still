@@ -24,7 +24,7 @@ Combat SHALL follow a three-phase turn structure: planning phase (player assigns
 - **THEN** Hot damage penalty applies (3 damage if Heat 8-9), status effect durations decrement, remaining hand is discarded, and win/loss is checked before the next turn
 
 ### Requirement: Run structure
-The game SHALL be organized into discrete runs. Each run begins with Still in an initial state and ends when Still reaches the final room of the current act or is defeated. A run consists of navigating the maze room by room, engaging in encounters, and collecting rewards.
+The game SHALL be organized into discrete runs. Each run begins with Still in an initial state and ends when Still reaches the final room of the current sector or is defeated. A run consists of navigating the maze room by room, engaging in encounters, and collecting rewards.
 
 #### Scenario: Starting a new run
 - **WHEN** the player starts a new run
@@ -35,7 +35,7 @@ The game SHALL be organized into discrete runs. Each run begins with Still in an
 - **THEN** the run ends, the defeat screen is shown, persistent resources earned during the run are saved, and the player is returned to the home base
 
 #### Scenario: Run ends in victory
-- **WHEN** Still clears the final room of the act
+- **WHEN** Still clears the final room of the sector
 - **THEN** the run ends, the victory screen is shown with a personal encouragement message, and all persistent rewards are saved
 
 ### Requirement: Win and loss conditions per combat

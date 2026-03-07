@@ -108,7 +108,7 @@ const diagnostics: ModifierCardDefinition = {
   },
 }
 
-// ─── Act 1 Modifier Card Pool ───────────────────────────────────────────────
+// ─── Sector 1 Modifier Card Pool ───────────────────────────────────────────────
 
 const overcharge: ModifierCardDefinition = {
   id: 'overcharge',
@@ -686,7 +686,7 @@ export const STARTING_CARDS: ModifierCardDefinition[] = [
   diagnostics,
 ]
 
-export const ACT1_CARD_POOL: ModifierCardDefinition[] = [
+export const SECTOR1_CARD_POOL: ModifierCardDefinition[] = [
   overcharge, spreadShot, echoProtocol, shieldBash, emergencyShield,
   deepFreeze, heatVent, quickScan, thermalSurge, meltdown,
   fieldRepair, targetLock,

@@ -27,7 +27,7 @@ export const RUN_END_MESSAGES = {
   ],
 }
 
-// ─── Act 1 Event Vignettes ───────────────────────────────────────────────────
+// ─── Sector 1 Event Vignettes ───────────────────────────────────────────────────
 
 export interface EventChoice {
   text: string
@@ -45,7 +45,7 @@ export interface EventVignette {
   choices: EventChoice[]
 }
 
-export const ACT1_EVENTS: EventVignette[] = [
+export const SECTOR1_EVENTS: EventVignette[] = [
   {
     id: 'rusted-door',
     title: 'A Rusted Door',
@@ -123,9 +123,9 @@ export const ACT1_EVENTS: EventVignette[] = [
   },
 ]
 
-// ─── Act 2 Event Vignettes ───────────────────────────────────────────────────
+// ─── Sector 2 Event Vignettes ───────────────────────────────────────────────────
 
-export const ACT2_EVENTS: EventVignette[] = [
+export const SECTOR2_EVENTS: EventVignette[] = [
   {
     id: 'known-corridor',
     title: 'A Known Corridor',
@@ -213,7 +213,7 @@ export const GRACE_LINES = [
   'Still going. I knew you would be.',
 ]
 
-// ─── Act 2: Name Discovery Event ─────────────────────────────────────────────
+// ─── Sector 2: Name Discovery Event ─────────────────────────────────────────────
 
 export const NAME_DISCOVERY_EVENT: EventVignette = {
   id: 'name-discovery',

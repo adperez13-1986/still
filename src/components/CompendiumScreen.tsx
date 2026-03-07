@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ACT1_CARD_POOL, STARTING_CARDS, ALL_CARDS } from '../data/cards'
+import { SECTOR1_CARD_POOL, STARTING_CARDS, ALL_CARDS } from '../data/cards'
 import { EQUIPMENT, BEHAVIORAL_PARTS } from '../data/parts'
-import { ACT1_ENEMIES, ACT1_ELITES, ACT1_BOSS } from '../data/enemies'
+import { SECTOR1_ENEMIES, SECTOR1_ELITES, SECTOR1_BOSS } from '../data/enemies'
 import type { ModifierCardDefinition, EnemyDefinition } from '../game/types'
 
 const TABS = ['Cards', 'Equipment', 'Mods', 'Bestiary'] as const
@@ -97,7 +97,7 @@ const uniqueStarting = STARTING_CARDS.filter(
 )
 const allUniqueCards = [
   ...uniqueStarting,
-  ...ACT1_CARD_POOL.filter((c) => !uniqueStarting.some((s) => s.id === c.id)),
+  ...SECTOR1_CARD_POOL.filter((c) => !uniqueStarting.some((s) => s.id === c.id)),
 ]
 // Add companion cards
 const companionIds = Object.keys(ALL_CARDS).filter(
@@ -110,8 +110,8 @@ function CardsTab() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
       <h4 style={sectionHeaderStyle}>STARTING</h4>
       {uniqueStarting.map((c) => <CardEntry key={c.id} card={c} />)}
-      <h4 style={sectionHeaderStyle}>ACT 1 POOL</h4>
-      {ACT1_CARD_POOL.map((c) => <CardEntry key={c.id} card={c} />)}
+      <h4 style={sectionHeaderStyle}>SECTOR 1 POOL</h4>
+      {SECTOR1_CARD_POOL.map((c) => <CardEntry key={c.id} card={c} />)}
       {companionCards.length > 0 && (
         <>
           <h4 style={sectionHeaderStyle}>COMPANIONS</h4>
@@ -223,11 +223,11 @@ function BestiaryTab() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
       <h4 style={sectionHeaderStyle}>STANDARD</h4>
-      {ACT1_ENEMIES.map((e) => <EnemyEntry key={e.id} enemy={e} />)}
+      {SECTOR1_ENEMIES.map((e) => <EnemyEntry key={e.id} enemy={e} />)}
       <h4 style={sectionHeaderStyle}>ELITE</h4>
-      {ACT1_ELITES.map((e) => <EnemyEntry key={e.id} enemy={e} />)}
+      {SECTOR1_ELITES.map((e) => <EnemyEntry key={e.id} enemy={e} />)}
       <h4 style={sectionHeaderStyle}>BOSS</h4>
-      <EnemyEntry enemy={ACT1_BOSS} />
+      <EnemyEntry enemy={SECTOR1_BOSS} />
     </div>
   )
 }
