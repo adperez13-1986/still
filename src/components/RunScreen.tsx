@@ -61,8 +61,6 @@ export default function RunScreen() {
       const picked = nonBasics[Math.floor(Math.random() * nonBasics.length)]
       if (picked) starterDeck.push(makeCardInstance(picked.id))
     }
-    const bonusHealth = permanent.workshopUpgrades['reinforced-chassis'] ? 15 : 0
-
     // Starting equipment
     const startingEquipment: import('../game/types').RunState['equipment'] = {
       Head: null,
@@ -76,7 +74,7 @@ export default function RunScreen() {
     }
 
     const map = generateMap(1)
-    const startMaxHealth = 70 + bonusHealth + sumBonus('health')
+    const startMaxHealth = 70 + sumBonus('health')
 
     run.startRun({
       act: 1,

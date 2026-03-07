@@ -13,7 +13,6 @@ export const defaultPermanent: PermanentState = {
   fragmentsAccumulated: 0,
   lastSeenTimestamp: Date.now(),
   workshopUpgrades: {
-    'reinforced-chassis': false,
     'practiced-routine': false,
     'sharp-eye': false,
     'fragment-cap': false,
@@ -103,7 +102,6 @@ export const usePermanentStore = create<PermanentState & PermanentActions>()(
     purchaseUpgrade: (id) => {
       const state = get()
       const upgradeCosts: Record<WorkshopUpgradeId, number> = {
-        'reinforced-chassis': 50,
         'practiced-routine': 75,
         'sharp-eye': 40,
         'fragment-cap': 60,

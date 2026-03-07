@@ -26,7 +26,6 @@ const COMPANIONS = [
 ]
 
 const UPGRADES: Array<{ id: WorkshopUpgradeId; name: string; description: string; cost: number }> = [
-  { id: 'reinforced-chassis', name: 'Reinforced Chassis', description: 'Start each run with +15 max health.', cost: 50 },
   { id: 'practiced-routine', name: 'Practiced Routine', description: 'Start each run with an extra non-basic card.', cost: 75 },
   { id: 'sharp-eye', name: 'Sharp Eye', description: 'Earn 20% more shards from enemies.', cost: 40 },
   { id: 'fragment-cap', name: 'Fragment Reservoir', description: 'Increase max offline fragment accumulation by 50%.', cost: 60 },

@@ -264,7 +264,6 @@ export interface FragmentBonus {
 // ─── Permanent State ─────────────────────────────────────────────────────────
 
 export type WorkshopUpgradeId =
-  | 'reinforced-chassis'
   | 'practiced-routine'
   | 'sharp-eye'
   | 'fragment-cap'

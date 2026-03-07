@@ -3,10 +3,6 @@
 ### Requirement: Workshop upgrades improve starting conditions
 Workshop upgrades SHALL affect Still's starting state in future runs, adapted for the body-driven combat model. In addition to permanent upgrades, the Workshop serves as a hub for spending permanent shards on maintenance actions such as repairing a broken carried part. The run state SHALL include an `equipPity` counter for equipment drop bad luck protection.
 
-#### Scenario: Starting health upgrade
-- **WHEN** the player purchases a "Reinforced Chassis" upgrade
-- **THEN** all future runs begin with increased max health (+15)
-
 #### Scenario: Starting deck upgrade
 - **WHEN** the player purchases a "Practiced Routine" upgrade
 - **THEN** all future runs begin with one additional modifier card from the Act 1 pool already in the starting deck (randomly selected at run start)
