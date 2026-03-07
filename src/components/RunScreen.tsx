@@ -66,13 +66,13 @@ export default function RunScreen() {
     // Starting equipment
     const startingEquipment: import('../game/types').RunState['equipment'] = {
       Head: null,
-      Torso: STARTING_TORSO,
-      Arms: null,
+      Torso: null,
+      Arms: STARTING_ARMS,
       Legs: null,
     }
-    // "Extra Slot" workshop upgrade: equip Piston Arm in Arms slot
+    // "Extra Slot" workshop upgrade: equip Scrap Plating in Torso slot
     if (permanent.workshopUpgrades['starting-slot']) {
-      startingEquipment.Arms = STARTING_ARMS
+      startingEquipment.Torso = STARTING_TORSO
     }
 
     const map = generateMap(1)

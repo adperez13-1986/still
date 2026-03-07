@@ -19,9 +19,9 @@ Workshop upgrades SHALL affect Still's starting state in future runs, adapted fo
 - **WHEN** the player purchases a "Fragment Reservoir" upgrade
 - **THEN** the offline fragment accumulation cap is extended by 50%
 
-#### Scenario: Extra Slot upgrade replaces starting equipment
+#### Scenario: Extra Slot upgrade adds starting Torso
 - **WHEN** the player purchases an "Extra Slot" upgrade
-- **THEN** all future runs begin with a basic ARMS equipment item (Piston Arm) pre-equipped in addition to the starting Torso, giving the player a damage-dealing body action from the start
+- **THEN** all future runs begin with a basic TORSO equipment item (Scrap Plating) pre-equipped in addition to the starting Arms, giving the player defensive block from body actions
 
 #### Scenario: Permanent shards used for carried part repair
 - **WHEN** the player has a broken carried part and enough permanent shards

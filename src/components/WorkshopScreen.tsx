@@ -30,7 +30,7 @@ const UPGRADES: Array<{ id: WorkshopUpgradeId; name: string; description: string
   { id: 'practiced-routine', name: 'Practiced Routine', description: 'Start each run with an extra non-basic card.', cost: 75 },
   { id: 'sharp-eye', name: 'Sharp Eye', description: 'Earn 20% more shards from enemies.', cost: 40 },
   { id: 'fragment-cap', name: 'Fragment Reservoir', description: 'Increase max offline fragment accumulation by 50%.', cost: 60 },
-  { id: 'starting-slot', name: 'Extra Slot', description: 'Start each run with an equipable slot pre-filled.', cost: 100 },
+  { id: 'starting-slot', name: 'Extra Slot', description: 'Start each run with Torso (Scrap Plating) pre-equipped.', cost: 100 },
 ]
 
 export default function WorkshopScreen() {
