@@ -91,6 +91,7 @@ export default function RunScreen() {
       shards: sumBonus('shards'),
       combat: null,
       nameDiscovered: permanent.nameEverDiscovered,
+      equipPity: 0,
     })
   }, [])
 

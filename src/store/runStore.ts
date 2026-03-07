@@ -86,6 +86,7 @@ const emptyRunState: RunState = {
   shards: 0,
   combat: null,
   nameDiscovered: false,
+  equipPity: 0,
 }
 
 function calcBlockAbsorb(block: number, damage: number): { newBlock: number; healthDamage: number } {

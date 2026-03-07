@@ -53,7 +53,12 @@ function resolveBonusDrop(entry: DropPool): ResolvedDrop[] {
   return []
 }
 
-export function resolveDrops(dropPool: DropPool[]): ResolvedDrop[] {
+export interface DropResult {
+  drops: ResolvedDrop[]
+  droppedEquipment: boolean
+}
+
+export function resolveDrops(dropPool: DropPool[], equipPity = 0): DropResult {
   const shardEntries = dropPool.filter((d) => d.type === 'shards')
   const bonusEntries = dropPool.filter((d) => d.type !== 'shards')
 
@@ -67,12 +72,27 @@ export function resolveDrops(dropPool: DropPool[]): ResolvedDrop[] {
     results.push({ type: 'shards', amount: 5 })
   }
 
-  // Roll for a bonus drop from non-shard entries
-  if (bonusEntries.length > 0) {
-    const weighted = bonusEntries.map((d) => ({ value: d, weight: d.weight }))
+  // Build weighted bonus entries with pity boost for equipment
+  let entries = [...bonusEntries]
+
+  // If no equipment entry exists and pity >= 2, inject a generic one
+  const hasEquipEntry = entries.some((d) => d.type === 'equipment')
+  if (!hasEquipEntry && equipPity >= 2) {
+    entries.push({ type: 'equipment', weight: 0 })
+  }
+
+  // Boost equipment weights by pity
+  const weighted = entries.map((d) => ({
+    value: d,
+    weight: d.type === 'equipment' ? d.weight + equipPity : d.weight,
+  }))
+
+  // Roll for a bonus drop
+  if (weighted.length > 0) {
     const chosen = weightedRandom(weighted)
     results.push(...resolveBonusDrop(chosen))
   }
 
-  return results
+  const droppedEquipment = results.some((r) => r.type === 'equipment')
+  return { drops: results, droppedEquipment }
 }

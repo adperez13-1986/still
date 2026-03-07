@@ -236,6 +236,7 @@ export interface RunState {
   shards: number
   combat: CombatState | null
   nameDiscovered: boolean
+  equipPity: number
 }
 
 // ─── Carried Part ─────────────────────────────────────────────────────────────

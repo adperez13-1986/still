@@ -107,10 +107,13 @@ export default function CombatScreen() {
   if (combat?.phase === 'reward') {
     // Calculate drops from defeated enemies
     const defeatedEnemies = combat.enemies.filter(e => e.isDefeated)
+    let anyEquipDropped = false
     const allDrops = defeatedEnemies.flatMap(e => {
       const def = ALL_ENEMIES[e.definitionId]
       if (!def?.dropPool.length) return []
-      return resolveDrops(def.dropPool)
+      const result = resolveDrops(def.dropPool, run.equipPity)
+      if (result.droppedEquipment) anyEquipDropped = true
+      return result.drops
     })
 
     // Auto-collect shards
@@ -155,6 +158,11 @@ export default function CombatScreen() {
           if (cardId) {
             run.addCardToDeck(makeCardInstance(cardId))
           }
+          // Update equipment pity counter
+          useRunStore.setState((s) => ({
+            ...s,
+            equipPity: anyEquipDropped ? 0 : s.equipPity + 1,
+          }))
           // Decrement carried part durability
           if (permanent.carriedPart && permanent.carriedPart.durability > 0) {
             permanent.updateCarriedPart({ durability: permanent.carriedPart.durability - 1 })
