@@ -1,91 +1,215 @@
-import type { MapGraph, Room, RoomType } from '../game/types'
+import type { GridMaze, GridRoom, GridRoomType } from '../game/types'
 
-function uuid() {
-  return Math.random().toString(36).slice(2, 10)
+const GRID_SIZE = 7
+
+// Recursive backtracker maze generation
+// Works on a grid where odd coordinates are cells and even coordinates are walls/passages
+// We use a (GRID_SIZE) x (GRID_SIZE) output grid where cells are carved out of solid walls
+
+type Dir = [number, number]
+const DIRS: Dir[] = [[0, -1], [1, 0], [0, 1], [-1, 0]] // up, right, down, left
+
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
 }
 
-type ExtendedRoomType = RoomType | 'Elite'
-
-// Guaranteed room type distribution per sector
-const SECTOR_ROOM_DISTRIBUTION: ExtendedRoomType[][] = [
-  // Layer 0: always Start (combat)
-  ['Combat'],
-  // Layers 1-2
-  ['Combat', 'Combat', 'Event'],
-  ['Combat', 'Rest', 'Shop'],
-  // Layer 3
-  ['Combat', 'Combat', 'Event'],
-  // Layer 4
-  ['Combat', 'Combat', 'Rest'],
-  // Layer 5: pre-boss
-  ['Shop', 'Event', 'Combat'],
-  // Layer 6: Boss
-  ['Boss'],
-]
-
-// Each layer has 1-3 rooms; we pick how many paths branch
-const LAYER_WIDTHS = [1, 2, 3, 2, 2, 2, 1]
-
-function pickRoomType(layer: number, slot: number): RoomType {
-  const dist = SECTOR_ROOM_DISTRIBUTION[layer] ?? ['Combat']
-  const t = dist[slot % dist.length]
-  // Treat 'Elite' as Combat room (elite flag set on enemy, not room)
-  return t === 'Elite' ? 'Combat' : t
+function carve(grid: boolean[][], cx: number, cy: number) {
+  grid[cy][cx] = true
+  for (const [dx, dy] of shuffle(DIRS)) {
+    const nx = cx + dx * 2
+    const ny = cy + dy * 2
+    if (nx >= 0 && nx < GRID_SIZE && ny >= 0 && ny < GRID_SIZE && !grid[ny][nx]) {
+      // Carve the wall between current and neighbor
+      grid[cy + dy][cx + dx] = true
+      carve(grid, nx, ny)
+    }
+  }
 }
 
-export function generateMap(sector: 1 | 2 | 3): MapGraph {
-  const rooms: Record<string, Room> = {}
-  const layers: string[][] = []
+function bfsDistances(grid: boolean[][], startX: number, startY: number): number[][] {
+  const dist: number[][] = Array.from({ length: GRID_SIZE }, () =>
+    Array(GRID_SIZE).fill(-1)
+  )
+  dist[startY][startX] = 0
+  const queue: [number, number][] = [[startX, startY]]
+  let head = 0
+  while (head < queue.length) {
+    const [x, y] = queue[head++]
+    for (const [dx, dy] of DIRS) {
+      const nx = x + dx
+      const ny = y + dy
+      if (
+        nx >= 0 && nx < GRID_SIZE &&
+        ny >= 0 && ny < GRID_SIZE &&
+        grid[ny][nx] &&
+        dist[ny][nx] === -1
+      ) {
+        dist[ny][nx] = dist[y][x] + 1
+        queue.push([nx, ny])
+      }
+    }
+  }
+  return dist
+}
 
-  // Build layers
-  for (let layer = 0; layer < LAYER_WIDTHS.length; layer++) {
-    const width = LAYER_WIDTHS[layer]
-    const layerIds: string[] = []
-    for (let slot = 0; slot < width; slot++) {
-      const id = uuid()
-      const type = pickRoomType(layer, slot)
-      rooms[id] = {
-        id,
-        type,
+function countWalkableNeighbors(grid: boolean[][], x: number, y: number): number {
+  let count = 0
+  for (const [dx, dy] of DIRS) {
+    const nx = x + dx
+    const ny = y + dy
+    if (nx >= 0 && nx < GRID_SIZE && ny >= 0 && ny < GRID_SIZE && grid[ny][nx]) {
+      count++
+    }
+  }
+  return count
+}
+
+export function generateGridMaze(sector: 1 | 2 | 3): GridMaze {
+  // Step 1: Generate maze using recursive backtracker
+  // Start carving from (0, 0) — top-left, using only even coordinates as cells
+  // But for a 7x7 grid, we treat all cells directly and carve passages between them
+  const walkable: boolean[][] = Array.from({ length: GRID_SIZE }, () =>
+    Array(GRID_SIZE).fill(false)
+  )
+
+  // Start from (0, 0) for top-left bias
+  carve(walkable, 0, 0)
+
+  // Step 2: BFS from start to get distances
+  const startX = 0
+  const startY = 0
+  const dist = bfsDistances(walkable, startX, startY)
+
+  // Step 3: Find farthest tile for Boss
+  let bossX = 0
+  let bossY = 0
+  let maxDist = 0
+  for (let y = 0; y < GRID_SIZE; y++) {
+    for (let x = 0; x < GRID_SIZE; x++) {
+      if (dist[y][x] > maxDist) {
+        maxDist = dist[y][x]
+        bossX = x
+        bossY = y
+      }
+    }
+  }
+
+  // Step 4: Classify tiles
+  const deadEnds: [number, number][] = []
+  const junctions: [number, number][] = []
+  const corridors: [number, number][] = []
+
+  for (let y = 0; y < GRID_SIZE; y++) {
+    for (let x = 0; x < GRID_SIZE; x++) {
+      if (!walkable[y][x]) continue
+      if (x === startX && y === startY) continue
+      if (x === bossX && y === bossY) continue
+      const neighbors = countWalkableNeighbors(walkable, x, y)
+      if (neighbors === 1) {
+        deadEnds.push([x, y])
+      } else if (neighbors >= 3) {
+        junctions.push([x, y])
+      } else {
+        corridors.push([x, y])
+      }
+    }
+  }
+
+  // Step 5: Assign room types
+  const typeMap: Map<string, GridRoomType> = new Map()
+  const key = (x: number, y: number) => `${x},${y}`
+
+  // Boss
+  typeMap.set(key(bossX, bossY), 'Boss')
+  // Start is empty corridor
+  typeMap.set(key(startX, startY), 'Empty')
+
+  // Event rooms: 1-2 at dead ends
+  const shuffledDeadEnds = shuffle(deadEnds)
+  const eventCount = Math.min(shuffledDeadEnds.length, 1 + (Math.random() < 0.5 ? 1 : 0))
+  for (let i = 0; i < eventCount; i++) {
+    const [x, y] = shuffledDeadEnds[i]
+    typeMap.set(key(x, y), 'Event')
+  }
+
+  // Rest rooms: 1-2 at junctions (not dead ends)
+  const shuffledJunctions = shuffle(junctions)
+  const restCount = Math.min(shuffledJunctions.length, 1 + (Math.random() < 0.5 ? 1 : 0))
+  let jIdx = 0
+  for (let i = 0; i < restCount && jIdx < shuffledJunctions.length; jIdx++) {
+    const [x, y] = shuffledJunctions[jIdx]
+    if (!typeMap.has(key(x, y))) {
+      typeMap.set(key(x, y), 'Rest')
+      i++
+    }
+  }
+
+  // Shop: 1 at mid-distance from start
+  const midDist = Math.floor(maxDist / 2)
+  const midCandidates = shuffle([...corridors, ...junctions].filter(([x, y]) => {
+    if (typeMap.has(key(x, y))) return false
+    const d = dist[y][x]
+    return d >= midDist - 2 && d <= midDist + 2
+  }))
+  if (midCandidates.length > 0) {
+    const [x, y] = midCandidates[0]
+    typeMap.set(key(x, y), 'Shop')
+  }
+
+  // Combat rooms: 8-10 on remaining unassigned walkable tiles
+  const unassigned = shuffle([
+    ...deadEnds.filter(([x, y]) => !typeMap.has(key(x, y))),
+    ...junctions.filter(([x, y]) => !typeMap.has(key(x, y))),
+    ...corridors.filter(([x, y]) => !typeMap.has(key(x, y))),
+  ])
+  const combatTarget = 8 + Math.floor(Math.random() * 3) // 8-10
+  const combatCount = Math.min(unassigned.length, combatTarget)
+  for (let i = 0; i < combatCount; i++) {
+    const [x, y] = unassigned[i]
+    typeMap.set(key(x, y), 'Combat')
+  }
+
+  // Everything else is Empty corridor
+  for (let y = 0; y < GRID_SIZE; y++) {
+    for (let x = 0; x < GRID_SIZE; x++) {
+      if (walkable[y][x] && !typeMap.has(key(x, y))) {
+        typeMap.set(key(x, y), 'Empty')
+      }
+    }
+  }
+
+  // Step 6: Build GridMaze
+  const grid: (GridRoom | null)[][] = Array.from({ length: GRID_SIZE }, () =>
+    Array(GRID_SIZE).fill(null)
+  )
+  for (let y = 0; y < GRID_SIZE; y++) {
+    for (let x = 0; x < GRID_SIZE; x++) {
+      if (!walkable[y][x]) continue
+      const roomType = typeMap.get(key(x, y)) ?? 'Empty'
+      grid[y][x] = {
+        type: roomType,
         sector,
-        connections: [],
-        visited: false,
-      }
-      layerIds.push(id)
-    }
-    layers.push(layerIds)
-  }
-
-  // Wire connections: each room connects to 1-2 rooms in the next layer
-  for (let layer = 0; layer < layers.length - 1; layer++) {
-    const current = layers[layer]
-    const next = layers[layer + 1]
-    for (let i = 0; i < current.length; i++) {
-      const roomId = current[i]
-      // Always connect to aligned next room
-      const primaryIdx = Math.floor((i / current.length) * next.length)
-      rooms[roomId].connections.push(next[primaryIdx])
-      // Sometimes connect to an adjacent next room
-      if (next.length > 1 && Math.random() < 0.4) {
-        const altIdx = (primaryIdx + 1) % next.length
-        if (!rooms[roomId].connections.includes(next[altIdx])) {
-          rooms[roomId].connections.push(next[altIdx])
-        }
-      }
-    }
-    // Ensure every next-layer room is reachable
-    for (const nextId of next) {
-      const reachable = current.some((id) => rooms[id].connections.includes(nextId))
-      if (!reachable) {
-        const sourceId = current[Math.floor(Math.random() * current.length)]
-        rooms[sourceId].connections.push(nextId)
+        visited: x === startX && y === startY,
+        cleared: roomType === 'Empty',
+        x,
+        y,
       }
     }
   }
 
-  const startRoomId = layers[0][0]
-  const bossRoomId = layers[layers.length - 1][0]
-  rooms[startRoomId].visited = true
-
-  return { rooms, startRoomId, currentRoomId: startRoomId, bossRoomId }
+  return {
+    grid,
+    startX,
+    startY,
+    playerX: startX,
+    playerY: startY,
+    bossX,
+    bossY,
+    sector,
+  }
 }

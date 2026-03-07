@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
-import type { Room, FragmentBonus, BehavioralPartDefinition } from '../game/types'
+import type { GridRoom, FragmentBonus, BehavioralPartDefinition } from '../game/types'
 import { useRunStore } from '../store/runStore'
 import { usePermanentStore } from '../store/permanentStore'
 import MapScreen from './MapScreen'
@@ -9,13 +9,13 @@ import RestScreen from './RestScreen'
 import ShopScreen from './ShopScreen'
 import EventScreen from './EventScreen'
 import RunInfoOverlay from './RunInfoOverlay'
-import { generateMap } from '../game/mapGen'
+import { generateGridMaze } from '../game/mapGen'
 import { makeEnemyInstance, makeCardInstance } from '../game/combat'
 import { SECTOR1_ENEMIES, SECTOR1_BOSS } from '../data/enemies'
 import { STARTING_CARDS, SECTOR1_CARD_POOL, yanah, yuri } from '../data/cards'
 import { ALL_PARTS, STARTING_TORSO, STARTING_ARMS } from '../data/parts'
 
-function pickEnemiesForRoom(room: Room, _sector: number) {
+function pickEnemiesForRoom(room: GridRoom, _sector: number) {
   if (room.type === 'Boss') return [makeEnemyInstance(SECTOR1_BOSS)]
   const pool = SECTOR1_ENEMIES
   const count = Math.random() < 0.3 ? 2 : 1
@@ -73,7 +73,7 @@ export default function RunScreen() {
       startingEquipment.Torso = STARTING_TORSO
     }
 
-    const map = generateMap(1)
+    const map = generateGridMaze(1)
     const startMaxHealth = 70 + sumBonus('health')
 
     run.startRun({
@@ -106,25 +106,28 @@ export default function RunScreen() {
     return <CombatScreen />
   }
 
-  const currentRoom = run.map.rooms[run.map.currentRoomId]
+  const currentRoom = run.map.grid[run.map.playerY][run.map.playerX]
 
-  const handleRoomSelect = (roomId: string) => {
+  const handleTileSelect = (x: number, y: number) => {
     setRoomDone(false)
-    run.moveToRoom(roomId)
-    const room = run.map!.rooms[roomId]
-    if (!room) return
+    run.moveToTile(x, y)
+    const tile = run.map!.grid[y][x]
+    if (!tile || tile.cleared) return
 
-    if (room.type === 'Combat' || room.type === 'Boss') {
-      const enemies = pickEnemiesForRoom(room, run.sector)
+    if (tile.type === 'Combat' || tile.type === 'Boss') {
+      const enemies = pickEnemiesForRoom(tile, run.sector)
       run.startCombat(enemies)
     }
   }
 
-  const finishRoom = () => setRoomDone(true)
+  const finishRoom = () => {
+    run.clearCurrentRoom()
+    setRoomDone(true)
+  }
 
   const mapWithOverlay = (
     <>
-      <MapScreen map={run.map} onRoomSelect={handleRoomSelect} />
+      <MapScreen map={run.map} onTileSelect={handleTileSelect} />
       {brokenCarryNotice && (
         <div style={{
           position: 'fixed',
@@ -217,8 +220,8 @@ export default function RunScreen() {
     </>
   )
 
-  // Show map when room is done or no special room is active
-  if (roomDone || !currentRoom || currentRoom.type === 'Combat' || currentRoom.type === 'Boss') {
+  // Show map when room is done, no room, empty corridor, cleared, or combat/boss type
+  if (roomDone || !currentRoom || currentRoom.type === 'Empty' || currentRoom.cleared || currentRoom.type === 'Combat' || currentRoom.type === 'Boss') {
     return mapWithOverlay
   }
 

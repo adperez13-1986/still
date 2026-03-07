@@ -9,7 +9,7 @@ import type {
   EnemyInstance,
   CombatPhase,
   CombatState,
-  MapGraph,
+  GridMaze,
 } from '../game/types'
 
 import {
@@ -65,8 +65,9 @@ interface RunActions {
   applyCombatResult: (combat: CombatState, stillHealth: number) => void
 
   // Map
-  setMap: (map: MapGraph) => void
-  moveToRoom: (roomId: string) => void
+  setMap: (map: GridMaze) => void
+  moveToTile: (x: number, y: number) => void
+  clearCurrentRoom: () => void
 
   // Narrative
   discoverName: () => void
@@ -365,12 +366,37 @@ export const useRunStore = create<RunState & RunActions>()(
         state.map = map
       }),
 
-    moveToRoom: (roomId) =>
+    moveToTile: (x, y) =>
       set((state) => {
         if (!state.map) return
-        state.map.currentRoomId = roomId
-        const room = state.map.rooms[roomId]
-        if (room) room.visited = true
+        const { playerX, playerY, grid } = state.map
+        // Validate adjacency (4-directional only)
+        const dx = Math.abs(x - playerX)
+        const dy = Math.abs(y - playerY)
+        if (dx + dy !== 1) return
+        // Validate walkable
+        if (y < 0 || y >= grid.length || x < 0 || x >= grid[0].length) return
+        const tile = grid[y][x]
+        if (!tile) return
+        // Move player
+        state.map.playerX = x
+        state.map.playerY = y
+        tile.visited = true
+        // Reveal 8-directional neighbors (fog of war)
+        for (let ry = y - 1; ry <= y + 1; ry++) {
+          for (let rx = x - 1; rx <= x + 1; rx++) {
+            if (ry < 0 || ry >= grid.length || rx < 0 || rx >= grid[0].length) continue
+            // Revealed state is implicit: a tile with visited=false that is adjacent
+            // to any visited tile is "revealed". No extra flag needed — computed in UI.
+          }
+        }
+      }),
+
+    clearCurrentRoom: () =>
+      set((state) => {
+        if (!state.map) return
+        const tile = state.map.grid[state.map.playerY][state.map.playerX]
+        if (tile) tile.cleared = true
       }),
 
     discoverName: () =>

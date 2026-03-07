@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { SECTOR1_EVENTS, SECTOR2_EVENTS, NAME_DISCOVERY_EVENT } from '../data/narrative'
-import type { Room } from '../game/types'
+import type { GridRoom } from '../game/types'
 import type { EventChoice } from '../data/narrative'
 
 interface Props {
-  room: Room
+  room: GridRoom
   nameDiscovered: boolean
   onChoice: (outcome: EventChoice['outcome']) => void
 }

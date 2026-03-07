@@ -194,8 +194,14 @@ export default function CombatScreen() {
               })
               return
             }
-            // Normal combat end — return to map
-            useRunStore.setState((s) => ({ ...s, combat: null }))
+            // Normal combat end — mark room cleared and return to map
+            useRunStore.setState((s) => {
+              if (s.map) {
+                const tile = s.map.grid[s.map.playerY][s.map.playerX]
+                if (tile) tile.cleared = true
+              }
+              return { ...s, combat: null }
+            })
           }
 
           // If there are equipment conflicts, show comparison overlay(s) before finishing

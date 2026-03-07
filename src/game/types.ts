@@ -196,22 +196,28 @@ export interface EnemyInstance {
 
 export type RoomType = 'Combat' | 'Rest' | 'Shop' | 'Event' | 'Boss'
 
-export interface Room {
-  id: string
-  type: RoomType
+export type GridRoomType = RoomType | 'Empty'
+
+export interface GridRoom {
+  type: GridRoomType
   sector: 1 | 2 | 3
-  enemyIds?: string[] // for Combat/Boss rooms
-  eventId?: string   // for Event rooms
-  connections: string[] // ids of next rooms
   visited: boolean
+  cleared: boolean
+  x: number
+  y: number
 }
 
-export interface MapGraph {
-  rooms: Record<string, Room>
-  startRoomId: string
-  currentRoomId: string
-  bossRoomId: string
+export interface GridMaze {
+  grid: (GridRoom | null)[][] // null = wall
+  startX: number
+  startY: number
+  playerX: number
+  playerY: number
+  bossX: number
+  bossY: number
+  sector: 1 | 2 | 3
 }
+
 
 // ─── Run State ───────────────────────────────────────────────────────────────
 
@@ -238,7 +244,7 @@ export interface CombatState {
 export interface RunState {
   active: boolean
   sector: 1 | 2 | 3
-  map: MapGraph | null
+  map: GridMaze | null
   health: number
   maxHealth: number
   drawCount: number

@@ -1,16 +1,5 @@
 ## ADDED Requirements
 
-### Requirement: Maze represented as a branching room graph
-The maze SHALL be represented as a directed graph of rooms with branching paths. The player chooses which path to take at each fork. The structure evokes feeling lost in a maze without requiring complex pathfinding or corridor rendering.
-
-#### Scenario: Player views the map
-- **WHEN** the player opens the map view
-- **THEN** they see a branching graph of rooms ahead, with their current position highlighted and fog obscuring distant rooms
-
-#### Scenario: Player chooses a path
-- **WHEN** the player is at a room with multiple forward paths
-- **THEN** they may select any adjacent room as their next destination; the choice is final
-
 ### Requirement: Room types
 The maze SHALL contain distinct room types that create varied pacing and decision-making.
 
@@ -48,10 +37,3 @@ The maze SHALL be divided into sectors that correspond to the game's narrative a
 #### Scenario: Sector 3 tone
 - **WHEN** the player reaches Sector 3
 - **THEN** the environment has changed — not safe, but meaningful — and Still moves with intention rather than just survival
-
-### Requirement: Fog of war on the map
-Rooms beyond the player's immediate next choices SHALL be obscured. The player cannot see the full map ahead — only the next layer of choices.
-
-#### Scenario: Fog prevents full planning
-- **WHEN** the player views the map
-- **THEN** only the current room and directly reachable next rooms are visible; further rooms show as unknown icons
