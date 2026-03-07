@@ -3,6 +3,7 @@ import { getHeatThreshold, HEAT_MAX } from '../game/types'
 interface Props {
   heat: number
   projectedHeat: number
+  nextRoundHeat?: number
 }
 
 function segmentColor(i: number): string {
@@ -12,9 +13,11 @@ function segmentColor(i: number): string {
   return '#27ae60'
 }
 
-export default function HeatTrack({ heat, projectedHeat }: Props) {
+export default function HeatTrack({ heat, projectedHeat, nextRoundHeat }: Props) {
   const threshold = getHeatThreshold(heat)
   const projectedThreshold = getHeatThreshold(projectedHeat)
+  const showProjection = projectedHeat !== heat
+  const showNextRound = nextRoundHeat != null && showProjection
 
   return (
     <div style={{
@@ -34,12 +37,24 @@ export default function HeatTrack({ heat, projectedHeat }: Props) {
           Heat: <span style={{ color: segmentColor(heat), fontWeight: 'bold' }}>{heat}/{HEAT_MAX}</span>
           <span style={{ color: '#555', marginLeft: '6px' }}>({threshold})</span>
         </span>
-        {projectedHeat !== heat && (
+        {showProjection && (
           <span style={{ color: '#888', fontSize: '11px' }}>
             After execute: <span style={{ color: segmentColor(projectedHeat), fontWeight: 'bold' }}>
               {projectedHeat}
             </span>
             <span style={{ color: '#555', marginLeft: '4px' }}>({projectedThreshold})</span>
+            {showNextRound && (
+              <>
+                <span style={{ color: '#555', margin: '0 6px' }}>→</span>
+                <span style={{ color: '#555' }}>Next turn: </span>
+                <span style={{ color: segmentColor(nextRoundHeat!), fontWeight: 'bold' }}>
+                  {nextRoundHeat}
+                </span>
+                <span style={{ color: '#555', marginLeft: '4px' }}>
+                  ({getHeatThreshold(nextRoundHeat!)})
+                </span>
+              </>
+            )}
           </span>
         )}
       </div>

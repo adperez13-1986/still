@@ -8,6 +8,7 @@ import { makeCardInstance, projectSlotActions } from '../game/combat'
 import { ALL_PARTS, ALL_EQUIPMENT } from '../data/parts'
 import { ALL_CARDS } from '../data/cards'
 import type { BodySlot, EquipmentDefinition } from '../game/types'
+import { HEAT_MAX, OVERHEAT_RESET, applyPassiveCooling } from '../game/types'
 
 import useIsMobile from '../hooks/useIsMobile'
 import StillPanel from './StillPanel'
@@ -31,12 +32,22 @@ export default function CombatScreen() {
   const [equipConflicts, setEquipConflicts] = useState<EquipmentDefinition[]>([])
   const [pendingPostReward, setPendingPostReward] = useState<(() => void) | null>(null)
   const [infoTab, setInfoTab] = useState<'deck' | 'equips' | null>(null)
-  const projectedHeat = run.getProjectedHeat()
 
   const projections = useMemo(() => {
     if (!combat || combat.shutdown) return []
     return projectSlotActions(combat, run.equipment, ALL_CARDS, run.parts)
   }, [combat, run.equipment, run.parts])
+
+  const projectedHeat = useMemo(() => {
+    if (!combat) return 0
+    const totalHeatCost = projections.reduce((sum, p) => sum + p.heatCost, 0)
+    return Math.min(HEAT_MAX, combat.heat + totalHeatCost)
+  }, [combat, projections])
+
+  const nextRoundHeat = useMemo(() => {
+    const postExecute = projectedHeat >= HEAT_MAX ? OVERHEAT_RESET : projectedHeat
+    return applyPassiveCooling(postExecute, run.passiveCoolingBonus)
+  }, [projectedHeat, run.passiveCoolingBonus])
 
   // ─── Card Interaction ─────────────────────────────────────────────
   const handleSelectSlotCard = useCallback((instanceId: string | null) => {
@@ -350,6 +361,7 @@ export default function CombatScreen() {
         <HeatTrack
           heat={combat.heat}
           projectedHeat={projectedHeat}
+          nextRoundHeat={nextRoundHeat}
         />
       )}
 

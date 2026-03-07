@@ -923,6 +923,10 @@ export interface SlotProjection {
   targetMode: 'single' | 'all'
   isOverride: boolean
   isDisabled: boolean
+  heatAtExecution: number
+  heatDmgContrib: number
+  heatBlkContrib: number
+  heatHealContrib: number
 }
 
 export function projectSlotActions(
@@ -952,6 +956,10 @@ export function projectSlotActions(
         targetMode: 'single',
         isOverride: false,
         isDisabled,
+        heatAtExecution: simulatedHeat,
+        heatDmgContrib: 0,
+        heatBlkContrib: 0,
+        heatHealContrib: 0,
       })
       continue
     }
@@ -966,11 +974,25 @@ export function projectSlotActions(
       parts
     )
 
+    // Compute Cool baseline to determine heat's contribution
+    const coolResult = resolveBodyAction(
+      slot,
+      equip,
+      modInstanceId,
+      cardDefs,
+      combat,
+      0, // Cool = no threshold bonus, no heat-triggered parts
+      parts
+    )
+
+    const heatAtExecution = simulatedHeat
+
     // Advance simulated heat so subsequent slots see correct threshold
     simulatedHeat = Math.min(HEAT_MAX, simulatedHeat + result.heatGenerated)
     simulatedHeat = Math.max(0, simulatedHeat - result.heatReduced)
 
     const totalDamage = result.damage.reduce((sum, d) => sum + d.amount, 0)
+    const coolDamage = coolResult.damage.reduce((sum, d) => sum + d.amount, 0)
     const isAoe = result.damage.length > 0 && result.damage[0].enemyId === '__all__'
 
     projections.push({
@@ -984,6 +1006,10 @@ export function projectSlotActions(
       targetMode: isAoe ? 'all' : 'single',
       isOverride: hasOverride,
       isDisabled: false,
+      heatAtExecution,
+      heatDmgContrib: totalDamage - coolDamage,
+      heatBlkContrib: result.blockGained - coolResult.blockGained,
+      heatHealContrib: result.healAmount - coolResult.healAmount,
     })
   }
 

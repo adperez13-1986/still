@@ -1,7 +1,48 @@
-import type { CombatState, BodySlot, EquipmentDefinition } from '../game/types'
-import { BODY_SLOTS } from '../game/types'
+import type { CombatState, BodySlot, EquipmentDefinition, HeatThreshold } from '../game/types'
+import { BODY_SLOTS, getHeatThreshold } from '../game/types'
 import { ALL_CARDS } from '../data/cards'
 import type { SlotProjection } from '../game/combat'
+
+const HEAT_COLORS: Record<HeatThreshold, string> = {
+  Cool: '#27ae60',
+  Warm: '#f1c40f',
+  Hot: '#e67e22',
+  Overheat: '#e74c3c',
+}
+
+function HeatValueDisplay({ total, heatContrib, suffix, color, fontSize }: {
+  total: number
+  heatContrib: number
+  suffix: string
+  color: string
+  fontSize: string
+}) {
+  if (total <= 0) return null
+  const base = total - heatContrib
+  const showBreakdown = heatContrib > 0 && base > 0
+  return (
+    <span style={{ fontWeight: 'bold', fontSize }}>
+      <span style={{ color }}>→{showBreakdown ? base : total}</span>
+      {showBreakdown && (
+        <span style={{ color: '#e67e22' }}>+{heatContrib}</span>
+      )}
+      <span style={{ color }}>{suffix}</span>
+    </span>
+  )
+}
+
+function ThresholdBadge({ heat, fontSize }: { heat: number; fontSize: string }) {
+  const threshold = getHeatThreshold(heat)
+  return (
+    <span style={{
+      fontSize,
+      color: HEAT_COLORS[threshold],
+      opacity: threshold === 'Cool' ? 0.5 : 1,
+    }}>
+      @{threshold}
+    </span>
+  )
+}
 
 interface Props {
   combat: CombatState
@@ -101,21 +142,10 @@ export default function BodySlotPanel({ combat, equipment, selectedCardId, proje
                 {/* Projection inline */}
                 {proj && proj.willFire && (
                   <>
-                    {proj.damage > 0 && (
-                      <span style={{ color: '#e74c3c', fontWeight: 'bold', fontSize: '10px' }}>
-                        →{proj.damage}dmg{proj.targetMode === 'all' ? ' ALL' : ''}
-                      </span>
-                    )}
-                    {proj.block > 0 && (
-                      <span style={{ color: '#3498db', fontWeight: 'bold', fontSize: '10px' }}>
-                        →{proj.block}blk
-                      </span>
-                    )}
-                    {proj.heal > 0 && (
-                      <span style={{ color: '#2ecc71', fontWeight: 'bold', fontSize: '10px' }}>
-                        →{proj.heal}hp
-                      </span>
-                    )}
+                    <ThresholdBadge heat={proj.heatAtExecution} fontSize="9px" />
+                    <HeatValueDisplay total={proj.damage} heatContrib={proj.heatDmgContrib} suffix={`dmg${proj.targetMode === 'all' ? ' ALL' : ''}`} color="#e74c3c" fontSize="10px" />
+                    <HeatValueDisplay total={proj.block} heatContrib={proj.heatBlkContrib} suffix="blk" color="#3498db" fontSize="10px" />
+                    <HeatValueDisplay total={proj.heal} heatContrib={proj.heatHealContrib} suffix="hp" color="#2ecc71" fontSize="10px" />
                     {proj.draw > 0 && (
                       <span style={{ color: '#dfe6e9', fontWeight: 'bold', fontSize: '10px' }}>
                         draw {proj.draw}
@@ -244,22 +274,11 @@ export default function BodySlotPanel({ combat, equipment, selectedCardId, proje
               {(() => {
                 if (!proj || !proj.willFire) return null
                 return (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px', fontSize: '11px' }}>
-                    {proj.damage > 0 && (
-                      <span style={{ color: '#e74c3c', fontWeight: 'bold' }}>
-                        → {proj.damage} dmg{proj.targetMode === 'all' ? ' ALL' : ''}
-                      </span>
-                    )}
-                    {proj.block > 0 && (
-                      <span style={{ color: '#3498db', fontWeight: 'bold' }}>
-                        → {proj.block} block
-                      </span>
-                    )}
-                    {proj.heal > 0 && (
-                      <span style={{ color: '#2ecc71', fontWeight: 'bold' }}>
-                        → {proj.heal} heal
-                      </span>
-                    )}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px', fontSize: '11px', alignItems: 'center' }}>
+                    <ThresholdBadge heat={proj.heatAtExecution} fontSize="10px" />
+                    <HeatValueDisplay total={proj.damage} heatContrib={proj.heatDmgContrib} suffix={` dmg${proj.targetMode === 'all' ? ' ALL' : ''}`} color="#e74c3c" fontSize="11px" />
+                    <HeatValueDisplay total={proj.block} heatContrib={proj.heatBlkContrib} suffix=" block" color="#3498db" fontSize="11px" />
+                    <HeatValueDisplay total={proj.heal} heatContrib={proj.heatHealContrib} suffix=" heal" color="#2ecc71" fontSize="11px" />
                     {proj.draw > 0 && (
                       <span style={{ color: '#dfe6e9', fontWeight: 'bold' }}>
                         → draw {proj.draw}
