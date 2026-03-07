@@ -618,37 +618,6 @@ const overclock: ModifierCardDefinition = {
 export const yanah: ModifierCardDefinition = {
   id: 'yanah',
   name: 'Yanah',
-  description: 'Draw 2 cards. Gain 1 Inspired.',
-  heatCost: 1,
-  category: {
-    type: 'system',
-    modifier: 'Draw',
-    effects: [
-      { type: 'draw', count: 2 },
-      { type: 'applyStatus', status: 'Inspired', stacks: 1, target: 'self' },
-    ],
-  },
-  keywords: [],
-  upgraded: {
-    id: 'yanah',
-    name: 'Yanah+',
-    description: 'Draw 3 cards. Gain 1 Inspired.',
-    heatCost: 0,
-    category: {
-      type: 'system',
-      modifier: 'Draw',
-      effects: [
-        { type: 'draw', count: 3 },
-        { type: 'applyStatus', status: 'Inspired', stacks: 1, target: 'self' },
-      ],
-    },
-    keywords: [],
-  },
-}
-
-export const yuri: ModifierCardDefinition = {
-  id: 'yuri',
-  name: 'Yuri',
   description: 'Heal 6 HP. Remove 1 debuff.',
   heatCost: 0,
   category: {
@@ -661,8 +630,8 @@ export const yuri: ModifierCardDefinition = {
   },
   keywords: [],
   upgraded: {
-    id: 'yuri',
-    name: 'Yuri+',
+    id: 'yanah',
+    name: 'Yanah+',
     description: 'Heal 10 HP. Remove 1 debuff.',
     heatCost: 0,
     category: {
@@ -671,6 +640,37 @@ export const yuri: ModifierCardDefinition = {
       effects: [
         { type: 'heal', value: 10 },
         { type: 'removeDebuff', count: 1 },
+      ],
+    },
+    keywords: [],
+  },
+}
+
+export const yuri: ModifierCardDefinition = {
+  id: 'yuri',
+  name: 'Yuri',
+  description: 'Gain 1 Strength. Gain 1 Inspired.',
+  heatCost: 1,
+  category: {
+    type: 'system',
+    modifier: 'Conditional',
+    effects: [
+      { type: 'applyStatus', status: 'Strength', stacks: 1, target: 'self' },
+      { type: 'applyStatus', status: 'Inspired', stacks: 1, target: 'self' },
+    ],
+  },
+  keywords: [],
+  upgraded: {
+    id: 'yuri',
+    name: 'Yuri+',
+    description: 'Gain 1 Strength. Gain 1 Inspired.',
+    heatCost: 0,
+    category: {
+      type: 'system',
+      modifier: 'Conditional',
+      effects: [
+        { type: 'applyStatus', status: 'Strength', stacks: 1, target: 'self' },
+        { type: 'applyStatus', status: 'Inspired', stacks: 1, target: 'self' },
       ],
     },
     keywords: [],
