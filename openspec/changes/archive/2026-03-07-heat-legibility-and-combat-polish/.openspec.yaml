@@ -1,0 +1,8 @@
+schema: retroactive
+created: 2026-03-07
+archived: 2026-03-07
+commits:
+  - 0b8eba2 Fix TypeScript build — cast Uint8Array via unknown to BufferSource
+  - 196d468 Add heat legibility — threshold labels, value breakdowns, next-turn preview
+  - 4fa6a7c Add heat projection to mobile compact view
+  - 39fe7bc Auto-switch target when enemy dies, show shards on map

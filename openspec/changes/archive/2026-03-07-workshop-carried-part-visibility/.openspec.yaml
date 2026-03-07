@@ -1,0 +1,5 @@
+schema: retroactive
+created: 2026-03-07
+archived: 2026-03-07
+commits:
+  - 4a361df Always show carried part in workshop, not just when broken
