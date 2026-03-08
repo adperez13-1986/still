@@ -17,7 +17,7 @@ import {
   SECTOR2_ENCOUNTERS, SECTOR2_ELITE_ENCOUNTERS,
   ALL_ENEMIES,
 } from '../data/enemies'
-import { STARTING_CARDS, SECTOR1_CARD_POOL, SECTOR2_CARD_POOL, ALL_CARDS, yanah, yuri } from '../data/cards'
+import { STARTING_CARDS, SECTOR1_CARD_POOL, SECTOR2_CARD_POOL, yanah, yuri } from '../data/cards'
 import { ALL_PARTS, ALL_EQUIPMENT, STARTING_TORSO, STARTING_ARMS } from '../data/parts'
 
 function pickEnemiesForRoom(room: GridRoom, sector: number) {
