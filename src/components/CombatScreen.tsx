@@ -618,7 +618,7 @@ export default function CombatScreen() {
           gap: '8px',
         }}>
           <span style={{ fontSize: '10px', color: '#555', whiteSpace: 'nowrap' }}>
-            R{combat.roundNumber}
+            Sector {run.sector} · Round {combat.roundNumber}
           </span>
           <button
             onClick={() => setInfoTab('equips')}
@@ -635,16 +635,6 @@ export default function CombatScreen() {
           >
             Info
           </button>
-          {effectiveTarget && (() => {
-            const targetEnemy = combat.enemies.find(e => e.instanceId === effectiveTarget)
-            if (!targetEnemy || targetEnemy.isDefeated) return null
-            const targetDef = ALL_ENEMIES[targetEnemy.definitionId]
-            return (
-              <span style={{ fontSize: '11px', color: '#f1c40f', whiteSpace: 'nowrap' }}>
-                {targetDef?.name ?? '???'}
-              </span>
-            )
-          })()}
           <button
             onClick={handleExecute}
             disabled={animating || combat.phase !== 'planning'}
@@ -668,16 +658,6 @@ export default function CombatScreen() {
         // Desktop: centered button + round info
         <>
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '12px' }}>
-            {effectiveTarget && (() => {
-              const targetEnemy = combat.enemies.find(e => e.instanceId === effectiveTarget)
-              if (!targetEnemy || targetEnemy.isDefeated) return null
-              const targetDef = ALL_ENEMIES[targetEnemy.definitionId]
-              return (
-                <span style={{ fontSize: '12px', color: '#f1c40f' }}>
-                  Target: {targetDef?.name ?? '???'}
-                </span>
-              )
-            })()}
             <button
               onClick={handleExecute}
               disabled={animating || combat.phase !== 'planning'}
@@ -705,6 +685,7 @@ export default function CombatScreen() {
             alignItems: 'center',
             gap: '12px',
           }}>
+            <span>Sector {run.sector}</span>
             <span>Round {combat.roundNumber}</span>
             <button
               onClick={() => setInfoTab('equips')}

@@ -1,3 +1,4 @@
+import { useState, useRef, useCallback } from 'react'
 import type { CombatState, BodySlot, EquipmentDefinition, HeatThreshold } from '../game/types'
 import { BODY_SLOTS, getHeatThreshold } from '../game/types'
 import { ALL_CARDS } from '../data/cards'
@@ -44,6 +45,71 @@ function ThresholdBadge({ heat, fontSize }: { heat: number; fontSize: string }) 
   )
 }
 
+const ACTION_TYPE_LABELS: Record<string, string> = {
+  damage: 'Damage',
+  block: 'Block',
+  heal: 'Heal',
+  draw: 'Draw',
+  coolHeat: 'Cool',
+  foresight: 'Foresight',
+}
+
+function EquipPopup({ equip, onClose }: { equip: EquipmentDefinition; onClose: () => void }) {
+  const actionLabel = ACTION_TYPE_LABELS[equip.action.type] ?? equip.action.type
+  const targetLabel = equip.action.targetMode === 'all_enemies' ? ' (all)' : equip.action.targetMode === 'self' ? ' (self)' : ''
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed',
+        top: 0, left: 0, right: 0, bottom: 0,
+        zIndex: 100,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'rgba(0,0,0,0.5)',
+      }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          backgroundColor: '#1e1e2e',
+          border: '2px solid #4a4a6a',
+          borderRadius: '10px',
+          padding: '16px',
+          maxWidth: '280px',
+          width: '90%',
+          color: '#e8e8e8',
+        }}
+      >
+        <div style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '4px' }}>{equip.name}</div>
+        <div style={{
+          fontSize: '10px',
+          color: equip.rarity === 'rare' ? '#f1c40f' : equip.rarity === 'uncommon' ? '#74b9ff' : '#888',
+          marginBottom: '8px',
+          textTransform: 'uppercase',
+          letterSpacing: '1px',
+        }}>
+          {equip.rarity} · {equip.slot}
+        </div>
+        <div style={{ fontSize: '12px', color: '#aaa', marginBottom: '10px' }}>{equip.description}</div>
+        <div style={{ fontSize: '11px', color: '#dfe6e9', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+          <span>{actionLabel} {equip.action.baseValue}{targetLabel}</span>
+          {equip.heatBonusThreshold && equip.heatBonusValue && (
+            <span style={{ color: '#e67e22' }}>@{equip.heatBonusThreshold}: +{equip.heatBonusValue}</span>
+          )}
+          {equip.extraHeatGenerated ? (
+            <span style={{ color: '#e67e22' }}>+{equip.extraHeatGenerated} Heat generated</span>
+          ) : null}
+          {equip.bonusBlockPerHeatLost ? (
+            <span style={{ color: '#3498db' }}>+{equip.bonusBlockPerHeatLost} Block per Heat cooled</span>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 interface Props {
   combat: CombatState
   equipment: Record<BodySlot, EquipmentDefinition | null>
@@ -56,6 +122,21 @@ interface Props {
 }
 
 export default function BodySlotPanel({ combat, equipment, selectedCardId, projections, onAssign, onUnassign, compact, activeSlot }: Props) {
+  const [popupEquip, setPopupEquip] = useState<EquipmentDefinition | null>(null)
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const startLongPress = useCallback((equip: EquipmentDefinition) => {
+    longPressTimer.current = setTimeout(() => {
+      setPopupEquip(equip)
+    }, 500)
+  }, [])
+
+  const cancelLongPress = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current)
+      longPressTimer.current = null
+    }
+  }, [])
   // If a slot modifier card is selected, determine valid slots
   let validSlots: Set<BodySlot> | null = null
   if (selectedCardId) {
@@ -112,6 +193,12 @@ export default function BodySlotPanel({ combat, equipment, selectedCardId, proje
                 onClick={() => {
                   if (isValid && selectedCardId) onAssign(slot)
                 }}
+                onTouchStart={() => equip && startLongPress(equip)}
+                onTouchEnd={cancelLongPress}
+                onTouchCancel={cancelLongPress}
+                onMouseDown={() => equip && startLongPress(equip)}
+                onMouseUp={cancelLongPress}
+                onMouseLeave={cancelLongPress}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -129,13 +216,15 @@ export default function BodySlotPanel({ combat, equipment, selectedCardId, proje
                   }`,
                   boxShadow: activeSlot === slot ? '0 0 8px #a29bfe66' : 'none',
                   borderRadius: '4px',
-                  cursor: isValid ? 'pointer' : 'default',
+                  cursor: isValid ? 'pointer' : equip ? 'default' : 'default',
                   fontSize: '11px',
                   color: '#e8e8e8',
                   minHeight: '28px',
                   flexWrap: 'wrap',
                   opacity: activeSlot && activeSlot !== slot ? 0.4 : 1,
                   transition: 'opacity 0.2s, border-color 0.2s, box-shadow 0.2s',
+                  userSelect: 'none',
+                  WebkitUserSelect: 'none',
                 }}
               >
                 <span style={{ fontWeight: 'bold', minWidth: '48px', fontSize: '11px' }}>
@@ -206,6 +295,12 @@ export default function BodySlotPanel({ combat, equipment, selectedCardId, proje
               onClick={() => {
                 if (isValid && selectedCardId) onAssign(slot)
               }}
+              onMouseDown={() => equip && startLongPress(equip)}
+              onMouseUp={cancelLongPress}
+              onMouseLeave={cancelLongPress}
+              onTouchStart={() => equip && startLongPress(equip)}
+              onTouchEnd={cancelLongPress}
+              onTouchCancel={cancelLongPress}
               style={{
                 padding: '10px',
                 backgroundColor: activeSlot === slot
@@ -223,6 +318,7 @@ export default function BodySlotPanel({ combat, equipment, selectedCardId, proje
                 cursor: isValid ? 'pointer' : 'default',
                 opacity: activeSlot && activeSlot !== slot ? 0.4 : 1,
                 transition: 'all 0.2s',
+                userSelect: 'none',
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -306,6 +402,9 @@ export default function BodySlotPanel({ combat, equipment, selectedCardId, proje
           )
         })}
       </div>
+      {popupEquip && (
+        <EquipPopup equip={popupEquip} onClose={() => setPopupEquip(null)} />
+      )}
     </div>
   )
 }

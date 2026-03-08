@@ -181,6 +181,18 @@ export default function RunScreen() {
         <span style={{
           padding: '8px 12px',
           backgroundColor: '#16213e',
+          border: '1px solid #636e72',
+          borderRadius: '6px',
+          color: '#dfe6e9',
+          fontSize: '12px',
+          fontWeight: 'bold',
+          letterSpacing: '1px',
+        }}>
+          Sector {run.sector}
+        </span>
+        <span style={{
+          padding: '8px 12px',
+          backgroundColor: '#16213e',
           border: '1px solid #f1c40f',
           borderRadius: '6px',
           color: '#f1c40f',

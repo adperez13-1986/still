@@ -46,7 +46,9 @@ function IntentDisplay({ intent }: { intent: Intent }) {
       <span style={{ fontWeight: 'bold', fontSize: '10px', textTransform: 'uppercase' }}>
         [{icon}]
       </span>
-      <span style={{ fontWeight: 'bold' }}>{intent.value}</span>
+      <span style={{ fontWeight: 'bold' }}>
+        {intent.type === 'DisableSlot' ? intent.targetSlot ?? '?' : intent.value}
+      </span>
       {intent.status && (
         <span style={{ fontSize: '10px', color: '#aaa' }}>
           +{intent.status} {intent.statusStacks ?? 1}
@@ -136,7 +138,7 @@ export default function EnemyCard({ instance, definition, selected, recentDamage
             )}
             {!instance.isDefeated && currentIntent && (
               <span style={{ color: intentColor, fontWeight: 'bold', fontSize: '10px' }}>
-                {intentIcon} {currentIntent.value}
+                {intentIcon} {currentIntent.type === 'DisableSlot' ? currentIntent.targetSlot ?? '?' : currentIntent.value}
                 {currentIntent.status && <span style={{ color: '#aaa', fontWeight: 'normal' }}> +{currentIntent.status[0]}{currentIntent.statusStacks ?? 1}</span>}
               </span>
             )}
