@@ -409,7 +409,7 @@ const targetLock: ModifierCardDefinition = {
   category: {
     type: 'system',
     modifier: 'Conditional',
-    effects: [{ type: 'applyStatus', status: 'Vulnerable', stacks: 2, target: 'self' }],
+    effects: [{ type: 'applyStatus', status: 'Vulnerable', stacks: 2, target: 'all_enemies' }],
   },
   keywords: [],
   heatCondition: 'Warm',
@@ -421,7 +421,7 @@ const targetLock: ModifierCardDefinition = {
     category: {
       type: 'system',
       modifier: 'Conditional',
-      effects: [{ type: 'applyStatus', status: 'Vulnerable', stacks: 3, target: 'self' }],
+      effects: [{ type: 'applyStatus', status: 'Vulnerable', stacks: 3, target: 'all_enemies' }],
     },
     keywords: [],
     heatCondition: 'Warm',
@@ -613,6 +613,300 @@ const overclock: ModifierCardDefinition = {
   },
 }
 
+// ─── Sector 2 Modifier Card Pool ───────────────────────────────────────────────
+
+// Slot-disruption answers (system/override cards that work when slots are disabled)
+
+const failsafeProtocol: ModifierCardDefinition = {
+  id: 'failsafe-protocol',
+  name: 'Failsafe Protocol',
+  description: 'Gain 10 Block. Draw 1 card.',
+  heatCost: 0,
+  category: {
+    type: 'system',
+    modifier: 'Conditional',
+    effects: [{ type: 'gainBlock', value: 10 }, { type: 'draw', count: 1 }],
+  },
+  keywords: [],
+  upgraded: {
+    id: 'failsafe-protocol',
+    name: 'Failsafe Protocol+',
+    description: 'Gain 14 Block. Draw 1 card.',
+    heatCost: 0,
+    category: {
+      type: 'system',
+      modifier: 'Conditional',
+      effects: [{ type: 'gainBlock', value: 14 }, { type: 'draw', count: 1 }],
+    },
+    keywords: [],
+  },
+}
+
+const reroute: ModifierCardDefinition = {
+  id: 'reroute',
+  name: 'Reroute',
+  description: 'Override: deal 12 damage to one enemy.',
+  heatCost: 1,
+  category: {
+    type: 'slot',
+    modifier: 'Override',
+    effect: {
+      type: 'override',
+      action: { type: 'damage', baseValue: 12, targetMode: 'single_enemy' },
+    },
+  },
+  keywords: [],
+  upgraded: {
+    id: 'reroute',
+    name: 'Reroute+',
+    description: 'Override: deal 16 damage to one enemy.',
+    heatCost: 1,
+    category: {
+      type: 'slot',
+      modifier: 'Override',
+      effect: {
+        type: 'override',
+        action: { type: 'damage', baseValue: 16, targetMode: 'single_enemy' },
+      },
+    },
+    keywords: [],
+  },
+}
+
+// Heat exploitation (deepening archetypes)
+
+const glacierLance: ModifierCardDefinition = {
+  id: 'glacier-lance',
+  name: 'Glacier Lance',
+  description: 'Deal 10 damage. While Cool: deal 16 + apply 1 Weak.',
+  heatCost: 0,
+  category: {
+    type: 'system',
+    modifier: 'Conditional',
+    effects: [{ type: 'damage', value: 10, targetMode: 'single_enemy' }],
+  },
+  keywords: [],
+  heatBonus: {
+    threshold: 'Cool',
+    effects: [
+      { type: 'damage', value: 16, targetMode: 'single_enemy' },
+      { type: 'applyStatus', status: 'Weak', stacks: 1, target: 'all_enemies' },
+    ],
+  },
+  upgraded: {
+    id: 'glacier-lance',
+    name: 'Glacier Lance+',
+    description: 'Deal 12 damage. While Cool: deal 20 + apply 2 Weak.',
+    heatCost: 0,
+    category: {
+      type: 'system',
+      modifier: 'Conditional',
+      effects: [{ type: 'damage', value: 12, targetMode: 'single_enemy' }],
+    },
+    keywords: [],
+    heatBonus: {
+      threshold: 'Cool',
+      effects: [
+        { type: 'damage', value: 20, targetMode: 'single_enemy' },
+        { type: 'applyStatus', status: 'Weak', stacks: 2, target: 'all_enemies' },
+      ],
+    },
+  },
+}
+
+const controlledBurn: ModifierCardDefinition = {
+  id: 'controlled-burn',
+  name: 'Controlled Burn',
+  description: 'Gain 2 Strength. While Hot: also gain 2 Dexterity.',
+  heatCost: 2,
+  category: {
+    type: 'system',
+    modifier: 'Conditional',
+    effects: [{ type: 'applyStatus', status: 'Strength', stacks: 2, target: 'self' }],
+  },
+  keywords: [],
+  heatBonus: {
+    threshold: 'Hot',
+    effects: [
+      { type: 'applyStatus', status: 'Strength', stacks: 2, target: 'self' },
+      { type: 'applyStatus', status: 'Dexterity', stacks: 2, target: 'self' },
+    ],
+  },
+  upgraded: {
+    id: 'controlled-burn',
+    name: 'Controlled Burn+',
+    description: 'Gain 3 Strength. While Hot: also gain 3 Dexterity.',
+    heatCost: 2,
+    category: {
+      type: 'system',
+      modifier: 'Conditional',
+      effects: [{ type: 'applyStatus', status: 'Strength', stacks: 3, target: 'self' }],
+    },
+    keywords: [],
+    heatBonus: {
+      threshold: 'Hot',
+      effects: [
+        { type: 'applyStatus', status: 'Strength', stacks: 3, target: 'self' },
+        { type: 'applyStatus', status: 'Dexterity', stacks: 3, target: 'self' },
+      ],
+    },
+  },
+}
+
+const fluxSpike: ModifierCardDefinition = {
+  id: 'flux-spike',
+  name: 'Flux Spike',
+  description: 'Requires Warm+. Deal 14 damage to all enemies. Exhaust.',
+  heatCost: 0,
+  category: {
+    type: 'system',
+    modifier: 'Conditional',
+    effects: [{ type: 'damage', value: 14, targetMode: 'all_enemies' }],
+  },
+  keywords: ['Exhaust'],
+  heatCondition: 'Warm',
+  upgraded: {
+    id: 'flux-spike',
+    name: 'Flux Spike+',
+    description: 'Requires Warm+. Deal 20 damage to all enemies. Exhaust.',
+    heatCost: 0,
+    category: {
+      type: 'system',
+      modifier: 'Conditional',
+      effects: [{ type: 'damage', value: 20, targetMode: 'all_enemies' }],
+    },
+    keywords: ['Exhaust'],
+    heatCondition: 'Warm',
+  },
+}
+
+const thermalEquilibrium: ModifierCardDefinition = {
+  id: 'thermal-equilibrium',
+  name: 'Thermal Equilibrium',
+  description: 'Reduce Heat by 3. Gain 6 Block.',
+  heatCost: -3,
+  category: {
+    type: 'system',
+    modifier: 'Cooling',
+    effects: [{ type: 'gainBlock', value: 6 }],
+  },
+  keywords: [],
+  upgraded: {
+    id: 'thermal-equilibrium',
+    name: 'Thermal Equilibrium+',
+    description: 'Reduce Heat by 4. Gain 8 Block.',
+    heatCost: -4,
+    category: {
+      type: 'system',
+      modifier: 'Cooling',
+      effects: [{ type: 'gainBlock', value: 8 }],
+    },
+    keywords: [],
+  },
+}
+
+// Scaling/utility
+
+const armorProtocol: ModifierCardDefinition = {
+  id: 'armor-protocol',
+  name: 'Armor Protocol',
+  description: 'Gain 2 Dexterity.',
+  heatCost: 1,
+  category: {
+    type: 'system',
+    modifier: 'Conditional',
+    effects: [{ type: 'applyStatus', status: 'Dexterity', stacks: 2, target: 'self' }],
+  },
+  keywords: [],
+  upgraded: {
+    id: 'armor-protocol',
+    name: 'Armor Protocol+',
+    description: 'Gain 3 Dexterity.',
+    heatCost: 1,
+    category: {
+      type: 'system',
+      modifier: 'Conditional',
+      effects: [{ type: 'applyStatus', status: 'Dexterity', stacks: 3, target: 'self' }],
+    },
+    keywords: [],
+  },
+}
+
+const salvageBurst: ModifierCardDefinition = {
+  id: 'salvage-burst',
+  name: 'Salvage Burst',
+  description: 'Draw 3 cards. Reduce Heat by 1. Exhaust.',
+  heatCost: -1,
+  category: {
+    type: 'system',
+    modifier: 'Draw',
+    effects: [{ type: 'draw', count: 3 }],
+  },
+  keywords: ['Exhaust'],
+  upgraded: {
+    id: 'salvage-burst',
+    name: 'Salvage Burst+',
+    description: 'Draw 4 cards. Reduce Heat by 2. Exhaust.',
+    heatCost: -2,
+    category: {
+      type: 'system',
+      modifier: 'Draw',
+      effects: [{ type: 'draw', count: 4 }],
+    },
+    keywords: ['Exhaust'],
+  },
+}
+
+const cascade: ModifierCardDefinition = {
+  id: 'cascade',
+  name: 'Cascade',
+  description: 'Repeat: slot fires 3 times.',
+  heatCost: 4,
+  category: {
+    type: 'slot',
+    modifier: 'Repeat',
+    effect: { type: 'repeat', extraFirings: 2 },
+  },
+  keywords: [],
+  upgraded: {
+    id: 'cascade',
+    name: 'Cascade+',
+    description: 'Repeat: slot fires 3 times.',
+    heatCost: 3,
+    category: {
+      type: 'slot',
+      modifier: 'Repeat',
+      effect: { type: 'repeat', extraFirings: 2 },
+    },
+    keywords: [],
+  },
+}
+
+const resonance: ModifierCardDefinition = {
+  id: 'resonance',
+  name: 'Resonance',
+  description: '+200% to one slot\'s output. Exhaust.',
+  heatCost: 3,
+  category: {
+    type: 'slot',
+    modifier: 'Amplify',
+    effect: { type: 'amplify', multiplier: 3.0 },
+  },
+  keywords: ['Exhaust'],
+  upgraded: {
+    id: 'resonance',
+    name: 'Resonance+',
+    description: '+250% to one slot\'s output. Exhaust.',
+    heatCost: 3,
+    category: {
+      type: 'slot',
+      modifier: 'Amplify',
+      effect: { type: 'amplify', multiplier: 3.5 },
+    },
+    keywords: ['Exhaust'],
+  },
+}
+
 // ─── Companion Cards (Task 3.11) ────────────────────────────────────────────
 
 export const yanah: ModifierCardDefinition = {
@@ -694,6 +988,12 @@ export const SECTOR1_CARD_POOL: ModifierCardDefinition[] = [
   thermalFlux, overclock,
 ]
 
+export const SECTOR2_CARD_POOL: ModifierCardDefinition[] = [
+  failsafeProtocol, reroute,
+  glacierLance, controlledBurn, fluxSpike, thermalEquilibrium,
+  armorProtocol, salvageBurst, cascade, resonance,
+]
+
 const allCardList: ModifierCardDefinition[] = [
   boost, emergencyStrike, coolantFlush, diagnostics,
   overcharge, spreadShot, echoProtocol, shieldBash, emergencyShield,
@@ -701,6 +1001,9 @@ const allCardList: ModifierCardDefinition[] = [
   fieldRepair, targetLock,
   precisionStrike, coldEfficiency, fuelTheFire, recklessCharge,
   thermalFlux, overclock,
+  failsafeProtocol, reroute,
+  glacierLance, controlledBurn, fluxSpike, thermalEquilibrium,
+  armorProtocol, salvageBurst, cascade, resonance,
   yanah, yuri,
 ]
 

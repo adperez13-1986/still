@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { SECTOR1_CARD_POOL, STARTING_CARDS, ALL_CARDS } from '../data/cards'
+import { SECTOR1_CARD_POOL, SECTOR2_CARD_POOL, STARTING_CARDS, ALL_CARDS } from '../data/cards'
 import { EQUIPMENT, BEHAVIORAL_PARTS } from '../data/parts'
-import { SECTOR1_ENEMIES, SECTOR1_ELITES, SECTOR1_BOSS } from '../data/enemies'
+import { SECTOR1_ENEMIES, SECTOR1_ELITES, SECTOR1_BOSS, SECTOR2_ENEMIES, SECTOR2_ELITES, SECTOR2_BOSS } from '../data/enemies'
 import type { ModifierCardDefinition, EnemyDefinition } from '../game/types'
 
 const TABS = ['Cards', 'Equipment', 'Mods', 'Bestiary'] as const
@@ -112,6 +112,8 @@ function CardsTab() {
       {uniqueStarting.map((c) => <CardEntry key={c.id} card={c} />)}
       <h4 style={sectionHeaderStyle}>SECTOR 1 POOL</h4>
       {SECTOR1_CARD_POOL.map((c) => <CardEntry key={c.id} card={c} />)}
+      <h4 style={sectionHeaderStyle}>SECTOR 2 POOL</h4>
+      {SECTOR2_CARD_POOL.map((c) => <CardEntry key={c.id} card={c} />)}
       {companionCards.length > 0 && (
         <>
           <h4 style={sectionHeaderStyle}>COMPANIONS</h4>
@@ -222,12 +224,18 @@ function EnemyEntry({ enemy }: { enemy: EnemyDefinition }) {
 function BestiaryTab() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-      <h4 style={sectionHeaderStyle}>STANDARD</h4>
+      <h4 style={sectionHeaderStyle}>SECTOR 1 — STANDARD</h4>
       {SECTOR1_ENEMIES.map((e) => <EnemyEntry key={e.id} enemy={e} />)}
-      <h4 style={sectionHeaderStyle}>ELITE</h4>
+      <h4 style={sectionHeaderStyle}>SECTOR 1 — ELITE</h4>
       {SECTOR1_ELITES.map((e) => <EnemyEntry key={e.id} enemy={e} />)}
-      <h4 style={sectionHeaderStyle}>BOSS</h4>
+      <h4 style={sectionHeaderStyle}>SECTOR 1 — BOSS</h4>
       <EnemyEntry enemy={SECTOR1_BOSS} />
+      <h4 style={sectionHeaderStyle}>SECTOR 2 — STANDARD</h4>
+      {SECTOR2_ENEMIES.map((e) => <EnemyEntry key={e.id} enemy={e} />)}
+      <h4 style={sectionHeaderStyle}>SECTOR 2 — ELITE</h4>
+      {SECTOR2_ELITES.map((e) => <EnemyEntry key={e.id} enemy={e} />)}
+      <h4 style={sectionHeaderStyle}>SECTOR 2 — BOSS</h4>
+      <EnemyEntry enemy={SECTOR2_BOSS} />
     </div>
   )
 }

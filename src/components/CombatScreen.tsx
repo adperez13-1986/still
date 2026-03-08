@@ -256,7 +256,7 @@ export default function CombatScreen() {
     const allDrops = defeatedEnemies.flatMap(e => {
       const def = ALL_ENEMIES[e.definitionId]
       if (!def?.dropPool.length) return []
-      const result = resolveDrops(def.dropPool, run.equipPity)
+      const result = resolveDrops(def.dropPool, run.equipPity, run.sector)
       if (result.droppedEquipment) anyEquipDropped = true
       return result.drops
     })
@@ -313,10 +313,23 @@ export default function CombatScreen() {
             permanent.updateCarriedPart({ durability: permanent.carriedPart.durability - 1 })
           }
 
-          // Post-reward: either boss end or return to map
+          // Post-reward: boss staging/victory, or return to map
           const finishReward = () => {
             const bossDefeated = defeatedEnemies.some(e => ALL_ENEMIES[e.definitionId]?.isBoss)
             if (bossDefeated) {
+              if (run.sector < 3) {
+                // Non-final sector boss — go to staging area
+                useRunStore.setState((s) => {
+                  if (s.map) {
+                    const tile = s.map.grid[s.map.playerY][s.map.playerX]
+                    if (tile) tile.cleared = true
+                  }
+                  s.combat = null
+                })
+                navigate('/staging')
+                return
+              }
+              // Final sector boss — end the run
               permanent.addShards(run.shards)
               permanent.addRunHistory({
                 id: `run-${Date.now()}`,

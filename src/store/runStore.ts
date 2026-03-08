@@ -28,6 +28,7 @@ import {
 
 import { ALL_CARDS } from '../data/cards'
 import { ALL_ENEMIES } from '../data/enemies'
+import { generateGridMaze } from '../game/mapGen'
 
 interface RunActions {
   // Run lifecycle
@@ -68,6 +69,9 @@ interface RunActions {
   setMap: (map: GridMaze) => void
   moveToTile: (x: number, y: number) => void
   clearCurrentRoom: () => void
+
+  // Sector transition
+  advanceSector: () => void
 
   // Narrative
   discoverName: () => void
@@ -411,6 +415,15 @@ export const useRunStore = create<RunState & RunActions>()(
         if (!state.map) return
         const tile = state.map.grid[state.map.playerY][state.map.playerX]
         if (tile) tile.cleared = true
+      }),
+
+    advanceSector: () =>
+      set((state) => {
+        if (state.sector >= 3) return
+        const newSector = (state.sector + 1) as 1 | 2 | 3
+        state.sector = newSector
+        state.map = generateGridMaze(newSector) as any
+        state.combat = null
       }),
 
     discoverName: () =>

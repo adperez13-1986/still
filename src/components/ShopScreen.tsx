@@ -1,12 +1,14 @@
+import { useMemo } from 'react'
 import CardDisplay from './CardDisplay'
-import { SECTOR1_CARD_POOL } from '../data/cards'
+import { SECTOR1_CARD_POOL, SECTOR2_CARD_POOL } from '../data/cards'
 import { PARTS, ALL_PARTS } from '../data/parts'
-import type { ModifierCardDefinition, BehavioralPartDefinition, CarriedPart } from '../game/types'
+import type { CarriedPart } from '../game/types'
 
 const REPAIR_COST = 50
 
 interface Props {
   shards: number
+  sector: number
   onBuyCard: (cardId: string, cost: number) => void
   onBuyPart: (partId: string, cost: number) => void
   onRepair: () => void
@@ -18,9 +20,6 @@ function shuffle<T>(arr: T[]): T[] {
   return [...arr].sort(() => Math.random() - 0.5)
 }
 
-const SHOP_CARDS: ModifierCardDefinition[] = shuffle(SECTOR1_CARD_POOL).slice(0, 3)
-const SHOP_PARTS: BehavioralPartDefinition[] = shuffle(PARTS).slice(0, 2)
-
 const CARD_COSTS: Record<string, number> = {
   rare: 75, uncommon: 55, common: 40,
 }
@@ -28,7 +27,13 @@ const PART_COSTS: Record<string, number> = {
   rare: 90, uncommon: 65, common: 45,
 }
 
-export default function ShopScreen({ shards, onBuyCard, onBuyPart, onRepair, carriedPart, onLeave }: Props) {
+export default function ShopScreen({ shards, sector, onBuyCard, onBuyPart, onRepair, carriedPart, onLeave }: Props) {
+  const SHOP_CARDS = useMemo(() => {
+    const pool = sector >= 2 ? SECTOR2_CARD_POOL : SECTOR1_CARD_POOL
+    return shuffle(pool).slice(0, 3)
+  }, [sector])
+  const SHOP_PARTS = useMemo(() => shuffle(PARTS).slice(0, 2), [])
+
   const showRepair = carriedPart !== null && carriedPart.durability === 0 && carriedPart.repairsLeft > 0
   const canAffordRepair = shards >= REPAIR_COST
   const brokenPartDef = carriedPart ? ALL_PARTS[carriedPart.partId] : null

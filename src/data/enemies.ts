@@ -237,6 +237,263 @@ const theFirstWarden: EnemyDefinition = {
   flavorText: 'It does not remember what it was built to protect. It only remembers the door.',
 }
 
+// ─── Sector 2 Standard Enemies ──────────────────────────────────────────────────
+
+const thermalLeech: EnemyDefinition = {
+  id: 'thermal-leech',
+  name: 'Thermal Leech',
+  maxHealth: 55,
+  intentPattern: [
+    { type: 'Absorb', value: 50 },
+    { type: 'Attack', value: 10 },
+    { type: 'Attack', value: 10 },
+  ],
+  dropPool: [
+    { type: 'shards', amount: 18, weight: 3 },
+    { type: 'card', ids: ['thermal-equilibrium', 'glacier-lance'], weight: 1 },
+  ],
+}
+
+const wireJammer: EnemyDefinition = {
+  id: 'wire-jammer',
+  name: 'Wire Jammer',
+  maxHealth: 45,
+  intentPattern: [
+    { type: 'DisableSlot', value: 0, targetSlot: 'Arms' },
+    { type: 'Attack', value: 12 },
+    { type: 'Block', value: 8 },
+  ],
+  dropPool: [
+    { type: 'shards', amount: 16, weight: 3 },
+    { type: 'card', ids: ['reroute', 'failsafe-protocol'], weight: 1 },
+  ],
+}
+
+const slagHeap: EnemyDefinition = {
+  id: 'slag-heap',
+  name: 'Slag Heap',
+  maxHealth: 75,
+  intentPattern: [
+    { type: 'Block', value: 12 },
+    { type: 'Block', value: 12 },
+    { type: 'Buff', value: 2, status: 'Strength' },
+    { type: 'Attack', value: 14 },
+  ],
+  dropPool: [
+    { type: 'shards', amount: 22, weight: 2 },
+    { type: 'part', ids: ['hardened-frame', 'bypass-circuit'], weight: 1 },
+    { type: 'equipment', ids: ['reactive-plating', 'heat-shield'], weight: 1 },
+  ],
+}
+
+const feedbackLoop: EnemyDefinition = {
+  id: 'feedback-loop',
+  name: 'Feedback Loop',
+  maxHealth: 38,
+  intentPattern: [
+    { type: 'Debuff', value: 2, status: 'Vulnerable' },
+    { type: 'Attack', value: 16 },
+    { type: 'Attack', value: 16 },
+  ],
+  dropPool: [
+    { type: 'shards', amount: 15, weight: 3 },
+    { type: 'card', ids: ['flux-spike', 'controlled-burn'], weight: 1 },
+  ],
+}
+
+const phaseDrone: EnemyDefinition = {
+  id: 'phase-drone',
+  name: 'Phase Drone',
+  maxHealth: 50,
+  intentPattern: [
+    { type: 'DisableSlot', value: 0, targetSlot: 'Head' },
+    { type: 'Attack', value: 9 },
+    { type: 'Attack', value: 9 },
+  ],
+  dropPool: [
+    { type: 'shards', amount: 17, weight: 3 },
+    { type: 'card', ids: ['salvage-burst', 'failsafe-protocol'], weight: 1 },
+    { type: 'equipment', ids: ['thermal-imager', 'predictive-array'], weight: 1 },
+  ],
+}
+
+const furnaceTick: EnemyDefinition = {
+  id: 'furnace-tick',
+  name: 'Furnace Tick',
+  maxHealth: 22,
+  intentPattern: [
+    { type: 'Absorb', value: 30 },
+    { type: 'Attack', value: 6 },
+    { type: 'Attack', value: 6 },
+  ],
+  dropPool: [
+    { type: 'shards', amount: 8, weight: 4 },
+    { type: 'card', ids: ['thermal-equilibrium', 'armor-protocol'], weight: 1 },
+  ],
+}
+
+const staticFrame: EnemyDefinition = {
+  id: 'static-frame',
+  name: 'Static Frame',
+  maxHealth: 65,
+  intentPattern: [
+    { type: 'Attack', value: 11 },
+    { type: 'Block', value: 10 },
+    { type: 'AttackDebuff', value: 9, status: 'Weak', statusStacks: 1 },
+  ],
+  dropPool: [
+    { type: 'shards', amount: 20, weight: 2 },
+    { type: 'card', ids: ['cascade', 'resonance'], weight: 1 },
+    { type: 'part', ids: ['thermal-buffer'], weight: 1 },
+  ],
+}
+
+const conduitSpider: EnemyDefinition = {
+  id: 'conduit-spider',
+  name: 'Conduit Spider',
+  maxHealth: 48,
+  intentPattern: [
+    { type: 'DisableSlot', value: 0, targetSlot: 'Legs' },
+    { type: 'Attack', value: 10 },
+    { type: 'Debuff', value: 2, status: 'Vulnerable' },
+  ],
+  dropPool: [
+    { type: 'shards', amount: 17, weight: 3 },
+    { type: 'card', ids: ['reroute', 'glacier-lance'], weight: 1 },
+    { type: 'equipment', ids: ['coolant-injector', 'stabilizer-treads'], weight: 1 },
+  ],
+}
+
+// ─── Sector 2 Elite Enemies ─────────────────────────────────────────────────────
+
+const overchargeSentinel: EnemyDefinition = {
+  id: 'overcharge-sentinel',
+  name: 'Overcharge Sentinel',
+  maxHealth: 110,
+  intentPattern: [
+    { type: 'Absorb', value: 60 },
+    { type: 'Block', value: 15 },
+    { type: 'Attack', value: 18 },
+    { type: 'Attack', value: 22 },
+  ],
+  dropPool: [
+    { type: 'shards', amount: 45, weight: 1 },
+    { type: 'part', ids: ['thermal-buffer', 'siphon-core', 'volatile-reactor'], weight: 2 },
+    { type: 'equipment', ids: ['stabilizer-treads', 'predictive-array'], weight: 1 },
+  ],
+  isElite: true,
+}
+
+const lockdownWarden: EnemyDefinition = {
+  id: 'lockdown-warden',
+  name: 'Lockdown Warden',
+  maxHealth: 100,
+  intentPattern: [
+    { type: 'DisableSlot', value: 0, targetSlot: 'Arms' },
+    { type: 'DisableSlot', value: 0, targetSlot: 'Head' },
+    { type: 'Attack', value: 20 },
+    { type: 'Attack', value: 20 },
+    { type: 'Buff', value: 2, status: 'Strength' },
+  ],
+  dropPool: [
+    { type: 'shards', amount: 50, weight: 1 },
+    { type: 'part', ids: ['emergency-draw', 'bypass-circuit'], weight: 2 },
+    { type: 'card', ids: ['failsafe-protocol', 'reroute'], weight: 1 },
+  ],
+  isElite: true,
+}
+
+const meltdownCore: EnemyDefinition = {
+  id: 'meltdown-core',
+  name: 'Meltdown Core',
+  maxHealth: 120,
+  intentPattern: [
+    { type: 'Debuff', value: 2, status: 'Vulnerable' },
+    { type: 'Absorb', value: 80 },
+    { type: 'Attack', value: 25 },
+    { type: 'Block', value: 10 },
+    { type: 'Attack', value: 18 },
+  ],
+  dropPool: [
+    { type: 'shards', amount: 55, weight: 1 },
+    { type: 'part', ids: ['volatile-reactor', 'hardened-frame'], weight: 2 },
+    { type: 'equipment', ids: ['plasma-cutter', 'heat-shield'], weight: 1 },
+  ],
+  isElite: true,
+}
+
+// ─── Sector 2 Boss ──────────────────────────────────────────────────────────────
+
+const theThermalArbiter: EnemyDefinition = {
+  id: 'the-thermal-arbiter',
+  name: 'The Thermal Arbiter',
+  maxHealth: 200,
+  intentPattern: [
+    { type: 'Absorb', value: 70 },
+    { type: 'DisableSlot', value: 0, targetSlot: 'Legs' },
+    { type: 'Attack', value: 18 },
+    { type: 'Attack', value: 18 },
+    { type: 'Buff', value: 2, status: 'Strength' },
+    { type: 'AttackDebuff', value: 22, status: 'Vulnerable', statusStacks: 2 },
+    { type: 'Absorb', value: 70 },
+    { type: 'Attack', value: 26 },
+  ],
+  dropPool: [
+    { type: 'shards', amount: 80, weight: 1 },
+    { type: 'part', ids: ['volatile-reactor', 'emergency-draw', 'thermal-buffer'], weight: 3 },
+    { type: 'equipment', ids: ['arc-welder', 'stabilizer-treads', 'predictive-array'], weight: 2 },
+  ],
+  isBoss: true,
+  flavorText: 'It measures everything. It forgives nothing.',
+}
+
+// ─── Encounter Compositions ────────────────────────────────────────────────────
+
+export interface Encounter {
+  enemies: string[] // enemy definition IDs
+}
+
+export const SECTOR1_ENCOUNTERS: Encounter[] = [
+  { enemies: ['wandering-drone'] },
+  { enemies: ['rust-guard'] },
+  { enemies: ['corroded-sentry'] },
+  { enemies: ['fracture-mite', 'fracture-mite'] },
+  { enemies: ['iron-crawler'] },
+  { enemies: ['glitch-node'] },
+  { enemies: ['sentinel-shard'] },
+  { enemies: ['hollow-repeater'] },
+  { enemies: ['drifting-frame'] },
+  { enemies: ['echo-construct'] },
+  { enemies: ['wandering-drone', 'fracture-mite'] },
+  { enemies: ['corroded-sentry', 'fracture-mite'] },
+  { enemies: ['rust-guard', 'glitch-node'] },
+]
+
+export const SECTOR1_ELITE_ENCOUNTERS: Encounter[] = [
+  { enemies: ['vault-keeper'] },
+  { enemies: ['corrupted-overseer'] },
+  { enemies: ['fracture-titan'] },
+]
+
+export const SECTOR2_ENCOUNTERS: Encounter[] = [
+  { enemies: ['wire-jammer', 'feedback-loop'] },
+  { enemies: ['furnace-tick', 'furnace-tick', 'furnace-tick'] },
+  { enemies: ['thermal-leech', 'static-frame'] },
+  { enemies: ['phase-drone', 'conduit-spider'] },
+  { enemies: ['slag-heap', 'furnace-tick', 'furnace-tick'] },
+  { enemies: ['static-frame', 'static-frame'] },
+  { enemies: ['thermal-leech', 'feedback-loop'] },
+  { enemies: ['wire-jammer', 'phase-drone'] },
+  { enemies: ['conduit-spider', 'static-frame'] },
+  { enemies: ['slag-heap'] },
+]
+
+export const SECTOR2_ELITE_ENCOUNTERS: Encounter[] = [
+  { enemies: ['overcharge-sentinel'] },
+  { enemies: ['lockdown-warden'] },
+  { enemies: ['meltdown-core'] },
+]
+
 // ─── Exports ─────────────────────────────────────────────────────────────────
 
 export const SECTOR1_ENEMIES: EnemyDefinition[] = [
@@ -250,6 +507,20 @@ export const SECTOR1_ELITES: EnemyDefinition[] = [
 
 export const SECTOR1_BOSS: EnemyDefinition = theFirstWarden
 
+export const SECTOR2_ENEMIES: EnemyDefinition[] = [
+  thermalLeech, wireJammer, slagHeap, feedbackLoop,
+  phaseDrone, furnaceTick, staticFrame, conduitSpider,
+]
+
+export const SECTOR2_ELITES: EnemyDefinition[] = [
+  overchargeSentinel, lockdownWarden, meltdownCore,
+]
+
+export const SECTOR2_BOSS: EnemyDefinition = theThermalArbiter
+
 export const ALL_ENEMIES: Record<string, EnemyDefinition> = Object.fromEntries(
-  [...SECTOR1_ENEMIES, ...SECTOR1_ELITES, SECTOR1_BOSS].map((e) => [e.id, e])
+  [
+    ...SECTOR1_ENEMIES, ...SECTOR1_ELITES, SECTOR1_BOSS,
+    ...SECTOR2_ENEMIES, ...SECTOR2_ELITES, SECTOR2_BOSS,
+  ].map((e) => [e.id, e])
 )

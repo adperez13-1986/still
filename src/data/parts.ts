@@ -122,6 +122,89 @@ const adaptiveTreads: EquipmentDefinition = {
   bonusBlockPerHeatLost: 1,
 }
 
+// ─── Sector 2 Equipment ────────────────────────────────────────────────────
+
+// HEAD slot
+const thermalImager: EquipmentDefinition = {
+  id: 'thermal-imager',
+  name: 'Thermal Imager',
+  description: 'Draw 2 cards.',
+  slot: 'Head',
+  action: { type: 'draw', baseValue: 2, targetMode: 'self' },
+  rarity: 'uncommon',
+}
+
+const predictiveArray: EquipmentDefinition = {
+  id: 'predictive-array',
+  name: 'Predictive Array',
+  description: 'Draw 1 card. While Cool: draw 2.',
+  slot: 'Head',
+  action: { type: 'draw', baseValue: 1, targetMode: 'self' },
+  rarity: 'rare',
+  heatBonusThreshold: 'Cool',
+  heatBonusValue: 1,
+}
+
+// TORSO slot
+const reactivePlating: EquipmentDefinition = {
+  id: 'reactive-plating',
+  name: 'Reactive Plating',
+  description: 'Gain 5 Block.',
+  slot: 'Torso',
+  action: { type: 'block', baseValue: 5, targetMode: 'self' },
+  rarity: 'uncommon',
+}
+
+const heatShield: EquipmentDefinition = {
+  id: 'heat-shield',
+  name: 'Heat Shield',
+  description: 'Gain 3 Block. While Hot: gain 7.',
+  slot: 'Torso',
+  action: { type: 'block', baseValue: 3, targetMode: 'self' },
+  rarity: 'rare',
+  heatBonusThreshold: 'Hot',
+  heatBonusValue: 4,
+}
+
+// ARMS slot
+const plasmaCutter: EquipmentDefinition = {
+  id: 'plasma-cutter',
+  name: 'Plasma Cutter',
+  description: 'Deal 10 damage to one enemy.',
+  slot: 'Arms',
+  action: { type: 'damage', baseValue: 10, targetMode: 'single_enemy' },
+  rarity: 'uncommon',
+}
+
+const arcWelder: EquipmentDefinition = {
+  id: 'arc-welder',
+  name: 'Arc Welder',
+  description: 'Deal 5 damage to ALL enemies. Apply 1 Weak.',
+  slot: 'Arms',
+  action: { type: 'damage', baseValue: 5, targetMode: 'all_enemies' },
+  rarity: 'rare',
+}
+
+// LEGS slot
+const coolantInjector: EquipmentDefinition = {
+  id: 'coolant-injector',
+  name: 'Coolant Injector',
+  description: 'Lose 2 Heat.',
+  slot: 'Legs',
+  action: { type: 'coolHeat', baseValue: 2, targetMode: 'self' },
+  rarity: 'uncommon',
+}
+
+const stabilizerTreads: EquipmentDefinition = {
+  id: 'stabilizer-treads',
+  name: 'Stabilizer Treads',
+  description: 'Lose 1 Heat. Gain 3 Block per heat lost.',
+  slot: 'Legs',
+  action: { type: 'coolHeat', baseValue: 1, targetMode: 'self' },
+  rarity: 'rare',
+  bonusBlockPerHeatLost: 3,
+}
+
 // ─── Behavioral Parts (Task 3.7) ────────────────────────────────────────────
 
 const salvagedPlating: BehavioralPartDefinition = {
@@ -196,6 +279,63 @@ const heatSink: BehavioralPartDefinition = {
   rarity: 'uncommon',
 }
 
+// ─── Sector 2 Behavioral Parts ──────────────────────────────────────────────
+
+const bypassCircuit: BehavioralPartDefinition = {
+  id: 'bypass-circuit',
+  name: 'Bypass Circuit',
+  description: 'When ARMS fires, deal +4 bonus damage.',
+  trigger: { type: 'onSlotFire', slot: 'Arms' },
+  effect: { type: 'bonusDamage', value: 4 },
+  rarity: 'uncommon',
+}
+
+const thermalBuffer: BehavioralPartDefinition = {
+  id: 'thermal-buffer',
+  name: 'Thermal Buffer',
+  description: 'At turn start, while Hot: gain +4 Block.',
+  trigger: { type: 'onTurnStart' },
+  effect: { type: 'bonusBlock', value: 4 },
+  rarity: 'uncommon',
+  heatCondition: 'Hot',
+}
+
+const emergencyDraw: BehavioralPartDefinition = {
+  id: 'emergency-draw',
+  name: 'Emergency Draw',
+  description: 'At turn start, draw 1 extra card.',
+  trigger: { type: 'onTurnStart' },
+  effect: { type: 'drawCards', count: 1 },
+  rarity: 'rare',
+}
+
+const siphonCore: BehavioralPartDefinition = {
+  id: 'siphon-core',
+  name: 'Siphon Core',
+  description: 'When LEGS fires, heal 2 HP.',
+  trigger: { type: 'onSlotFire', slot: 'Legs' },
+  effect: { type: 'bonusHealing', value: 2 },
+  rarity: 'uncommon',
+}
+
+const hardenedFrame: BehavioralPartDefinition = {
+  id: 'hardened-frame',
+  name: 'Hardened Frame',
+  description: 'When TORSO fires, gain +3 Block.',
+  trigger: { type: 'onSlotFire', slot: 'Torso' },
+  effect: { type: 'bonusBlock', value: 3 },
+  rarity: 'uncommon',
+}
+
+const volatileReactor: BehavioralPartDefinition = {
+  id: 'volatile-reactor',
+  name: 'Volatile Reactor',
+  description: 'When heat crosses a threshold, draw 1 card and deal +3 bonus damage on next ARMS fire.',
+  trigger: { type: 'onThresholdCross' },
+  effect: { type: 'drawCards', count: 1 },
+  rarity: 'rare',
+}
+
 // ─── Archetype Mods ─────────────────────────────────────────────────────────
 
 const frostCore: BehavioralPartDefinition = {
@@ -234,12 +374,18 @@ export const EQUIPMENT: EquipmentDefinition[] = [
   scrapPlating, patchedHull, thermalPlating,
   pistonArm, weldingTorch, overclockedPistons,
   wornActuators, salvagedTreads, adaptiveTreads,
+  thermalImager, predictiveArray,
+  reactivePlating, heatShield,
+  plasmaCutter, arcWelder,
+  coolantInjector, stabilizerTreads,
 ]
 
 export const BEHAVIORAL_PARTS: BehavioralPartDefinition[] = [
   salvagedPlating, tensionSpring, reactiveFrame, opticalExpander,
   coolingFins, reinforcedJoints, scavengerLens, heatSink,
   frostCore, overheater, fluxCapacitor,
+  bypassCircuit, thermalBuffer, emergencyDraw,
+  siphonCore, hardenedFrame, volatileReactor,
 ]
 
 export const ALL_EQUIPMENT: Record<string, EquipmentDefinition> = Object.fromEntries(

@@ -11,16 +11,30 @@ import EventScreen from './EventScreen'
 import RunInfoOverlay from './RunInfoOverlay'
 import { generateGridMaze } from '../game/mapGen'
 import { makeEnemyInstance, makeCardInstance } from '../game/combat'
-import { SECTOR1_ENEMIES, SECTOR1_BOSS } from '../data/enemies'
-import { STARTING_CARDS, SECTOR1_CARD_POOL, yanah, yuri } from '../data/cards'
+import {
+  SECTOR1_BOSS, SECTOR2_BOSS,
+  SECTOR1_ENCOUNTERS, SECTOR1_ELITE_ENCOUNTERS,
+  SECTOR2_ENCOUNTERS, SECTOR2_ELITE_ENCOUNTERS,
+  ALL_ENEMIES,
+} from '../data/enemies'
+import { STARTING_CARDS, SECTOR1_CARD_POOL, SECTOR2_CARD_POOL, yanah, yuri } from '../data/cards'
 import { ALL_PARTS, STARTING_TORSO, STARTING_ARMS } from '../data/parts'
 
-function pickEnemiesForRoom(room: GridRoom, _sector: number) {
-  if (room.type === 'Boss') return [makeEnemyInstance(SECTOR1_BOSS)]
-  const pool = SECTOR1_ENEMIES
-  const count = Math.random() < 0.3 ? 2 : 1
-  const picked = [...pool].sort(() => Math.random() - 0.5).slice(0, count)
-  return picked.map(makeEnemyInstance)
+function pickEnemiesForRoom(room: GridRoom, sector: number) {
+  if (room.type === 'Boss') {
+    const boss = sector >= 2 ? SECTOR2_BOSS : SECTOR1_BOSS
+    return [makeEnemyInstance(boss)]
+  }
+  const encounters = sector >= 2 ? SECTOR2_ENCOUNTERS : SECTOR1_ENCOUNTERS
+  const eliteEncounters = sector >= 2 ? SECTOR2_ELITE_ENCOUNTERS : SECTOR1_ELITE_ENCOUNTERS
+  // ~20% of combat rooms are elite encounters
+  const pool = Math.random() < 0.2 ? eliteEncounters : encounters
+  const encounter = pool[Math.floor(Math.random() * pool.length)]
+  return encounter.enemies.map(id => {
+    const def = ALL_ENEMIES[id]
+    if (!def) throw new Error(`Unknown enemy: ${id}`)
+    return makeEnemyInstance(def)
+  })
 }
 
 export default function RunScreen() {
@@ -253,6 +267,7 @@ export default function RunScreen() {
     return (
       <ShopScreen
         shards={run.shards}
+        sector={run.sector}
         carriedPart={permanent.carriedPart}
         onBuyCard={(cardId, cost) => {
           if (run.shards < cost) return
@@ -288,7 +303,8 @@ export default function RunScreen() {
           if (outcome.type === 'health') run.heal(outcome.value)
           if (outcome.type === 'shards') run.addShards(outcome.value)
           if (outcome.type === 'card') {
-            const nonBasics = SECTOR1_CARD_POOL.filter((c) => !['boost', 'emergency-strike', 'coolant-flush', 'diagnostics'].includes(c.id))
+            const sectorPool = run.sector >= 2 ? SECTOR2_CARD_POOL : SECTOR1_CARD_POOL
+            const nonBasics = sectorPool.filter((c) => !['boost', 'emergency-strike', 'coolant-flush', 'diagnostics'].includes(c.id))
             const picked = nonBasics[Math.floor(Math.random() * nonBasics.length)]
             if (picked) run.addCardToDeck(makeCardInstance(picked.id))
           }

@@ -74,7 +74,7 @@ export type SlotModifierEffect =
 export type SystemEffect =
   | { type: 'draw'; count: number }
   | { type: 'heal'; value: number }
-  | { type: 'applyStatus'; status: StatusEffectType; stacks: number; target: 'self' }
+  | { type: 'applyStatus'; status: StatusEffectType; stacks: number; target: 'self' | 'all_enemies' }
   | { type: 'removeDebuff'; count: number }
   | { type: 'gainBlock'; value: number }
   | { type: 'damage'; value: number; targetMode: TargetMode }

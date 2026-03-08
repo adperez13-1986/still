@@ -1,6 +1,10 @@
-import type { DropPool } from '../game/types'
-import { SECTOR1_CARD_POOL } from '../data/cards'
+import type { DropPool, ModifierCardDefinition } from '../game/types'
+import { SECTOR1_CARD_POOL, SECTOR2_CARD_POOL } from '../data/cards'
 import { PARTS, EQUIPMENT } from '../data/parts'
+
+function getCardPoolForSector(sector: number): ModifierCardDefinition[] {
+  return sector >= 2 ? SECTOR2_CARD_POOL : SECTOR1_CARD_POOL
+}
 
 export type ResolvedDrop =
   | { type: 'shards'; amount: number }
@@ -25,11 +29,12 @@ function resolveShardDrop(entry: DropPool): ResolvedDrop {
   return { type: 'shards', amount }
 }
 
-function resolveBonusDrop(entry: DropPool): ResolvedDrop[] {
+function resolveBonusDrop(entry: DropPool, sector: number): ResolvedDrop[] {
   if (entry.type === 'card') {
+    const cardPool = getCardPoolForSector(sector)
     const pool = entry.ids
-      ? SECTOR1_CARD_POOL.filter((c) => entry.ids!.includes(c.id))
-      : SECTOR1_CARD_POOL
+      ? cardPool.filter((c) => entry.ids!.includes(c.id))
+      : cardPool
     const shuffled = [...pool].sort(() => Math.random() - 0.5)
     return shuffled.slice(0, 3).map((c) => ({ type: 'card', cardId: c.id }))
   }
@@ -58,7 +63,7 @@ export interface DropResult {
   droppedEquipment: boolean
 }
 
-export function resolveDrops(dropPool: DropPool[], equipPity = 0): DropResult {
+export function resolveDrops(dropPool: DropPool[], equipPity = 0, sector = 1): DropResult {
   const shardEntries = dropPool.filter((d) => d.type === 'shards')
   const bonusEntries = dropPool.filter((d) => d.type !== 'shards')
 
@@ -90,7 +95,7 @@ export function resolveDrops(dropPool: DropPool[], equipPity = 0): DropResult {
   // Roll for a bonus drop
   if (weighted.length > 0) {
     const chosen = weightedRandom(weighted)
-    results.push(...resolveBonusDrop(chosen))
+    results.push(...resolveBonusDrop(chosen, sector))
   }
 
   const droppedEquipment = results.some((r) => r.type === 'equipment')

@@ -628,6 +628,17 @@ export function playModifierCard(
               effect.stacks
             )
             result.log.push(`Applied ${effect.stacks} ${effect.status}`)
+          } else if (effect.target === 'all_enemies') {
+            for (const enemy of result.combat.enemies) {
+              if (!enemy.isDefeated) {
+                enemy.statusEffects = addStatus(
+                  enemy.statusEffects,
+                  effect.status,
+                  effect.stacks
+                )
+              }
+            }
+            result.log.push(`Applied ${effect.stacks} ${effect.status} to all enemies`)
           }
           break
         case 'removeDebuff': {

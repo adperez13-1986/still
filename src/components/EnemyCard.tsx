@@ -65,6 +65,7 @@ export default function EnemyCard({ instance, definition, selected, recentDamage
   if (compact) {
     const intentColor = currentIntent ? (INTENT_COLORS[currentIntent.type] ?? '#aaa') : '#aaa'
     const intentIcon = currentIntent ? (INTENT_ICONS[currentIntent.type] ?? '?') : '?'
+    const sprite = getEnemySprite(definition.id)
 
     return (
       <div
@@ -76,78 +77,85 @@ export default function EnemyCard({ instance, definition, selected, recentDamage
           backgroundColor: instance.isDefeated ? '#1a1a1a' : '#1e1e2e',
           border: `2px solid ${selected ? '#f1c40f' : instance.isDefeated ? '#333' : '#4a4a6a'}`,
           borderRadius: '6px',
-          padding: '4px 10px',
-          minHeight: '36px',
+          padding: '6px 10px',
           cursor: instance.isDefeated ? 'default' : 'pointer',
           opacity: instance.isDefeated ? 0.4 : 1,
           transition: 'border-color 0.15s, box-shadow 0.15s',
           boxShadow: selected ? '0 0 8px rgba(241,196,15,0.3)' : 'none',
           fontSize: '12px',
           color: '#e8e8e8',
-          flexWrap: 'wrap',
         }}
       >
-        {/* TGT label */}
-        {selected && !instance.isDefeated && (
-          <span style={{ fontWeight: 'bold', color: '#f1c40f', fontSize: '10px', letterSpacing: '1px' }}>TGT</span>
-        )}
-        {/* Name */}
-        <span style={{
-          fontWeight: 'bold',
-          color: definition.isBoss ? '#e74c3c' : definition.isElite ? '#e67e22' : '#e8e8e8',
-          whiteSpace: 'nowrap',
-        }}>
-          {definition.name}
-        </span>
-        {/* Health bar + value */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', position: 'relative' }}>
-          {recentDamage != null && recentDamage > 0 && (
-            <span key={recentDamage + instance.currentHealth} className="damage-popup" style={{ fontSize: '10px' }}>
-              -{recentDamage}
-            </span>
-          )}
-          <div style={{
-            width: '80px',
-            height: '8px',
-            backgroundColor: '#2c3e50',
-            borderRadius: '4px',
-            overflow: 'hidden',
-          }}>
-            <div style={{
-              height: '100%',
-              width: `${healthPct}%`,
-              backgroundColor: '#e74c3c',
-              borderRadius: '4px',
-              transition: 'width 0.3s',
-            }} />
-          </div>
-          <span style={{ fontSize: '11px', color: '#aaa' }}>{instance.currentHealth}/{instance.maxHealth}</span>
+        {/* Sprite */}
+        <div style={{ flexShrink: 0 }}>
+          <Sprite art={sprite.art} palette={sprite.palette} pixelSize={2} />
         </div>
-        {/* Block */}
-        {instance.block > 0 && (
-          <span style={{ color: '#74b9ff', fontWeight: 'bold', fontSize: '11px' }}>+{instance.block}blk</span>
-        )}
-        {/* Intent */}
-        {!instance.isDefeated && currentIntent && (
-          <span style={{ color: intentColor, fontWeight: 'bold', fontSize: '11px' }}>
-            [{intentIcon} {currentIntent.value}]
-          </span>
-        )}
-        {/* Status pills abbreviated */}
-        {instance.statusEffects.map((s) => (
-          <span key={s.type} style={{
-            fontSize: '10px',
-            backgroundColor: '#2c3e50',
-            borderRadius: '3px',
-            padding: '1px 4px',
-            color: '#dfe6e9',
-          }}>
-            {s.type[0]}{s.stacks}
-          </span>
-        ))}
-        {instance.isDefeated && (
-          <span style={{ fontSize: '11px', color: '#555' }}>Defeated</span>
-        )}
+        {/* Info */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {/* Row 1: name + health */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+            {selected && !instance.isDefeated && (
+              <span style={{ fontWeight: 'bold', color: '#f1c40f', fontSize: '10px', letterSpacing: '1px' }}>TGT</span>
+            )}
+            <span style={{
+              fontWeight: 'bold',
+              color: definition.isBoss ? '#e74c3c' : definition.isElite ? '#e67e22' : '#e8e8e8',
+              whiteSpace: 'nowrap',
+              fontSize: '11px',
+            }}>
+              {definition.name}
+            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', position: 'relative' }}>
+              {recentDamage != null && recentDamage > 0 && (
+                <span key={recentDamage + instance.currentHealth} className="damage-popup" style={{ fontSize: '10px' }}>
+                  -{recentDamage}
+                </span>
+              )}
+              <div style={{
+                width: '60px',
+                height: '6px',
+                backgroundColor: '#2c3e50',
+                borderRadius: '3px',
+                overflow: 'hidden',
+              }}>
+                <div style={{
+                  height: '100%',
+                  width: `${healthPct}%`,
+                  backgroundColor: '#e74c3c',
+                  borderRadius: '3px',
+                  transition: 'width 0.3s',
+                }} />
+              </div>
+              <span style={{ fontSize: '10px', color: '#aaa' }}>{instance.currentHealth}/{instance.maxHealth}</span>
+            </div>
+          </div>
+          {/* Row 2: block + intent + status */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px', flexWrap: 'wrap' }}>
+            {instance.block > 0 && (
+              <span style={{ color: '#74b9ff', fontWeight: 'bold', fontSize: '10px' }}>[shield {instance.block}]</span>
+            )}
+            {!instance.isDefeated && currentIntent && (
+              <span style={{ color: intentColor, fontWeight: 'bold', fontSize: '10px' }}>
+                {intentIcon} {currentIntent.value}
+                {currentIntent.status && <span style={{ color: '#aaa', fontWeight: 'normal' }}> +{currentIntent.status[0]}{currentIntent.statusStacks ?? 1}</span>}
+              </span>
+            )}
+            {instance.statusEffects.map((s) => (
+              <span key={s.type} style={{
+                fontSize: '9px',
+                backgroundColor: '#2c3e50',
+                borderRadius: '3px',
+                padding: '1px 4px',
+                color: '#dfe6e9',
+              }}>
+                {s.type[0]}{s.stacks}
+              </span>
+            ))}
+            {instance.isDefeated && (
+              <span style={{ fontSize: '10px', color: '#555' }}>Defeated</span>
+            )}
+          </div>
+        </div>
       </div>
     )
   }
