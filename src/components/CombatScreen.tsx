@@ -256,7 +256,7 @@ export default function CombatScreen() {
     const allDrops = defeatedEnemies.flatMap(e => {
       const def = ALL_ENEMIES[e.definitionId]
       if (!def?.dropPool.length) return []
-      const result = resolveDrops(def.dropPool, run.equipPity, run.sector)
+      const result = resolveDrops(def.dropPool, run.equipPity, run.sector, run.parts.map(p => p.id))
       if (result.droppedEquipment) anyEquipDropped = true
       return result.drops
     })
