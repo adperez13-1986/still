@@ -265,6 +265,7 @@ export interface RunState {
   combat: CombatState | null
   nameDiscovered: boolean
   equipPity: number
+  isDebug?: boolean
 }
 
 // ─── Carried Part ─────────────────────────────────────────────────────────────

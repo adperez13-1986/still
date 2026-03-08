@@ -330,16 +330,18 @@ export default function CombatScreen() {
                 return
               }
               // Final sector boss — end the run
-              permanent.addShards(run.shards)
-              permanent.addRunHistory({
-                id: `run-${Date.now()}`,
-                date: new Date().toISOString(),
-                sectorReached: run.sector,
-                outcome: 'victory',
-                message: 'Cleared the sector.',
-                notable: run.parts.map(p => p.name),
-              })
-              permanent.save()
+              if (!run.isDebug) {
+                permanent.addShards(run.shards)
+                permanent.addRunHistory({
+                  id: `run-${Date.now()}`,
+                  date: new Date().toISOString(),
+                  sectorReached: run.sector,
+                  outcome: 'victory',
+                  message: 'Cleared the sector.',
+                  notable: run.parts.map(p => p.name),
+                })
+                permanent.save()
+              }
               run.endRun()
               navigate('/', {
                 state: {
@@ -393,18 +395,20 @@ export default function CombatScreen() {
         </p>
         <button
           onClick={() => {
-            // Transfer shards to permanent store
-            permanent.addShards(run.shards)
-            // Record run history
-            permanent.addRunHistory({
-              id: `run-${Date.now()}`,
-              date: new Date().toISOString(),
-              sectorReached: run.sector,
-              outcome: 'defeat',
-              message: 'Fell in combat.',
-              notable: run.parts.map(p => p.name),
-            })
-            permanent.save()
+            if (!run.isDebug) {
+              // Transfer shards to permanent store
+              permanent.addShards(run.shards)
+              // Record run history
+              permanent.addRunHistory({
+                id: `run-${Date.now()}`,
+                date: new Date().toISOString(),
+                sectorReached: run.sector,
+                outcome: 'defeat',
+                message: 'Fell in combat.',
+                notable: run.parts.map(p => p.name),
+              })
+              permanent.save()
+            }
             run.endRun()
             navigate('/', {
               state: {

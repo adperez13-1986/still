@@ -17,8 +17,8 @@ import {
   SECTOR2_ENCOUNTERS, SECTOR2_ELITE_ENCOUNTERS,
   ALL_ENEMIES,
 } from '../data/enemies'
-import { STARTING_CARDS, SECTOR1_CARD_POOL, SECTOR2_CARD_POOL, yanah, yuri } from '../data/cards'
-import { ALL_PARTS, STARTING_TORSO, STARTING_ARMS } from '../data/parts'
+import { STARTING_CARDS, SECTOR1_CARD_POOL, SECTOR2_CARD_POOL, ALL_CARDS, yanah, yuri } from '../data/cards'
+import { ALL_PARTS, ALL_EQUIPMENT, STARTING_TORSO, STARTING_ARMS } from '../data/parts'
 
 function pickEnemiesForRoom(room: GridRoom, sector: number) {
   if (room.type === 'Boss') {
@@ -48,6 +48,43 @@ export default function RunScreen() {
   // Initialize run if not active
   useEffect(() => {
     if (run.active) return
+
+    // Debug shortcut: /run?debug=s2 starts directly in Sector 2 with a loaded build
+    const params = new URLSearchParams(location.search)
+    if (params.get('debug') === 's2') {
+      const deck = [
+        ...STARTING_CARDS.map(c => makeCardInstance(c.id)),
+        makeCardInstance('overcharge'),
+        makeCardInstance('spread-shot'),
+        makeCardInstance('thermal-flux'),
+        makeCardInstance('glacier-lance'),
+        makeCardInstance('controlled-burn'),
+        makeCardInstance('failsafe-protocol'),
+        makeCardInstance('salvage-burst'),
+      ]
+      run.startRun({
+        sector: 2,
+        map: generateGridMaze(2),
+        health: 60,
+        maxHealth: 70,
+        drawCount: 5,
+        passiveCoolingBonus: 0,
+        deck,
+        parts: [ALL_PARTS['bypass-circuit'], ALL_PARTS['thermal-buffer']].filter(Boolean),
+        equipment: {
+          Head: ALL_EQUIPMENT['thermal-imager'] ?? null,
+          Torso: ALL_EQUIPMENT['reactive-plating'] ?? null,
+          Arms: ALL_EQUIPMENT['plasma-cutter'] ?? null,
+          Legs: ALL_EQUIPMENT['coolant-injector'] ?? null,
+        },
+        shards: 80,
+        combat: null,
+        nameDiscovered: true,
+        equipPity: 0,
+        isDebug: true,
+      })
+      return
+    }
 
     const bonuses = (location.state as { bonuses?: FragmentBonus[] })?.bonuses ?? []
     const sumBonus = (type: FragmentBonus['type']) =>
