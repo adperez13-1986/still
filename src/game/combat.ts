@@ -788,6 +788,9 @@ export function executeEnemyTurn(ctx: CombatContext): CombatResult {
     log: [],
   }
 
+  // Clear slot disables from previous enemy turn (before applying new ones)
+  result.combat.disabledSlots = []
+
   // Reset enemy block
   for (const enemy of result.combat.enemies) {
     enemy.block = 0
@@ -980,9 +983,6 @@ export function startTurn(ctx: CombatContext, inspiredBonus = 0): CombatResult {
 
   // Step 2: Block resets to 0
   result.combat.block = 0
-
-  // Step 2b: Disabled slots recover
-  result.combat.disabledSlots = []
 
   // Step 3: Draw modifier cards
   const drawCount = ctx.drawCount + inspiredBonus
