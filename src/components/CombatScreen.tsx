@@ -20,6 +20,7 @@ import RewardScreen from './RewardScreen'
 import EquipCompareOverlay from './EquipCompareOverlay'
 import RunInfoOverlay from './RunInfoOverlay'
 import DamageNumber from './DamageNumber'
+import PartBadges from './PartBadges'
 
 export default function CombatScreen() {
   const navigate = useNavigate()
@@ -44,6 +45,7 @@ export default function CombatScreen() {
   }>>([])
   const dmgIdRef = useRef(0)
   const animLogRef = useRef<CombatEvent[]>([])
+  const [activePartIds, setActivePartIds] = useState<Set<string>>(new Set())
 
   // ─── Display State (intermediate values during animation) ───────
   const [displayHealth, setDisplayHealth] = useState<number | null>(null)
@@ -123,6 +125,7 @@ export default function CombatScreen() {
         setTimeout(() => {
           setAnimating(false)
           setActiveSlot(null)
+          setActivePartIds(new Set())
           setDamageNumbers([])
           setDisplayHealth(null)
           setDisplayBlock(null)
@@ -155,6 +158,17 @@ export default function CombatScreen() {
           applyEvent(event)
           setTimeout(playNext, 500)
         }, 200)
+      } else if (event.type === 'partTrigger') {
+        // Glow the badge immediately, clear after 600ms, no delay on sequence
+        setActivePartIds(prev => new Set([...prev, event.partId]))
+        setTimeout(() => {
+          setActivePartIds(prev => {
+            const next = new Set(prev)
+            next.delete(event.partId)
+            return next
+          })
+        }, 600)
+        playNext()
       } else if (event.type === 'overheatShutdown') {
         setTimeout(playNext, 400)
       } else {
@@ -609,55 +623,60 @@ export default function CombatScreen() {
 
       {/* Execute section */}
       {isMobile ? (
-        // Sticky bottom bar on mobile
-        <div style={{
-          position: 'sticky',
-          bottom: 0,
-          backgroundColor: '#0d0d1a',
-          borderTop: '1px solid #2c3e50',
-          padding: '8px',
-          zIndex: 10,
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-        }}>
-          <span style={{ fontSize: '10px', color: '#555', whiteSpace: 'nowrap' }}>
-            Sector {run.sector} · Round {combat.roundNumber}
-          </span>
-          <button
-            onClick={() => setInfoTab('equips')}
-            style={{
-              background: 'none',
-              border: '1px solid #333',
-              borderRadius: '4px',
-              color: '#74b9ff',
-              fontSize: '10px',
-              cursor: 'pointer',
-              padding: '4px 8px',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            Info
-          </button>
-          <button
-            onClick={handleExecute}
-            disabled={animating || combat.phase !== 'planning'}
-            style={{
-              flex: 1,
-              padding: '10px',
-              backgroundColor: !animating && combat.phase === 'planning' ? '#a29bfe' : '#2c3e50',
-              border: 'none',
-              color: !animating && combat.phase === 'planning' ? '#0d0d1a' : '#555',
-              borderRadius: '6px',
-              cursor: !animating && combat.phase === 'planning' ? 'pointer' : 'not-allowed',
-              fontSize: '14px',
-              fontWeight: 'bold',
-              letterSpacing: '2px',
-            }}
-          >
-            EXECUTE
-          </button>
-        </div>
+        // Sticky bottom bar + part badges on mobile
+        <>
+          <div style={{
+            position: 'sticky',
+            bottom: 0,
+            backgroundColor: '#0d0d1a',
+            borderTop: '1px solid #2c3e50',
+            padding: '8px',
+            zIndex: 10,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}>
+            <span style={{ fontSize: '10px', color: '#555', whiteSpace: 'nowrap' }}>
+              Sector {run.sector} · Round {combat.roundNumber}
+            </span>
+            <button
+              onClick={() => setInfoTab('equips')}
+              style={{
+                background: 'none',
+                border: '1px solid #333',
+                borderRadius: '4px',
+                color: '#74b9ff',
+                fontSize: '10px',
+                cursor: 'pointer',
+                padding: '4px 8px',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              Info
+            </button>
+            <button
+              onClick={handleExecute}
+              disabled={animating || combat.phase !== 'planning'}
+              style={{
+                flex: 1,
+                padding: '10px',
+                backgroundColor: !animating && combat.phase === 'planning' ? '#a29bfe' : '#2c3e50',
+                border: 'none',
+                color: !animating && combat.phase === 'planning' ? '#0d0d1a' : '#555',
+                borderRadius: '6px',
+                cursor: !animating && combat.phase === 'planning' ? 'pointer' : 'not-allowed',
+                fontSize: '14px',
+                fontWeight: 'bold',
+                letterSpacing: '2px',
+              }}
+            >
+              EXECUTE
+            </button>
+          </div>
+          {run.parts.length > 0 && (
+            <PartBadges parts={run.parts} activePartIds={activePartIds} />
+          )}
+        </>
       ) : (
         // Desktop: centered button + round info
         <>

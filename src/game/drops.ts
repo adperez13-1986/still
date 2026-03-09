@@ -1,6 +1,6 @@
 import type { DropPool, ModifierCardDefinition } from '../game/types'
 import { SECTOR1_CARD_POOL, SECTOR2_CARD_POOL } from '../data/cards'
-import { PARTS, EQUIPMENT } from '../data/parts'
+import { SECTOR1_PART_POOL, SECTOR2_PART_POOL, EQUIPMENT } from '../data/parts'
 
 function getCardPoolForSector(sector: number): ModifierCardDefinition[] {
   return sector >= 2 ? SECTOR2_CARD_POOL : SECTOR1_CARD_POOL
@@ -40,9 +40,10 @@ function resolveBonusDrop(entry: DropPool, sector: number, ownedPartIds: string[
   }
 
   if (entry.type === 'part') {
+    const sectorPool = sector >= 2 ? SECTOR2_PART_POOL : SECTOR1_PART_POOL
     const base = entry.ids
-      ? PARTS.filter((p) => entry.ids!.includes(p.id))
-      : PARTS
+      ? sectorPool.filter((p) => entry.ids!.includes(p.id))
+      : sectorPool
     const pool = base.filter((p) => !ownedPartIds.includes(p.id))
     if (pool.length === 0) return [{ type: 'shards', amount: 15 }]
     const picked = pool[Math.floor(Math.random() * pool.length)]

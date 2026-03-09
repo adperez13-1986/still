@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { SECTOR1_CARD_POOL, SECTOR2_CARD_POOL, STARTING_CARDS, ALL_CARDS } from '../data/cards'
-import { EQUIPMENT, BEHAVIORAL_PARTS } from '../data/parts'
+import { EQUIPMENT, SECTOR1_PART_POOL, SECTOR2_PART_POOL } from '../data/parts'
 import { SECTOR1_ENEMIES, SECTOR1_ELITES, SECTOR1_BOSS, SECTOR2_ENEMIES, SECTOR2_ELITES, SECTOR2_BOSS } from '../data/enemies'
 import type { ModifierCardDefinition, EnemyDefinition } from '../game/types'
 
@@ -157,20 +157,34 @@ function EquipmentTab() {
 
 // ─── Mods Tab ───────────────────────────────────────────────────────────────
 
+function PartEntry({ part }: { part: { id: string; name: string; description: string; rarity: string; heatCondition?: string } }) {
+  return (
+    <div style={entryStyle}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#e8e8e8' }}>{part.name}</span>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          {part.heatCondition && (
+            <span style={{ fontSize: '10px', color: '#fdcb6e', letterSpacing: '1px' }}>
+              {part.heatCondition}
+            </span>
+          )}
+          <span style={{ fontSize: '10px', color: RARITY_COLORS[part.rarity], letterSpacing: '1px' }}>
+            {part.rarity.toUpperCase()}
+          </span>
+        </div>
+      </div>
+      <div style={{ fontSize: '12px', color: '#aaa', marginTop: '4px' }}>{part.description}</div>
+    </div>
+  )
+}
+
 function ModsTab() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-      {BEHAVIORAL_PARTS.map((p) => (
-        <div key={p.id} style={entryStyle}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#e8e8e8' }}>{p.name}</span>
-            <span style={{ fontSize: '10px', color: RARITY_COLORS[p.rarity], letterSpacing: '1px' }}>
-              {p.rarity.toUpperCase()}
-            </span>
-          </div>
-          <div style={{ fontSize: '12px', color: '#aaa', marginTop: '4px' }}>{p.description}</div>
-        </div>
-      ))}
+      <h4 style={sectionHeaderStyle}>SECTOR 1</h4>
+      {SECTOR1_PART_POOL.map((p) => <PartEntry key={p.id} part={p} />)}
+      <h4 style={sectionHeaderStyle}>SECTOR 2</h4>
+      {SECTOR2_PART_POOL.map((p) => <PartEntry key={p.id} part={p} />)}
     </div>
   )
 }

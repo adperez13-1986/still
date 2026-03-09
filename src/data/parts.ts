@@ -205,23 +205,59 @@ const stabilizerTreads: EquipmentDefinition = {
   bonusBlockPerHeatLost: 3,
 }
 
-// ─── Behavioral Parts (Task 3.7) ────────────────────────────────────────────
+// ─── Sector 1 Behavioral Parts ──────────────────────────────────────────────
 
-const salvagedPlating: BehavioralPartDefinition = {
-  id: 'salvaged-plating',
-  name: 'Salvaged Plating',
-  description: 'When TORSO fires, gain +2 Block.',
-  trigger: { type: 'onSlotFire', slot: 'Torso' },
-  effect: { type: 'bonusBlock', value: 2 },
-  rarity: 'common',
+const feedbackLoop: BehavioralPartDefinition = {
+  id: 'feedback-loop',
+  name: 'Feedback Loop',
+  description: 'When you assign a modifier to a slot, reduce Heat by 1.',
+  trigger: { type: 'onModifierAssign' },
+  effect: { type: 'reduceHeat', value: 1 },
+  rarity: 'uncommon',
 }
 
-const tensionSpring: BehavioralPartDefinition = {
-  id: 'tension-spring',
-  name: 'Tension Spring',
-  description: 'When you play an Amplify modifier, reduce Heat by 1.',
-  trigger: { type: 'onModifierPlay', modifier: 'Amplify' },
+const residualCharge: BehavioralPartDefinition = {
+  id: 'residual-charge',
+  name: 'Residual Charge',
+  description: 'System cards you play also reduce Heat by 1.',
+  trigger: { type: 'onCardPlay' },
   effect: { type: 'reduceHeat', value: 1 },
+  rarity: 'uncommon',
+}
+
+const scrapRecycler: BehavioralPartDefinition = {
+  id: 'scrap-recycler',
+  name: 'Scrap Recycler',
+  description: 'When a card is Exhausted, gain 4 Block.',
+  trigger: { type: 'onCardExhaust' },
+  effect: { type: 'bonusBlock', value: 4 },
+  rarity: 'uncommon',
+}
+
+const ablativeShell: BehavioralPartDefinition = {
+  id: 'ablative-shell',
+  name: 'Ablative Shell',
+  description: 'The first hit each combat dealing 8+ damage is halved.',
+  trigger: { type: 'onDamageTaken' },
+  effect: { type: 'halveLargeDamage', threshold: 8 },
+  rarity: 'uncommon',
+}
+
+const momentumCore: BehavioralPartDefinition = {
+  id: 'momentum-core',
+  name: 'Momentum Core',
+  description: 'If all 4 body slots fire this turn, gain 3 Block and draw 1 card.',
+  trigger: { type: 'onSlotFire', slot: 'Head' }, // checked post-execution
+  effect: { type: 'bonusBlock', value: 3 },
+  rarity: 'uncommon',
+}
+
+const pressureValve: BehavioralPartDefinition = {
+  id: 'pressure-valve',
+  name: 'Pressure Valve',
+  description: 'When you would Overheat, instead set Heat to 8 and deal 5 damage to all enemies.',
+  trigger: { type: 'onWouldOverheat' },
+  effect: { type: 'preventOverheat', setHeat: 8, damage: 5 },
   rarity: 'uncommon',
 }
 
@@ -234,134 +270,97 @@ const reactiveFrame: BehavioralPartDefinition = {
   rarity: 'rare',
 }
 
-const opticalExpander: BehavioralPartDefinition = {
-  id: 'optical-expander',
-  name: 'Optical Expander',
-  description: 'When HEAD fires, draw 1 extra card.',
-  trigger: { type: 'onSlotFire', slot: 'Head' },
-  effect: { type: 'drawCards', count: 1 },
-  rarity: 'uncommon',
-}
-
-const coolingFins: BehavioralPartDefinition = {
-  id: 'cooling-fins',
-  name: 'Cooling Fins',
-  description: 'At the start of each turn, reduce Heat by 1.',
-  trigger: { type: 'onTurnStart' },
-  effect: { type: 'reduceHeat', value: 1 },
-  rarity: 'uncommon',
-}
-
-const reinforcedJoints: BehavioralPartDefinition = {
-  id: 'reinforced-joints',
-  name: 'Reinforced Joints',
-  description: 'When ARMS fires, deal +2 bonus damage.',
-  trigger: { type: 'onSlotFire', slot: 'Arms' },
-  effect: { type: 'bonusDamage', value: 2 },
-  rarity: 'common',
-}
-
-const scavengerLens: BehavioralPartDefinition = {
-  id: 'scavenger-lens',
-  name: 'Scavenger Lens',
-  description: 'At combat start, draw 1 extra card.',
-  trigger: { type: 'onCombatStart' },
-  effect: { type: 'drawCards', count: 1 },
-  rarity: 'common',
-}
-
-const heatSink: BehavioralPartDefinition = {
-  id: 'heat-sink',
-  name: 'Heat Sink',
-  description: 'When LEGS fires, reduce Heat by 1.',
-  trigger: { type: 'onSlotFire', slot: 'Legs' },
-  effect: { type: 'reduceHeat', value: 1 },
-  rarity: 'uncommon',
-}
-
-// ─── Sector 2 Behavioral Parts ──────────────────────────────────────────────
-
-const bypassCircuit: BehavioralPartDefinition = {
-  id: 'bypass-circuit',
-  name: 'Bypass Circuit',
-  description: 'When ARMS fires, deal +4 bonus damage.',
-  trigger: { type: 'onSlotFire', slot: 'Arms' },
-  effect: { type: 'bonusDamage', value: 4 },
-  rarity: 'uncommon',
-}
-
-const thermalBuffer: BehavioralPartDefinition = {
-  id: 'thermal-buffer',
-  name: 'Thermal Buffer',
-  description: 'At turn start, while Hot: gain +4 Block.',
-  trigger: { type: 'onTurnStart' },
-  effect: { type: 'bonusBlock', value: 4 },
-  rarity: 'uncommon',
-  heatCondition: 'Hot',
-}
-
-const emergencyDraw: BehavioralPartDefinition = {
-  id: 'emergency-draw',
-  name: 'Emergency Draw',
-  description: 'At turn start, draw 1 extra card.',
-  trigger: { type: 'onTurnStart' },
+const fluxCapacitor: BehavioralPartDefinition = {
+  id: 'flux-capacitor',
+  name: 'Flux Capacitor',
+  description: 'When heat crosses a threshold, draw 1 card.',
+  trigger: { type: 'onThresholdCross' },
   effect: { type: 'drawCards', count: 1 },
   rarity: 'rare',
 }
 
-const siphonCore: BehavioralPartDefinition = {
-  id: 'siphon-core',
-  name: 'Siphon Core',
-  description: 'When LEGS fires, heal 2 HP.',
-  trigger: { type: 'onSlotFire', slot: 'Legs' },
-  effect: { type: 'bonusHealing', value: 2 },
+// ─── Sector 2 Behavioral Parts ──────────────────────────────────────────────
+
+const zeroPointField: BehavioralPartDefinition = {
+  id: 'zero-point-field',
+  name: 'Zero Point Field',
+  description: 'At turn start, if Cool: cards cost 1 less Heat this turn (min 0).',
+  trigger: { type: 'onTurnStart' },
+  effect: { type: 'reduceCardHeatCosts', value: 1 },
+  rarity: 'uncommon',
+  heatCondition: 'Cool',
+}
+
+const salvageProtocol: BehavioralPartDefinition = {
+  id: 'salvage-protocol',
+  name: 'Salvage Protocol',
+  description: 'Disabled slots generate 5 Block instead of doing nothing.',
+  trigger: { type: 'onSlotFire', slot: 'Head' }, // checked during execution
+  effect: { type: 'blockForDisabledSlots', value: 5 },
   rarity: 'uncommon',
 }
 
-const hardenedFrame: BehavioralPartDefinition = {
-  id: 'hardened-frame',
-  name: 'Hardened Frame',
-  description: 'When TORSO fires, gain +3 Block.',
-  trigger: { type: 'onSlotFire', slot: 'Torso' },
+const thermalOscillator: BehavioralPartDefinition = {
+  id: 'thermal-oscillator',
+  name: 'Thermal Oscillator',
+  description: 'When heat crosses a threshold, gain 3 Block and deal 3 damage to all enemies.',
+  trigger: { type: 'onThresholdCross' },
   effect: { type: 'bonusBlock', value: 3 },
   rarity: 'uncommon',
+}
+
+const emptyChamber: BehavioralPartDefinition = {
+  id: 'empty-chamber',
+  name: 'Empty Chamber',
+  description: 'When you Execute, gain 2 Block per unplayed card in hand.',
+  trigger: { type: 'onPlanningEnd' },
+  effect: { type: 'blockPerUnplayedCard', value: 2 },
+  rarity: 'uncommon',
+}
+
+const failsafeArmor: BehavioralPartDefinition = {
+  id: 'failsafe-armor',
+  name: 'Failsafe Armor',
+  description: 'At the start of each turn, gain Block equal to cards in your Exhaust pile.',
+  trigger: { type: 'onTurnStart' },
+  effect: { type: 'blockPerExhausted' },
+  rarity: 'uncommon',
+}
+
+const cryoEngine: BehavioralPartDefinition = {
+  id: 'cryo-engine',
+  name: 'Cryo Engine',
+  description: 'While Cool: gain 1 Block for each card you play.',
+  trigger: { type: 'onCardPlay' },
+  effect: { type: 'blockPerCard', value: 1 },
+  rarity: 'rare',
+  heatCondition: 'Cool',
+}
+
+const gyroStabilizer: BehavioralPartDefinition = {
+  id: 'gyro-stabilizer',
+  name: 'Gyro Stabilizer',
+  description: 'While Warm: whenever you play a card, deal 2 damage to a random enemy.',
+  trigger: { type: 'onCardPlay' },
+  effect: { type: 'damageRandomEnemy', value: 2 },
+  rarity: 'rare',
+  heatCondition: 'Warm',
+}
+
+const meltdownCore: BehavioralPartDefinition = {
+  id: 'meltdown-core',
+  name: 'Meltdown Core',
+  description: 'While Hot: slot modifiers get +50% bonus to effect values.',
+  trigger: { type: 'onSlotFire', slot: 'Head' }, // checked during execution
+  effect: { type: 'amplifyModifiers', multiplier: 1.5 },
+  rarity: 'rare',
+  heatCondition: 'Hot',
 }
 
 const volatileReactor: BehavioralPartDefinition = {
   id: 'volatile-reactor',
   name: 'Volatile Reactor',
   description: 'When heat crosses a threshold, draw 1 card and deal +3 bonus damage on next ARMS fire.',
-  trigger: { type: 'onThresholdCross' },
-  effect: { type: 'drawCards', count: 1 },
-  rarity: 'rare',
-}
-
-// ─── Archetype Mods ─────────────────────────────────────────────────────────
-
-const frostCore: BehavioralPartDefinition = {
-  id: 'frost-core',
-  name: 'Frost Core',
-  description: 'At turn start, while Cool: gain +2 Block.',
-  trigger: { type: 'onTurnStart' },
-  effect: { type: 'bonusBlock', value: 2 },
-  rarity: 'uncommon',
-  heatCondition: 'Cool',
-}
-
-const overheater: BehavioralPartDefinition = {
-  id: 'overheater',
-  name: 'Overheater',
-  description: 'When ARMS fires, while Hot: +3 bonus damage.',
-  trigger: { type: 'onSlotFire', slot: 'Arms' },
-  effect: { type: 'bonusDamage', value: 3 },
-  rarity: 'uncommon',
-  heatCondition: 'Hot',
-}
-
-const fluxCapacitor: BehavioralPartDefinition = {
-  id: 'flux-capacitor',
-  name: 'Flux Capacitor',
-  description: 'When heat crosses a threshold, draw 1 card.',
   trigger: { type: 'onThresholdCross' },
   effect: { type: 'drawCards', count: 1 },
   rarity: 'rare',
@@ -380,12 +379,19 @@ export const EQUIPMENT: EquipmentDefinition[] = [
   coolantInjector, stabilizerTreads,
 ]
 
+export const SECTOR1_PART_POOL: BehavioralPartDefinition[] = [
+  feedbackLoop, residualCharge, scrapRecycler, ablativeShell,
+  momentumCore, pressureValve, reactiveFrame, fluxCapacitor,
+]
+
+export const SECTOR2_PART_POOL: BehavioralPartDefinition[] = [
+  zeroPointField, salvageProtocol, thermalOscillator, emptyChamber,
+  failsafeArmor, cryoEngine, gyroStabilizer, meltdownCore, volatileReactor,
+]
+
 export const BEHAVIORAL_PARTS: BehavioralPartDefinition[] = [
-  salvagedPlating, tensionSpring, reactiveFrame, opticalExpander,
-  coolingFins, reinforcedJoints, scavengerLens, heatSink,
-  frostCore, overheater, fluxCapacitor,
-  bypassCircuit, thermalBuffer, emergencyDraw,
-  siphonCore, hardenedFrame, volatileReactor,
+  ...SECTOR1_PART_POOL,
+  ...SECTOR2_PART_POOL,
 ]
 
 export const ALL_EQUIPMENT: Record<string, EquipmentDefinition> = Object.fromEntries(

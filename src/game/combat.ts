@@ -146,6 +146,8 @@ export function initCombat(
     heatChangeThisTurn: 0,
     thresholdCrossedThisTurn: false,
     combatLog: [],
+    heatCostReduction: 0,
+    ablativeShellUsed: false,
   }
 }
 
@@ -244,6 +246,7 @@ export function resolveBodyAction(
   // Apply modifier effects (non-override)
   let repeatCount = 1
   let finalTargetMode = targetMode
+  const valueBeforeModifier = finalValue
 
   if (modifierDef && !isOverride && modifierDef.category.type === 'slot') {
     const effect = modifierDef.category.effect
@@ -259,6 +262,21 @@ export function resolveBodyAction(
         // Extra firings generate +1 Heat each
         result.heatGenerated += effect.extraFirings
         break
+    }
+  }
+
+  // Meltdown Core: while Hot, slot modifiers get +50% bonus to effect values
+  if (modifierDef && !isOverride) {
+    for (const part of parts) {
+      if (part.effect.type === 'amplifyModifiers') {
+        if (!part.heatCondition || getHeatThreshold(heat) === part.heatCondition) {
+          const modifierDelta = finalValue - valueBeforeModifier
+          if (modifierDelta > 0) {
+            const bonus = Math.floor(modifierDelta * (part.effect.multiplier - 1))
+            finalValue += bonus
+          }
+        }
+      }
     }
   }
 
@@ -385,6 +403,19 @@ function fireThresholdCrossTriggers(
   for (const part of parts) {
     if (part.trigger.type === 'onThresholdCross') {
       applyPartEffect(part, result, ctx)
+      // Thermal Oscillator: also deal 3 damage to all enemies
+      if (part.id === 'thermal-oscillator') {
+        for (const enemy of result.combat.enemies) {
+          if (!enemy.isDefeated) {
+            const absorbed = Math.min(enemy.block, 3)
+            enemy.block -= absorbed
+            const actual = 3 - absorbed
+            enemy.currentHealth = Math.max(0, enemy.currentHealth - actual)
+            if (enemy.currentHealth === 0) enemy.isDefeated = true
+            result.log.push(`${part.name}: dealt ${actual} damage to ${enemy.definitionId}`)
+          }
+        }
+      }
     }
   }
 }
@@ -404,10 +435,27 @@ export function executeBodyActions(ctx: CombatContext): CombatResult {
     return result
   }
 
+  // Fire onPlanningEnd part triggers (Empty Chamber: block per unplayed card)
+  for (const part of ctx.parts) {
+    if (part.trigger.type === 'onPlanningEnd') {
+      applyPartEffect(part, result, ctx)
+    }
+  }
+
+  const slotsFired: BodySlot[] = []
+
   for (const slot of BODY_SLOTS) {
-    // Disabled slots skip execution (Task 2.15)
+    // Disabled slots: Salvage Protocol generates Block, otherwise skip
     if (result.combat.disabledSlots.includes(slot)) {
-      result.log.push(`${slot} is disabled — skipped`)
+      let salvaged = false
+      for (const part of ctx.parts) {
+        if (part.effect.type === 'blockForDisabledSlots') {
+          result.combat.block += part.effect.value
+          result.log.push(`${part.name}: ${slot} disabled → +${part.effect.value} Block`)
+          salvaged = true
+        }
+      }
+      if (!salvaged) result.log.push(`${slot} is disabled — skipped`)
       continue
     }
 
@@ -504,15 +552,38 @@ export function executeBodyActions(ctx: CombatContext): CombatResult {
 
     // Check Overheat after each action (Task 2.9)
     if (result.combat.heat >= HEAT_MAX) {
-      result.combat.shutdown = true
-      result.combat.combatLog.push({ type: 'overheatShutdown' })
-      result.log.push('OVERHEAT — shutdown next turn')
+      // Pressure Valve: prevent overheat, set heat and deal AOE damage
+      const pressureValve = ctx.parts.find(p => p.trigger.type === 'onWouldOverheat')
+      if (pressureValve && pressureValve.effect.type === 'preventOverheat') {
+        result.combat.combatLog.push({ type: 'partTrigger', partId: pressureValve.id })
+        result.combat.heat = pressureValve.effect.setHeat
+        for (const enemy of result.combat.enemies) {
+          if (!enemy.isDefeated) {
+            const pvAbsorbed = Math.min(enemy.block, pressureValve.effect.damage)
+            enemy.block -= pvAbsorbed
+            const pvActual = pressureValve.effect.damage - pvAbsorbed
+            enemy.currentHealth = Math.max(0, enemy.currentHealth - pvActual)
+            if (enemy.currentHealth === 0) enemy.isDefeated = true
+          }
+        }
+        result.log.push(`${pressureValve.name}: prevented overheat! Heat → ${pressureValve.effect.setHeat}, dealt ${pressureValve.effect.damage} AOE damage`)
+      } else {
+        result.combat.shutdown = true
+        result.combat.combatLog.push({ type: 'overheatShutdown' })
+        result.log.push('OVERHEAT — shutdown next turn')
+      }
     }
 
-    // Fire onSlotFire part triggers for modifier play tracking
+    slotsFired.push(slot)
+  }
+
+  // Momentum Core: if all 4 body slots fired, gain Block and draw
+  if (slotsFired.length === 4) {
     for (const part of ctx.parts) {
-      if (part.trigger.type === 'onSlotFire' && part.trigger.slot === slot) {
-        // Part effects already applied in resolveBodyAction
+      if (part.id === 'momentum-core') {
+        applyPartEffect(part, result, ctx)
+        const drawn = drawCards(result.combat, 1)
+        result.log.push(`${part.name}: all 4 slots fired! Drew ${drawn} card(s)`)
       }
     }
   }
@@ -561,8 +632,9 @@ export function playModifierCard(
     }
   }
 
-  // Apply Heat cost (with threshold tracking)
-  const crossedOnPlay = applyHeatChange(result.combat, card.heatCost)
+  // Apply Heat cost (with Zero Point Field reduction)
+  const effectiveHeatCost = Math.max(0, card.heatCost - result.combat.heatCostReduction)
+  const crossedOnPlay = applyHeatChange(result.combat, effectiveHeatCost)
   if (crossedOnPlay) fireThresholdCrossTriggers(ctx.parts, result, ctx)
 
   if (card.category.type === 'slot') {
@@ -594,6 +666,13 @@ export function playModifierCard(
     // can locate it later (endTurn, unassign, resolveBodyAction). The UI
     // filters assigned cards out of the visible hand.
     result.combat.slotModifiers[targetSlot] = instanceId
+
+    // Fire onModifierAssign part triggers (Feedback Loop)
+    for (const part of ctx.parts) {
+      if (part.trigger.type === 'onModifierAssign') {
+        applyPartEffect(part, result, ctx)
+      }
+    }
 
     result.log.push(`Assigned ${card.name} to ${targetSlot}`)
   } else {
@@ -725,6 +804,12 @@ export function playModifierCard(
     if (cardInst) {
       if (card.keywords.includes('Exhaust')) {
         result.combat.exhaustPile.push(cardInst)
+        // Fire onCardExhaust part triggers (Scrap Recycler)
+        for (const part of ctx.parts) {
+          if (part.trigger.type === 'onCardExhaust') {
+            applyPartEffect(part, result, ctx)
+          }
+        }
       } else {
         result.combat.discardPile.push(cardInst)
       }
@@ -741,10 +826,36 @@ export function playModifierCard(
     }
   }
 
+  // Fire onCardPlay part triggers (Cryo Engine, Gyro Stabilizer, Residual Charge)
+  for (const part of ctx.parts) {
+    if (part.trigger.type === 'onCardPlay') {
+      // Residual Charge only fires for system cards
+      if (part.id === 'residual-charge' && card.category.type !== 'system') continue
+      applyPartEffect(part, result, ctx)
+    }
+  }
+
   // Check Overheat
   if (result.combat.heat >= HEAT_MAX) {
-    result.combat.shutdown = true
-    result.log.push('OVERHEAT — shutdown next turn')
+    // Pressure Valve: prevent overheat, set heat and deal AOE damage
+    const pressureValve = ctx.parts.find(p => p.trigger.type === 'onWouldOverheat')
+    if (pressureValve && pressureValve.effect.type === 'preventOverheat') {
+      result.combat.combatLog.push({ type: 'partTrigger', partId: pressureValve.id })
+      result.combat.heat = pressureValve.effect.setHeat
+      for (const enemy of result.combat.enemies) {
+        if (!enemy.isDefeated) {
+          const pvAbsorbed = Math.min(enemy.block, pressureValve.effect.damage)
+          enemy.block -= pvAbsorbed
+          const pvActual = pressureValve.effect.damage - pvAbsorbed
+          enemy.currentHealth = Math.max(0, enemy.currentHealth - pvActual)
+          if (enemy.currentHealth === 0) enemy.isDefeated = true
+        }
+      }
+      result.log.push(`${pressureValve.name}: prevented overheat! Heat → ${pressureValve.effect.setHeat}, dealt ${pressureValve.effect.damage} AOE damage`)
+    } else {
+      result.combat.shutdown = true
+      result.log.push('OVERHEAT — shutdown next turn')
+    }
   }
 
   return result
@@ -818,6 +929,18 @@ export function executeEnemyTurn(ctx: CombatContext): CombatResult {
         // Vulnerable on Still
         if (getStatus(result.combat.statusEffects, 'Vulnerable') > 0) dealt = Math.floor(dealt * 1.5)
         dealt = Math.max(0, dealt)
+        // Ablative Shell: halve first big hit each combat
+        if (!result.combat.ablativeShellUsed) {
+          for (const part of ctx.parts) {
+            if (part.effect.type === 'halveLargeDamage' && dealt >= part.effect.threshold) {
+              result.combat.combatLog.push({ type: 'partTrigger', partId: part.id })
+              dealt = Math.floor(dealt / 2)
+              result.combat.ablativeShellUsed = true
+              result.log.push(`${part.name}: halved incoming damage to ${dealt}`)
+              break
+            }
+          }
+        }
         const absorbed = Math.min(result.combat.block, dealt)
         result.combat.block -= absorbed
         const actual = dealt - absorbed
@@ -980,6 +1103,7 @@ export function startTurn(ctx: CombatContext, inspiredBonus = 0): CombatResult {
   // Reset per-turn heat tracking (Tasks 5.2-5.3)
   result.combat.heatChangeThisTurn = 0
   result.combat.thresholdCrossedThisTurn = false
+  result.combat.heatCostReduction = 0
 
   // Step 2: Block resets to 0
   result.combat.block = 0
@@ -1181,6 +1305,9 @@ function applyPartEffect(
     return
   }
 
+  // Emit animation event for part trigger
+  result.combat.combatLog.push({ type: 'partTrigger', partId: part.id })
+
   switch (part.effect.type) {
     case 'bonusBlock':
       result.combat.block += part.effect.value
@@ -1198,8 +1325,8 @@ function applyPartEffect(
     case 'drawCards': {
       const actualDrawn = drawCards(result.combat, part.effect.count)
       result.log.push(`${part.name}: drew ${actualDrawn}/${part.effect.count} card(s)`)
-    }
       break
+    }
     case 'reduceModifierHeat':
       // Applied at card play time in store logic
       break
@@ -1209,6 +1336,59 @@ function applyPartEffect(
     case 'extraFiring':
       // Applied during resolveBodyAction
       break
+    case 'blockPerCard':
+      result.combat.block += part.effect.value
+      result.log.push(`${part.name}: +${part.effect.value} Block`)
+      break
+    case 'damageRandomEnemy': {
+      const alive = result.combat.enemies.filter(e => !e.isDefeated)
+      if (alive.length > 0) {
+        const target = alive[Math.floor(Math.random() * alive.length)]
+        const absorbed = Math.min(target.block, part.effect.value)
+        target.block -= absorbed
+        const actual = part.effect.value - absorbed
+        target.currentHealth = Math.max(0, target.currentHealth - actual)
+        if (target.currentHealth === 0) target.isDefeated = true
+        result.log.push(`${part.name}: dealt ${actual} damage to ${target.definitionId}`)
+      }
+      break
+    }
+    case 'reduceCardHeatCosts':
+      result.combat.heatCostReduction += part.effect.value
+      result.log.push(`${part.name}: cards cost ${part.effect.value} less Heat this turn`)
+      break
+    case 'preventOverheat':
+      // Handled inline at overheat check points
+      break
+    case 'amplifyModifiers':
+      // Handled in resolveBodyAction
+      break
+    case 'blockForDisabledSlots':
+      // Handled in executeBodyActions
+      break
+    case 'blockPerExhausted': {
+      const exhaustCount = result.combat.exhaustPile.length
+      if (exhaustCount > 0) {
+        result.combat.block += exhaustCount
+        result.log.push(`${part.name}: +${exhaustCount} Block (${exhaustCount} exhausted cards)`)
+      }
+      break
+    }
+    case 'halveLargeDamage':
+      // Handled inline in executeEnemyTurn
+      break
+    case 'blockPerUnplayedCard': {
+      const assignedIds = new Set(
+        Object.values(result.combat.slotModifiers).filter((id): id is string => id !== null)
+      )
+      const unplayedCount = result.combat.hand.filter(c => !assignedIds.has(c.instanceId)).length
+      if (unplayedCount > 0) {
+        const block = unplayedCount * part.effect.value
+        result.combat.block += block
+        result.log.push(`${part.name}: +${block} Block (${unplayedCount} unplayed cards)`)
+      }
+      break
+    }
   }
 }
 

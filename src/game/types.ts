@@ -124,6 +124,12 @@ export type PartTrigger =
   | { type: 'onThresholdCross' }
   | { type: 'onTurnStart' }
   | { type: 'onCombatStart' }
+  | { type: 'onCardPlay' }
+  | { type: 'onCardExhaust' }
+  | { type: 'onModifierAssign' }
+  | { type: 'onWouldOverheat' }
+  | { type: 'onPlanningEnd' }
+  | { type: 'onDamageTaken' }
 
 export type PartEffect =
   | { type: 'bonusBlock'; value: number }
@@ -133,6 +139,15 @@ export type PartEffect =
   | { type: 'drawCards'; count: number }
   | { type: 'reduceModifierHeat'; value: number }
   | { type: 'bonusHealing'; value: number }
+  | { type: 'blockPerCard'; value: number }
+  | { type: 'damageRandomEnemy'; value: number }
+  | { type: 'reduceCardHeatCosts'; value: number }
+  | { type: 'preventOverheat'; setHeat: number; damage: number }
+  | { type: 'amplifyModifiers'; multiplier: number }
+  | { type: 'blockForDisabledSlots'; value: number }
+  | { type: 'blockPerExhausted' }
+  | { type: 'halveLargeDamage'; threshold: number }
+  | { type: 'blockPerUnplayedCard'; value: number }
 
 export interface BehavioralPartDefinition {
   id: string
@@ -230,6 +245,7 @@ export type CombatEvent =
   | { type: 'enemyAction'; enemyId: string; enemyName: string; intentType: IntentType; damage?: number; blocked?: number; block?: number; statusApplied?: StatusEffectType }
   | { type: 'hotPenalty'; damage: number }
   | { type: 'overheatShutdown' }
+  | { type: 'partTrigger'; partId: string }
 
 export interface CombatState {
   phase: CombatPhase
@@ -248,6 +264,8 @@ export interface CombatState {
   heatChangeThisTurn: number // cumulative absolute heat change this turn
   thresholdCrossedThisTurn: boolean // whether a threshold boundary was crossed
   combatLog: CombatEvent[] // events from last execution for animation replay
+  heatCostReduction: number // per-turn card heat cost reduction (Zero Point Field)
+  ablativeShellUsed: boolean // once-per-combat flag for Ablative Shell
 }
 
 export interface RunState {

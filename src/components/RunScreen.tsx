@@ -70,7 +70,7 @@ export default function RunScreen() {
         drawCount: 5,
         passiveCoolingBonus: 0,
         deck,
-        parts: [ALL_PARTS['bypass-circuit'], ALL_PARTS['thermal-buffer']].filter(Boolean),
+        parts: [ALL_PARTS['feedback-loop'], ALL_PARTS['thermal-oscillator']].filter(Boolean),
         equipment: {
           Head: ALL_EQUIPMENT['thermal-imager'] ?? null,
           Torso: ALL_EQUIPMENT['reactive-plating'] ?? null,
