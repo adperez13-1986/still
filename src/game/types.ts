@@ -56,6 +56,7 @@ export interface EquipmentDefinition {
   heatBonusValue?: number // extra value added to action when at threshold
   extraHeatGenerated?: number // extra heat produced when this equipment fires
   bonusBlockPerHeatLost?: number // block gained per point of heat actually cooled
+  bonusHeal?: number // bonus healing applied alongside the main action
 }
 
 // ─── Modifier Cards ─────────────────────────────────────────────────────────
@@ -148,6 +149,9 @@ export type PartEffect =
   | { type: 'blockPerExhausted' }
   | { type: 'halveLargeDamage'; threshold: number }
   | { type: 'blockPerUnplayedCard'; value: number }
+  | { type: 'dualLoader' }
+  | { type: 'heatLock'; turns: number }
+  | { type: 'overheatReactor'; heatReset: number; maxHpCost: number }
 
 export interface BehavioralPartDefinition {
   id: string
@@ -260,12 +264,17 @@ export interface CombatState {
   statusEffects: StatusEffect[]
   roundNumber: number
   slotModifiers: Record<BodySlot, string | null> // instanceId of assigned modifier card
+  slotModifiers2: Record<BodySlot, string | null> // second modifier (Dual Loader only)
   disabledSlots: BodySlot[]
   heatChangeThisTurn: number // cumulative absolute heat change this turn
   thresholdCrossedThisTurn: boolean // whether a threshold boundary was crossed
   combatLog: CombatEvent[] // events from last execution for animation replay
   heatCostReduction: number // per-turn card heat cost reduction (Zero Point Field)
   ablativeShellUsed: boolean // once-per-combat flag for Ablative Shell
+  heatLocked: boolean // Thermal Damper: heat costs go to debt
+  heatDebt: number // accumulated heat debt during lock
+  heatLockTurnsLeft: number // turns remaining on heat lock
+  overheatReactorFired: boolean // Overheat Reactor: 2x damage this turn
 }
 
 export interface RunState {

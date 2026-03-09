@@ -1,6 +1,6 @@
 import type { DropPool, ModifierCardDefinition } from '../game/types'
 import { SECTOR1_CARD_POOL, SECTOR2_CARD_POOL } from '../data/cards'
-import { SECTOR1_PART_POOL, SECTOR2_PART_POOL, EQUIPMENT } from '../data/parts'
+import { SECTOR1_PART_POOL, SECTOR2_PART_POOL, EQUIPMENT, RUN_WARPING_PARTS } from '../data/parts'
 
 function getCardPoolForSector(sector: number): ModifierCardDefinition[] {
   return sector >= 2 ? SECTOR2_CARD_POOL : SECTOR1_CARD_POOL
@@ -103,4 +103,18 @@ export function resolveDrops(dropPool: DropPool[], equipPity = 0, sector = 1, ow
 
   const droppedEquipment = results.some((r) => r.type === 'equipment')
   return { drops: results, droppedEquipment }
+}
+
+// Diminishing chance for run-warping rare part drops from elite/boss fights
+const WARPER_DROP_CHANCES = [0.35, 0.15, 0.05, 0]
+
+export function resolveWarperDrop(ownedWarperIds: string[]): ResolvedDrop | null {
+  const chance = WARPER_DROP_CHANCES[Math.min(ownedWarperIds.length, WARPER_DROP_CHANCES.length - 1)]
+  if (chance <= 0 || Math.random() > chance) return null
+
+  const available = RUN_WARPING_PARTS.filter(p => !ownedWarperIds.includes(p.id))
+  if (available.length === 0) return null
+
+  const picked = available[Math.floor(Math.random() * available.length)]
+  return { type: 'part', partId: picked.id }
 }

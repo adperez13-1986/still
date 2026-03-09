@@ -38,6 +38,7 @@ const patchedHull: EquipmentDefinition = {
   slot: 'Torso',
   action: { type: 'block', baseValue: 2, targetMode: 'self' },
   rarity: 'uncommon',
+  bonusHeal: 3,
 }
 
 // ARMS slot: output domain
@@ -366,6 +367,35 @@ const volatileReactor: BehavioralPartDefinition = {
   rarity: 'rare',
 }
 
+// ─── Run-Warping Rare Parts ─────────────────────────────────────────────────
+
+const dualLoader: BehavioralPartDefinition = {
+  id: 'dual-loader',
+  name: 'Dual Loader',
+  description: 'You can assign 2 modifiers to the same slot.',
+  trigger: { type: 'onSlotFire', slot: 'Head' }, // passive, checked inline
+  effect: { type: 'dualLoader' },
+  rarity: 'rare',
+}
+
+const thermalDamper: BehavioralPartDefinition = {
+  id: 'thermal-damper',
+  name: 'Thermal Damper',
+  description: 'At the start of each combat, heat is locked for 2 turns. Deferred heat applies all at once when the lock expires.',
+  trigger: { type: 'onCombatStart' },
+  effect: { type: 'heatLock', turns: 2 },
+  rarity: 'rare',
+}
+
+const overheatReactor: BehavioralPartDefinition = {
+  id: 'overheat-reactor',
+  name: 'Overheat Reactor',
+  description: 'When you Overheat: don\'t shut down. All slots deal 2x, heat resets to 5, max HP permanently reduced by 5.',
+  trigger: { type: 'onWouldOverheat' },
+  effect: { type: 'overheatReactor', heatReset: 5, maxHpCost: 5 },
+  rarity: 'rare',
+}
+
 // ─── Exports ────────────────────────────────────────────────────────────────
 
 export const EQUIPMENT: EquipmentDefinition[] = [
@@ -389,9 +419,14 @@ export const SECTOR2_PART_POOL: BehavioralPartDefinition[] = [
   failsafeArmor, cryoEngine, gyroStabilizer, meltdownCore, volatileReactor,
 ]
 
+export const RUN_WARPING_PARTS: BehavioralPartDefinition[] = [
+  dualLoader, thermalDamper, overheatReactor,
+]
+
 export const BEHAVIORAL_PARTS: BehavioralPartDefinition[] = [
   ...SECTOR1_PART_POOL,
   ...SECTOR2_PART_POOL,
+  ...RUN_WARPING_PARTS,
 ]
 
 export const ALL_EQUIPMENT: Record<string, EquipmentDefinition> = Object.fromEntries(

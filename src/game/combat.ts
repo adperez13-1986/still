@@ -111,6 +111,7 @@ export interface CombatResult {
   combat: CombatState
   stillHealth: number
   log: string[]
+  _maxHpReduction?: number // Overheat Reactor: accumulated max HP reduction this turn
 }
 
 // ─── Combat Initialisation (Task 2.11) ───────────────────────────────────────
@@ -119,7 +120,8 @@ export function initCombat(
   deck: CardInstance[],
   drawCount: number,
   enemies: EnemyInstance[],
-  startingStatuses: StatusEffect[] = []
+  startingStatuses: StatusEffect[] = [],
+  parts: BehavioralPartDefinition[] = []
 ): CombatState {
   const drawPile = shuffle(deck)
   const hand: CardInstance[] = []
@@ -128,6 +130,8 @@ export function initCombat(
   for (let i = 0; i < initialDraw; i++) {
     hand.push(drawPile.pop()!)
   }
+
+  const hasThermalDamper = parts.some(p => p.id === 'thermal-damper')
 
   return {
     phase: 'planning',
@@ -142,12 +146,17 @@ export function initCombat(
     statusEffects: [...startingStatuses],
     roundNumber: 1,
     slotModifiers: { Head: null, Torso: null, Arms: null, Legs: null },
+    slotModifiers2: { Head: null, Torso: null, Arms: null, Legs: null },
     disabledSlots: [],
     heatChangeThisTurn: 0,
     thresholdCrossedThisTurn: false,
     combatLog: [],
     heatCostReduction: 0,
     ablativeShellUsed: false,
+    heatLocked: hasThermalDamper,
+    heatDebt: 0,
+    heatLockTurnsLeft: hasThermalDamper ? 2 : 0,
+    overheatReactorFired: false,
   }
 }
 
@@ -186,7 +195,8 @@ export function resolveBodyAction(
   cardDefs: Record<string, ModifierCardDefinition>,
   combat: CombatState,
   heat: number,
-  parts: BehavioralPartDefinition[]
+  parts: BehavioralPartDefinition[],
+  modifierInstanceId2: string | null = null
 ): ActionResult {
   const result: ActionResult = {
     damage: [],
@@ -197,26 +207,29 @@ export function resolveBodyAction(
     heatGenerated: 1, // each body action generates +1 Heat
   }
 
-  // Determine the action and whether it's an override
-  let action: BodyAction | null = null
-  let isOverride = false
-  let modifierDef: ModifierCardDefinition | null = null
-
-  if (modifierInstanceId) {
-    // Find the card instance in hand/assigned to get definition
-    const cardInst = [...combat.hand].find(c => c.instanceId === modifierInstanceId)
-      ?? findAssignedCard(combat, modifierInstanceId)
-    if (cardInst) {
-      const def = cardDefs[cardInst.definitionId]
-      if (def?.category.type === 'slot') {
-        modifierDef = def
-      }
-    }
+  // Resolve both modifier definitions
+  function resolveModDef(instanceId: string | null): ModifierCardDefinition | null {
+    if (!instanceId) return null
+    const cardInst = [...combat.hand].find(c => c.instanceId === instanceId)
+      ?? findAssignedCard(combat, instanceId)
+    if (!cardInst) return null
+    const def = cardDefs[cardInst.definitionId]
+    if (def?.category.type === 'slot') return def
+    return null
   }
 
-  if (modifierDef?.category.type === 'slot' && modifierDef.category.effect.type === 'override') {
-    // Override replaces the action entirely
-    action = modifierDef.category.effect.action
+  const modifierDef = resolveModDef(modifierInstanceId)
+  const modifierDef2 = resolveModDef(modifierInstanceId2)
+
+  // Determine the action: override takes priority (first override found wins)
+  let action: BodyAction | null = null
+  let isOverride = false
+
+  const overrideMod = [modifierDef, modifierDef2].find(
+    m => m?.category.type === 'slot' && m.category.effect.type === 'override'
+  )
+  if (overrideMod?.category.type === 'slot' && overrideMod.category.effect.type === 'override') {
+    action = overrideMod.category.effect.action
     isOverride = true
   } else if (equipment) {
     action = equipment.action
@@ -243,13 +256,22 @@ export function resolveBodyAction(
     result.heatGenerated += equipment.extraHeatGenerated
   }
 
-  // Apply modifier effects (non-override)
+  // Apply bonus heal from equipment (e.g., Patched Hull)
+  if (equipment?.bonusHeal) {
+    result.healAmount += equipment.bonusHeal
+  }
+
+  // Apply modifier effects (non-override) from both modifiers
   let repeatCount = 1
   let finalTargetMode = targetMode
   const valueBeforeModifier = finalValue
+  let hasNonOverrideMod = false
 
-  if (modifierDef && !isOverride && modifierDef.category.type === 'slot') {
-    const effect = modifierDef.category.effect
+  for (const mDef of [modifierDef, modifierDef2]) {
+    if (!mDef || mDef.category.type !== 'slot') continue
+    if (mDef === overrideMod) continue // skip the override — it already set the action
+    hasNonOverrideMod = true
+    const effect = mDef.category.effect
     switch (effect.type) {
       case 'amplify':
         finalValue = Math.floor(finalValue * effect.multiplier)
@@ -266,7 +288,7 @@ export function resolveBodyAction(
   }
 
   // Meltdown Core: while Hot, slot modifiers get +50% bonus to effect values
-  if (modifierDef && !isOverride) {
+  if (hasNonOverrideMod) {
     for (const part of parts) {
       if (part.effect.type === 'amplifyModifiers') {
         if (!part.heatCondition || getHeatThreshold(heat) === part.heatCondition) {
@@ -329,6 +351,11 @@ export function resolveBodyAction(
     }
   }
 
+  // Overheat Reactor: double damage output when fired this turn
+  if (combat.overheatReactorFired && action.type === 'damage') {
+    finalValue *= 2
+  }
+
   // Execute the action repeatCount times
   for (let i = 0; i < repeatCount; i++) {
     switch (action.type) {
@@ -384,6 +411,13 @@ function isThresholdMet(current: HeatThreshold, required: HeatThreshold): boolea
 
 function applyHeatChange(combat: CombatState, delta: number): boolean {
   const oldHeat = combat.heat
+
+  // Thermal Damper: positive heat goes to debt while locked (cooling still applies normally)
+  if (combat.heatLocked && delta > 0) {
+    combat.heatDebt += delta
+    return false
+  }
+
   const oldThreshold = getHeatThreshold(oldHeat)
   combat.heat = Math.min(HEAT_MAX, Math.max(0, oldHeat + delta))
   const newThreshold = getHeatThreshold(combat.heat)
@@ -461,6 +495,7 @@ export function executeBodyActions(ctx: CombatContext): CombatResult {
 
     const equip = ctx.equipment[slot]
     const modInstanceId = result.combat.slotModifiers[slot]
+    const modInstanceId2 = result.combat.slotModifiers2[slot]
 
     // Skip if no equipment and no override modifier
     if (!equip && !hasOverrideModifier(modInstanceId, ctx.cardDefs, result.combat)) {
@@ -474,7 +509,8 @@ export function executeBodyActions(ctx: CombatContext): CombatResult {
       ctx.cardDefs,
       result.combat,
       result.combat.heat,
-      ctx.parts
+      ctx.parts,
+      modInstanceId2
     )
 
     // Apply Heat generation (with threshold tracking)
@@ -552,8 +588,8 @@ export function executeBodyActions(ctx: CombatContext): CombatResult {
 
     // Check Overheat after each action (Task 2.9)
     if (result.combat.heat >= HEAT_MAX) {
-      // Pressure Valve: prevent overheat, set heat and deal AOE damage
-      const pressureValve = ctx.parts.find(p => p.trigger.type === 'onWouldOverheat')
+      // Pressure Valve: prevent overheat, set heat and deal AOE damage (highest priority)
+      const pressureValve = ctx.parts.find(p => p.trigger.type === 'onWouldOverheat' && p.effect.type === 'preventOverheat')
       if (pressureValve && pressureValve.effect.type === 'preventOverheat') {
         result.combat.combatLog.push({ type: 'partTrigger', partId: pressureValve.id })
         result.combat.heat = pressureValve.effect.setHeat
@@ -568,9 +604,20 @@ export function executeBodyActions(ctx: CombatContext): CombatResult {
         }
         result.log.push(`${pressureValve.name}: prevented overheat! Heat → ${pressureValve.effect.setHeat}, dealt ${pressureValve.effect.damage} AOE damage`)
       } else {
-        result.combat.shutdown = true
-        result.combat.combatLog.push({ type: 'overheatShutdown' })
-        result.log.push('OVERHEAT — shutdown next turn')
+        // Overheat Reactor: don't shut down, reset heat, 2x damage, cost max HP
+        const reactor = ctx.parts.find(p => p.effect.type === 'overheatReactor')
+        if (reactor && reactor.effect.type === 'overheatReactor') {
+          result.combat.combatLog.push({ type: 'partTrigger', partId: reactor.id })
+          result.combat.heat = reactor.effect.heatReset
+          result.combat.overheatReactorFired = true
+          result.stillHealth = Math.max(1, result.stillHealth - reactor.effect.maxHpCost)
+          result._maxHpReduction = (result._maxHpReduction ?? 0) + reactor.effect.maxHpCost
+          result.log.push(`${reactor.name}: Overheat harnessed! Heat → ${reactor.effect.heatReset}, max HP -${reactor.effect.maxHpCost}, 2x damage this turn`)
+        } else {
+          result.combat.shutdown = true
+          result.combat.combatLog.push({ type: 'overheatShutdown' })
+          result.log.push('OVERHEAT — shutdown next turn')
+        }
       }
     }
 
@@ -632,8 +679,10 @@ export function playModifierCard(
     }
   }
 
-  // Apply Heat cost (with Zero Point Field reduction)
-  const effectiveHeatCost = Math.max(0, card.heatCost - result.combat.heatCostReduction)
+  // Apply Heat cost (with Zero Point Field reduction for positive costs only)
+  const effectiveHeatCost = card.heatCost < 0
+    ? card.heatCost
+    : Math.max(0, card.heatCost - result.combat.heatCostReduction)
   const crossedOnPlay = applyHeatChange(result.combat, effectiveHeatCost)
   if (crossedOnPlay) fireThresholdCrossTriggers(ctx.parts, result, ctx)
 
@@ -650,10 +699,13 @@ export function playModifierCard(
       return result
     }
 
-    // Check slot not already modified
+    // Check slot not already modified (Dual Loader allows a second)
     if (result.combat.slotModifiers[targetSlot] !== null) {
-      result.log.push(`${targetSlot} already has a modifier assigned`)
-      return result
+      const hasDualLoader = ctx.parts.some(p => p.effect.type === 'dualLoader')
+      if (!hasDualLoader || result.combat.slotModifiers2[targetSlot] !== null) {
+        result.log.push(`${targetSlot} already has a modifier assigned`)
+        return result
+      }
     }
 
     // Non-override modifiers need a filled equipment slot
@@ -665,7 +717,12 @@ export function playModifierCard(
     // Assign modifier to slot — card stays in hand array so findAssignedCard
     // can locate it later (endTurn, unassign, resolveBodyAction). The UI
     // filters assigned cards out of the visible hand.
-    result.combat.slotModifiers[targetSlot] = instanceId
+    if (result.combat.slotModifiers[targetSlot] !== null) {
+      // Primary filled — assign to secondary (Dual Loader)
+      result.combat.slotModifiers2[targetSlot] = instanceId
+    } else {
+      result.combat.slotModifiers[targetSlot] = instanceId
+    }
 
     // Fire onModifierAssign part triggers (Feedback Loop)
     for (const part of ctx.parts) {
@@ -837,8 +894,8 @@ export function playModifierCard(
 
   // Check Overheat
   if (result.combat.heat >= HEAT_MAX) {
-    // Pressure Valve: prevent overheat, set heat and deal AOE damage
-    const pressureValve = ctx.parts.find(p => p.trigger.type === 'onWouldOverheat')
+    // Pressure Valve: prevent overheat (highest priority)
+    const pressureValve = ctx.parts.find(p => p.trigger.type === 'onWouldOverheat' && p.effect.type === 'preventOverheat')
     if (pressureValve && pressureValve.effect.type === 'preventOverheat') {
       result.combat.combatLog.push({ type: 'partTrigger', partId: pressureValve.id })
       result.combat.heat = pressureValve.effect.setHeat
@@ -853,8 +910,19 @@ export function playModifierCard(
       }
       result.log.push(`${pressureValve.name}: prevented overheat! Heat → ${pressureValve.effect.setHeat}, dealt ${pressureValve.effect.damage} AOE damage`)
     } else {
-      result.combat.shutdown = true
-      result.log.push('OVERHEAT — shutdown next turn')
+      // Overheat Reactor: don't shut down, reset heat, 2x damage, cost max HP
+      const reactor = ctx.parts.find(p => p.effect.type === 'overheatReactor')
+      if (reactor && reactor.effect.type === 'overheatReactor') {
+        result.combat.combatLog.push({ type: 'partTrigger', partId: reactor.id })
+        result.combat.heat = reactor.effect.heatReset
+        result.combat.overheatReactorFired = true
+        result.stillHealth = Math.max(1, result.stillHealth - reactor.effect.maxHpCost)
+        result._maxHpReduction = (result._maxHpReduction ?? 0) + reactor.effect.maxHpCost
+        result.log.push(`${reactor.name}: Overheat harnessed! Heat → ${reactor.effect.heatReset}, max HP -${reactor.effect.maxHpCost}, 2x damage this turn`)
+      } else {
+        result.combat.shutdown = true
+        result.log.push('OVERHEAT — shutdown next turn')
+      }
     }
   }
 
@@ -874,19 +942,24 @@ export function unassignModifier(
     log: [],
   }
 
-  const instanceId = result.combat.slotModifiers[slot]
-  if (!instanceId) {
+  // Check secondary slot first (Dual Loader), then primary
+  const secondaryId = result.combat.slotModifiers2[slot]
+  const primaryId = result.combat.slotModifiers[slot]
+
+  if (secondaryId) {
+    // Unassign from secondary slot (most recent assignment)
+    result.combat.heat = Math.max(0, result.combat.heat - card.heatCost)
+    result.combat.slotModifiers2[slot] = null
+    result.log.push(`Unassigned ${card.name} from ${slot} (secondary)`)
+  } else if (primaryId) {
+    // Unassign from primary slot
+    result.combat.heat = Math.max(0, result.combat.heat - card.heatCost)
+    result.combat.slotModifiers[slot] = null
+    result.log.push(`Unassigned ${card.name} from ${slot}`)
+  } else {
     result.log.push(`No modifier assigned to ${slot}`)
-    return result
   }
 
-  // Refund Heat cost
-  result.combat.heat = Math.max(0, result.combat.heat - card.heatCost)
-
-  // Card stays in hand (was never removed), just clear the slot assignment
-  result.combat.slotModifiers[slot] = null
-
-  result.log.push(`Unassigned ${card.name} from ${slot}`)
   return result
 }
 
@@ -1033,6 +1106,9 @@ export function endTurn(ctx: CombatContext): CombatResult {
     result.log.push(`Hot penalty: took ${HOT_DAMAGE} damage`)
   }
 
+  // Clear Overheat Reactor flag at end of turn
+  result.combat.overheatReactorFired = false
+
   // Step 8b: Decrement Still's status durations
   const inspiredBonus = getStatus(result.combat.statusEffects, 'Inspired')
   result.combat.statusEffects = decrementStatuses(result.combat.statusEffects)
@@ -1040,20 +1116,23 @@ export function endTurn(ctx: CombatContext): CombatResult {
   // Step 9: Move assigned slot modifiers to discard/exhaust, then discard remaining hand
   const assignedIds = new Set<string>()
   for (const slot of BODY_SLOTS) {
-    const modId = result.combat.slotModifiers[slot]
-    if (modId) {
-      assignedIds.add(modId)
-      const cardInst = findAssignedCard(result.combat, modId)
-      if (cardInst) {
-        const def = ctx.cardDefs[cardInst.definitionId]
-        if (def?.keywords.includes('Exhaust')) {
-          result.combat.exhaustPile.push(cardInst)
-        } else {
-          result.combat.discardPile.push(cardInst)
+    // Handle both primary and secondary (Dual Loader) modifiers
+    for (const modId of [result.combat.slotModifiers[slot], result.combat.slotModifiers2[slot]]) {
+      if (modId) {
+        assignedIds.add(modId)
+        const cardInst = findAssignedCard(result.combat, modId)
+        if (cardInst) {
+          const def = ctx.cardDefs[cardInst.definitionId]
+          if (def?.keywords.includes('Exhaust')) {
+            result.combat.exhaustPile.push(cardInst)
+          } else {
+            result.combat.discardPile.push(cardInst)
+          }
         }
       }
     }
     result.combat.slotModifiers[slot] = null
+    result.combat.slotModifiers2[slot] = null
   }
 
   // Discard remaining hand, excluding cards already handled as assigned modifiers
@@ -1072,7 +1151,33 @@ export function endTurn(ctx: CombatContext): CombatResult {
 
   // Check Overheat triggers shutdown for NEXT turn
   if (result.combat.heat >= HEAT_MAX) {
-    result.combat.shutdown = true
+    const pressureValve = ctx.parts.find(p => p.trigger.type === 'onWouldOverheat' && p.effect.type === 'preventOverheat')
+    if (pressureValve && pressureValve.effect.type === 'preventOverheat') {
+      result.combat.combatLog.push({ type: 'partTrigger', partId: pressureValve.id })
+      result.combat.heat = pressureValve.effect.setHeat
+      for (const enemy of result.combat.enemies) {
+        if (!enemy.isDefeated) {
+          const pvAbsorbed = Math.min(enemy.block, pressureValve.effect.damage)
+          enemy.block -= pvAbsorbed
+          const pvActual = pressureValve.effect.damage - pvAbsorbed
+          enemy.currentHealth = Math.max(0, enemy.currentHealth - pvActual)
+          if (enemy.currentHealth === 0) enemy.isDefeated = true
+        }
+      }
+      result.log.push(`${pressureValve.name}: prevented overheat! Heat → ${pressureValve.effect.setHeat}`)
+    } else {
+      const reactor = ctx.parts.find(p => p.effect.type === 'overheatReactor')
+      if (reactor && reactor.effect.type === 'overheatReactor') {
+        result.combat.combatLog.push({ type: 'partTrigger', partId: reactor.id })
+        result.combat.heat = reactor.effect.heatReset
+        result.combat.overheatReactorFired = true
+        result.stillHealth = Math.max(1, result.stillHealth - reactor.effect.maxHpCost)
+        result._maxHpReduction = (result._maxHpReduction ?? 0) + reactor.effect.maxHpCost
+        result.log.push(`${reactor.name}: Overheat harnessed! Heat → ${reactor.effect.heatReset}, max HP -${reactor.effect.maxHpCost}`)
+      } else {
+        result.combat.shutdown = true
+      }
+    }
   }
 
   // Store inspired bonus for next turn draw
@@ -1088,6 +1193,19 @@ export function startTurn(ctx: CombatContext, inspiredBonus = 0): CombatResult {
     combat: JSON.parse(JSON.stringify(ctx.combat)) as CombatState,
     stillHealth: ctx.stillHealth,
     log: [],
+  }
+
+  // Thermal Damper: decrement lock, apply debt when expired
+  if (result.combat.heatLockTurnsLeft > 0) {
+    result.combat.heatLockTurnsLeft--
+    if (result.combat.heatLockTurnsLeft === 0) {
+      result.combat.heatLocked = false
+      if (result.combat.heatDebt > 0) {
+        result.log.push(`Thermal Damper expired: +${result.combat.heatDebt} deferred heat`)
+        applyHeatChange(result.combat, result.combat.heatDebt)
+        result.combat.heatDebt = 0
+      }
+    }
   }
 
   // Step 1: Overheat shutdown setup

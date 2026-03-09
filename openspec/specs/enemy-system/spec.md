@@ -60,3 +60,10 @@ Enemy types and difficulty SHALL scale across sectors, reflecting both the narra
 #### Scenario: Sector 3 enemy complexity
 - **WHEN** Still encounters a Sector 3 enemy
 - **THEN** the enemy has multi-step patterns, high health or defense, potentially multiple intents per round, and sophisticated interactions with Still's body configuration and Heat state
+
+### Requirement: Elite encounters are gated behind early combats
+Elite enemies SHALL NOT appear in the first 3 combat encounters of a run, giving the player time to establish their build before facing stronger opponents.
+
+#### Scenario: Early combats are normal encounters
+- **WHEN** fewer than 3 combat rooms have been cleared in the current run
+- **THEN** all combat encounters draw from the normal encounter pool only (no elite chance)

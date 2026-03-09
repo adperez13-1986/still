@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react'
-import type { CombatState, BodySlot, EquipmentDefinition, HeatThreshold } from '../game/types'
+import type { CombatState, BodySlot, EquipmentDefinition, HeatThreshold, BehavioralPartDefinition } from '../game/types'
 import { BODY_SLOTS, getHeatThreshold } from '../game/types'
 import { ALL_CARDS } from '../data/cards'
 import type { SlotProjection } from '../game/combat'
@@ -113,6 +113,7 @@ function EquipPopup({ equip, onClose }: { equip: EquipmentDefinition; onClose: (
 interface Props {
   combat: CombatState
   equipment: Record<BodySlot, EquipmentDefinition | null>
+  parts: BehavioralPartDefinition[]
   selectedCardId: string | null
   projections: SlotProjection[]
   onAssign: (slot: BodySlot) => void
@@ -121,7 +122,7 @@ interface Props {
   activeSlot?: BodySlot | null
 }
 
-export default function BodySlotPanel({ combat, equipment, selectedCardId, projections, onAssign, onUnassign, compact, activeSlot }: Props) {
+export default function BodySlotPanel({ combat, equipment, parts, selectedCardId, projections, onAssign, onUnassign, compact, activeSlot }: Props) {
   const [popupEquip, setPopupEquip] = useState<EquipmentDefinition | null>(null)
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -138,6 +139,7 @@ export default function BodySlotPanel({ combat, equipment, selectedCardId, proje
     }
   }, [])
   // If a slot modifier card is selected, determine valid slots
+  const hasDualLoader = parts.some(p => p.effect.type === 'dualLoader')
   let validSlots: Set<BodySlot> | null = null
   if (selectedCardId) {
     const cardInst = combat.hand.find(c => c.instanceId === selectedCardId)
@@ -148,7 +150,10 @@ export default function BodySlotPanel({ combat, equipment, selectedCardId, proje
         validSlots = new Set<BodySlot>()
         for (const slot of BODY_SLOTS) {
           if (combat.disabledSlots.includes(slot)) continue
-          if (combat.slotModifiers[slot] !== null) continue
+          // Dual Loader: allow if primary filled but secondary empty
+          if (combat.slotModifiers[slot] !== null) {
+            if (!hasDualLoader || combat.slotModifiers2[slot] !== null) continue
+          }
           if (!isOverride && !equipment[slot]) continue
           validSlots.add(slot)
         }
@@ -173,15 +178,22 @@ export default function BodySlotPanel({ combat, equipment, selectedCardId, proje
           const isDisabled = combat.disabledSlots.includes(slot)
           const isValid = validSlots?.has(slot) ?? false
 
-          // Find modifier card name
+          const modInstanceId2 = combat.slotModifiers2[slot]
+
+          // Find modifier card names
           let modName: string | null = null
+          let modName2: string | null = null
+          const allCardsArr = [
+            ...combat.hand, ...combat.drawPile,
+            ...combat.discardPile, ...combat.exhaustPile,
+          ]
           if (modInstanceId) {
-            const allCards = [
-              ...combat.hand, ...combat.drawPile,
-              ...combat.discardPile, ...combat.exhaustPile,
-            ]
-            const inst = allCards.find(c => c.instanceId === modInstanceId)
+            const inst = allCardsArr.find(c => c.instanceId === modInstanceId)
             if (inst) modName = ALL_CARDS[inst.definitionId]?.name ?? null
+          }
+          if (modInstanceId2) {
+            const inst = allCardsArr.find(c => c.instanceId === modInstanceId2)
+            if (inst) modName2 = ALL_CARDS[inst.definitionId]?.name ?? null
           }
 
           const proj = projections.find(p => p.slot === slot)
@@ -253,7 +265,7 @@ export default function BodySlotPanel({ combat, equipment, selectedCardId, proje
                     )}
                   </>
                 )}
-                {/* Modifier badge + remove */}
+                {/* Modifier badge(s) + remove */}
                 {modName && (
                   <>
                     <span style={{
@@ -263,7 +275,7 @@ export default function BodySlotPanel({ combat, equipment, selectedCardId, proje
                       color: '#a29bfe',
                       borderRadius: '3px',
                     }}>
-                      {modName}
+                      {modName}{modName2 ? ` + ${modName2}` : ''}
                     </span>
                     <button
                       onClick={(e) => { e.stopPropagation(); onUnassign(slot) }}
@@ -282,7 +294,7 @@ export default function BodySlotPanel({ combat, equipment, selectedCardId, proje
                     </button>
                   </>
                 )}
-                {isValid && !modName && (
+                {isValid && (
                   <span style={{ fontSize: '9px', color: '#a29bfe' }}>Tap</span>
                 )}
               </div>
@@ -351,7 +363,7 @@ export default function BodySlotPanel({ combat, equipment, selectedCardId, proje
                     color: '#a29bfe',
                     borderRadius: '4px',
                   }}>
-                    {modName}
+                    {modName}{modName2 ? ` + ${modName2}` : ''}
                   </span>
                   <button
                     onClick={(e) => { e.stopPropagation(); onUnassign(slot) }}
@@ -370,7 +382,7 @@ export default function BodySlotPanel({ combat, equipment, selectedCardId, proje
                 </div>
               )}
 
-              {isValid && !modName && (
+              {isValid && (
                 <div style={{ fontSize: '10px', color: '#a29bfe', marginTop: '4px' }}>
                   Click to assign
                 </div>

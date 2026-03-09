@@ -4,6 +4,9 @@ interface Props {
   heat: number
   projectedHeat: number
   nextRoundHeat?: number
+  heatLocked?: boolean
+  heatLockTurnsLeft?: number
+  heatDebt?: number
 }
 
 function segmentColor(i: number): string {
@@ -13,7 +16,7 @@ function segmentColor(i: number): string {
   return '#27ae60'
 }
 
-export default function HeatTrack({ heat, projectedHeat, nextRoundHeat }: Props) {
+export default function HeatTrack({ heat, projectedHeat, nextRoundHeat, heatLocked, heatLockTurnsLeft, heatDebt }: Props) {
   const threshold = getHeatThreshold(heat)
   const projectedThreshold = getHeatThreshold(projectedHeat)
   const showProjection = projectedHeat !== heat
@@ -36,6 +39,19 @@ export default function HeatTrack({ heat, projectedHeat, nextRoundHeat }: Props)
         <span style={{ color: '#aaa' }}>
           Heat: <span style={{ color: segmentColor(heat), fontWeight: 'bold' }}>{heat}/{HEAT_MAX}</span>
           <span style={{ color: '#555', marginLeft: '6px' }}>({threshold})</span>
+          {heatLocked && (
+            <span style={{
+              marginLeft: '8px',
+              padding: '1px 6px',
+              background: 'rgba(52, 152, 219, 0.2)',
+              color: '#3498db',
+              borderRadius: '3px',
+              fontSize: '10px',
+              fontWeight: 'bold',
+            }}>
+              LOCKED {heatLockTurnsLeft}t | +{heatDebt ?? 0} debt
+            </span>
+          )}
         </span>
         {showProjection && (
           <span style={{ color: '#888', fontSize: '11px' }}>

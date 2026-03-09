@@ -38,6 +38,7 @@ interface RunActions {
   // Health
   takeDamage: (amount: number) => void
   heal: (amount: number) => void
+  reduceMaxHealth: (amount: number) => void
 
   // Card management
   addCardToDeck: (card: CardInstance) => void
@@ -125,6 +126,12 @@ export const useRunStore = create<RunState & RunActions>()(
         state.health = Math.min(state.maxHealth, state.health + amount)
       }),
 
+    reduceMaxHealth: (amount) =>
+      set((state) => {
+        state.maxHealth = Math.max(1, state.maxHealth - amount)
+        if (state.health > state.maxHealth) state.health = state.maxHealth
+      }),
+
     addCardToDeck: (card) =>
       set((state) => {
         state.deck.push(card)
@@ -160,6 +167,7 @@ export const useRunStore = create<RunState & RunActions>()(
 
     addPart: (part) =>
       set((state) => {
+        if (state.parts.some(p => p.id === part.id)) return
         state.parts.push(part)
       }),
 
@@ -181,7 +189,8 @@ export const useRunStore = create<RunState & RunActions>()(
           [...state.deck],
           state.drawCount,
           enemies,
-          []
+          [],
+          state.parts
         )
         state.combat = combat
 
@@ -229,6 +238,11 @@ export const useRunStore = create<RunState & RunActions>()(
         const result = playModifierCard(ctx, cardDef, instanceId, targetSlot)
         Object.assign(state.combat, result.combat)
         state.health = result.stillHealth
+        // Apply Overheat Reactor max HP reduction
+        if (result._maxHpReduction) {
+          state.maxHealth = Math.max(1, state.maxHealth - result._maxHpReduction)
+          if (state.health > state.maxHealth) state.health = state.maxHealth
+        }
       }),
 
     // Unassign modifier from slot (return to hand, refund heat)
@@ -293,6 +307,11 @@ export const useRunStore = create<RunState & RunActions>()(
         state.combat.phase = 'executing'
         const bodyResult = executeBodyActions(baseCtx)
         state.health = bodyResult.stillHealth
+        // Apply Overheat Reactor max HP reduction
+        if (bodyResult._maxHpReduction) {
+          state.maxHealth = Math.max(1, state.maxHealth - bodyResult._maxHpReduction)
+          if (state.health > state.maxHealth) state.health = state.maxHealth
+        }
         allEvents.push(...bodyResult.combat.combatLog)
         bodyResult.combat.combatLog = []
 
@@ -331,6 +350,11 @@ export const useRunStore = create<RunState & RunActions>()(
         }
         const endResult = endTurn(endCtx)
         state.health = endResult.stillHealth
+        // Apply Overheat Reactor max HP reduction from endTurn (Thermal Damper debt can trigger overheat)
+        if (endResult._maxHpReduction) {
+          state.maxHealth = Math.max(1, state.maxHealth - endResult._maxHpReduction)
+          if (state.health > state.maxHealth) state.health = state.maxHealth
+        }
         allEvents.push(...endResult.combat.combatLog)
         endResult.combat.combatLog = []
 

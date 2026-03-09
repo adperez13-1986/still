@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useRunStore } from '../store/runStore'
 import { usePermanentStore } from '../store/permanentStore'
 import { ALL_ENEMIES } from '../data/enemies'
-import { resolveDrops } from '../game/drops'
+import { resolveDrops, resolveWarperDrop } from '../game/drops'
 import { makeCardInstance, projectSlotActions } from '../game/combat'
 import { ALL_PARTS, ALL_EQUIPMENT } from '../data/parts'
 import { ALL_CARDS } from '../data/cards'
@@ -46,6 +46,8 @@ export default function CombatScreen() {
   const dmgIdRef = useRef(0)
   const animLogRef = useRef<CombatEvent[]>([])
   const [activePartIds, setActivePartIds] = useState<Set<string>>(new Set())
+  const rewardDropsRef = useRef<import('../game/drops').ResolvedDrop[] | null>(null)
+  const rewardPhaseKey = useRef<string | null>(null)
 
   // ─── Display State (intermediate values during animation) ───────
   const [displayHealth, setDisplayHealth] = useState<number | null>(null)
@@ -77,10 +79,14 @@ export default function CombatScreen() {
             }
             return next
           })
-          // Show damage numbers per enemy
+          // Show damage numbers per enemy (aggregate repeated hits)
+          const perEnemy = new Map<string, number>()
           for (const d of event.damages) {
+            perEnemy.set(d.enemyId, (perEnemy.get(d.enemyId) ?? 0) + d.amount)
+          }
+          for (const [enemyId, total] of perEnemy) {
             const id = ++dmgIdRef.current
-            setDamageNumbers(prev => [...prev, { id, value: -d.amount, color: '#e74c3c', target: d.enemyId }])
+            setDamageNumbers(prev => [...prev, { id, value: -total, color: '#e74c3c', target: enemyId }])
           }
         }
         if (event.block) {
@@ -232,7 +238,11 @@ export default function CombatScreen() {
     }
     setDisplayEnemyHealth(enemySnap)
 
-    run.executeTurn(targetEnemyId ?? undefined)
+    // Use effectiveTarget: falls back to first alive enemy if current target is dead
+    const aliveTarget = targetEnemyId && combat.enemies.some(e => e.instanceId === targetEnemyId && !e.isDefeated)
+      ? targetEnemyId
+      : combat.enemies.find(e => !e.isDefeated)?.instanceId
+    run.executeTurn(aliveTarget ?? undefined)
   }, [run, combat, targetEnemyId, animating])
 
   // ─── Equipment conflict resolution ──────────────────────────────
@@ -264,16 +274,37 @@ export default function CombatScreen() {
 
   // ─── Reward Phase ─────────────────────────────────────────────────
   if (!animating && combat?.phase === 'reward') {
-    // Calculate drops from defeated enemies
-    const defeatedEnemies = combat.enemies.filter(e => e.isDefeated)
-    let anyEquipDropped = false
-    const allDrops = defeatedEnemies.flatMap(e => {
-      const def = ALL_ENEMIES[e.definitionId]
-      if (!def?.dropPool.length) return []
-      const result = resolveDrops(def.dropPool, run.equipPity, run.sector, run.parts.map(p => p.id))
-      if (result.droppedEquipment) anyEquipDropped = true
-      return result.drops
-    })
+    // Calculate drops ONCE per reward phase (avoid re-rolling on re-render)
+    const phaseKey = combat.enemies.map(e => e.instanceId).join(',')
+    if (rewardPhaseKey.current !== phaseKey) {
+      rewardPhaseKey.current = phaseKey
+      const defeatedEnemies = combat.enemies.filter(e => e.isDefeated)
+      let anyEquip = false
+      const drops = defeatedEnemies.flatMap(e => {
+        const def = ALL_ENEMIES[e.definitionId]
+        if (!def?.dropPool.length) return []
+        const result = resolveDrops(def.dropPool, run.equipPity, run.sector, run.parts.map(p => p.id))
+        if (result.droppedEquipment) anyEquip = true
+        return result.drops
+      })
+
+      // Run-warping part drop chance for elite/boss encounters
+      const hasEliteOrBoss = defeatedEnemies.some(e => {
+        const def = ALL_ENEMIES[e.definitionId]
+        return def?.isElite || def?.isBoss
+      })
+      if (hasEliteOrBoss) {
+        const ownedWarperIds = run.parts.map(p => p.id)
+        const warperDrop = resolveWarperDrop(ownedWarperIds)
+        if (warperDrop) drops.push(warperDrop)
+      }
+
+      rewardDropsRef.current = drops
+      // Store anyEquipDropped in the drops array for later access
+      ;(rewardDropsRef.current as any)._anyEquip = anyEquip
+    }
+    const allDrops = rewardDropsRef.current!
+    const anyEquipDropped = (allDrops as any)._anyEquip ?? false
 
     // Auto-collect shards
     const shardDrops = allDrops.filter(d => d.type === 'shards')
@@ -564,6 +595,7 @@ export default function CombatScreen() {
       <BodySlotPanel
         combat={combat}
         equipment={run.equipment}
+        parts={run.parts}
         selectedCardId={selectedCardId}
         projections={projections}
         onAssign={handleAssignSlot}
@@ -578,6 +610,9 @@ export default function CombatScreen() {
           heat={combat.heat}
           projectedHeat={projectedHeat}
           nextRoundHeat={nextRoundHeat}
+          heatLocked={combat.heatLocked}
+          heatLockTurnsLeft={combat.heatLockTurnsLeft}
+          heatDebt={combat.heatDebt}
         />
       )}
 

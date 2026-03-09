@@ -109,6 +109,13 @@ Some equipment items SHALL have bonus effects that activate based on Still's hea
 - **WHEN** a body action fires from equipment with a heat-conditional bonus and Still is below the required threshold
 - **THEN** only the base effect applies
 
+### Requirement: Equipment may have secondary effects
+Some equipment items SHALL have a secondary effect (e.g., bonus healing) that triggers alongside the primary action each turn, regardless of heat threshold.
+
+#### Scenario: Equipment with bonus heal
+- **WHEN** a body action fires from equipment with a bonusHeal property
+- **THEN** Still heals for the specified amount in addition to the primary action effect
+
 ### Requirement: Each equipment slot has at least three options in Sector 1
 The Sector 1 equipment pool SHALL include at least 3 items per slot, providing meaningful choice within each body domain.
 
@@ -118,7 +125,7 @@ The Sector 1 equipment pool SHALL include at least 3 items per slot, providing m
 
 #### Scenario: Third Torso equipment option
 - **WHEN** Torso equipment drops in Sector 1
-- **THEN** the pool includes Thermal Plating (gain 3 Block, gain 5 while Hot) alongside Scrap Plating and Patched Hull
+- **THEN** the pool includes Thermal Plating (gain 3 Block, gain 5 while Hot) alongside Scrap Plating and Patched Hull (gain 2 Block and heal 3 HP)
 
 #### Scenario: Third Arms equipment option
 - **WHEN** Arms equipment drops in Sector 1
