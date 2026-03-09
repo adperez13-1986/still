@@ -360,7 +360,7 @@ export default function CombatScreen() {
 
           // Post-reward: boss staging/victory, or return to map
           const finishReward = () => {
-            const bossDefeated = defeatedEnemies.some(e => ALL_ENEMIES[e.definitionId]?.isBoss)
+            const bossDefeated = combat.enemies.filter(e => e.isDefeated).some(e => ALL_ENEMIES[e.definitionId]?.isBoss)
             if (bossDefeated) {
               if (run.sector < 3) {
                 // Non-final sector boss — go to staging area
