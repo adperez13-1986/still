@@ -32,7 +32,7 @@ export const RUN_END_MESSAGES = {
 export interface EventChoice {
   text: string
   outcome: {
-    type: 'health' | 'shards' | 'card' | 'status'
+    type: 'health' | 'shards' | 'card' | 'status' | 'removeCard'
     value: number
     description: string
   }
@@ -121,6 +121,21 @@ export const SECTOR1_EVENTS: EventVignette[] = [
       },
     ],
   },
+  {
+    id: 'the-sorting',
+    title: 'The Sorting',
+    body: 'A workbench. Tools laid out in a line. Someone was organizing — deciding what to keep and what to leave behind. The logic is clear even now: only carry what matters.\n\nI look at what I\'m carrying. Not all of it matters.',
+    choices: [
+      {
+        text: 'Let something go',
+        outcome: { type: 'removeCard', value: 0, description: 'Removed a card. Lighter now.' },
+      },
+      {
+        text: 'Keep everything',
+        outcome: { type: 'shards', value: 18, description: 'Found shards between the tools. Gained 18 shards.' },
+      },
+    ],
+  },
 ]
 
 // ─── Sector 2 Event Vignettes ───────────────────────────────────────────────────
@@ -198,6 +213,21 @@ export const SECTOR2_EVENTS: EventVignette[] = [
       {
         text: 'Go right',
         outcome: { type: 'status', value: 2, description: 'Something unlocked. Gained 2 Strength.' },
+      },
+    ],
+  },
+  {
+    id: 'letting-go',
+    title: 'Letting Go',
+    body: 'A disposal chute. Still functional. The label reads: RETURN WHAT YOU DON\'T NEED.\n\nI think about what\'s working and what isn\'t. Some things I picked up because they were there, not because they helped. The chute hums, waiting.',
+    choices: [
+      {
+        text: 'Feed it something',
+        outcome: { type: 'removeCard', value: 10, description: 'The chute accepted it. Recovered 10 health from the lighter load.' },
+      },
+      {
+        text: 'Walk past',
+        outcome: { type: 'shards', value: 22, description: 'Found shards lodged in the chute\'s frame. Gained 22 shards.' },
       },
     ],
   },

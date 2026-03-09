@@ -1,16 +1,20 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import CardDisplay from './CardDisplay'
+import CardPicker from './CardPicker'
 import { SECTOR1_CARD_POOL, SECTOR2_CARD_POOL } from '../data/cards'
 import { PARTS, ALL_PARTS } from '../data/parts'
-import type { CarriedPart } from '../game/types'
+import type { CardInstance, CarriedPart } from '../game/types'
 
 const REPAIR_COST = 50
+const RECYCLE_COST = 60
 
 interface Props {
   shards: number
   sector: number
+  deck: CardInstance[]
   onBuyCard: (cardId: string, cost: number) => void
   onBuyPart: (partId: string, cost: number) => void
+  onRecycle: (instanceId: string) => void
   onRepair: () => void
   carriedPart: CarriedPart | null
   onLeave: () => void
@@ -27,7 +31,8 @@ const PART_COSTS: Record<string, number> = {
   rare: 90, uncommon: 65, common: 45,
 }
 
-export default function ShopScreen({ shards, sector, onBuyCard, onBuyPart, onRepair, carriedPart, onLeave }: Props) {
+export default function ShopScreen({ shards, sector, deck, onBuyCard, onBuyPart, onRecycle, onRepair, carriedPart, onLeave }: Props) {
+  const [showRecyclePicker, setShowRecyclePicker] = useState(false)
   const SHOP_CARDS = useMemo(() => {
     const pool = sector >= 2 ? SECTOR2_CARD_POOL : SECTOR1_CARD_POOL
     return shuffle(pool).slice(0, 3)
@@ -154,6 +159,38 @@ export default function ShopScreen({ shards, sector, onBuyCard, onBuyPart, onRep
             </button>
           </div>
         </div>
+      )}
+
+      {/* Recycler */}
+      <div>
+        <h3 style={{ color: '#aaa', fontSize: '12px', letterSpacing: '2px', marginBottom: '12px' }}>RECYCLER</h3>
+        <button
+          onClick={() => shards >= RECYCLE_COST && setShowRecyclePicker(true)}
+          disabled={shards < RECYCLE_COST}
+          style={{
+            padding: '10px 28px',
+            backgroundColor: shards >= RECYCLE_COST ? '#e74c3c' : '#2c3e50',
+            color: shards >= RECYCLE_COST ? '#fff' : '#555',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: shards >= RECYCLE_COST ? 'pointer' : 'not-allowed',
+            fontSize: '13px',
+            fontWeight: 'bold',
+          }}
+        >
+          Recycle a card — {RECYCLE_COST} shards
+        </button>
+      </div>
+
+      {showRecyclePicker && (
+        <CardPicker
+          deck={deck}
+          onSelect={(instanceId) => {
+            onRecycle(instanceId)
+            setShowRecyclePicker(false)
+          }}
+          onCancel={() => setShowRecyclePicker(false)}
+        />
       )}
 
       <button

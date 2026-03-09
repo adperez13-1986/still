@@ -8,6 +8,7 @@ import CombatScreen from './CombatScreen'
 import RestScreen from './RestScreen'
 import ShopScreen from './ShopScreen'
 import EventScreen from './EventScreen'
+import CardPicker from './CardPicker'
 import RunInfoOverlay from './RunInfoOverlay'
 import { generateGridMaze } from '../game/mapGen'
 import { makeEnemyInstance, makeCardInstance } from '../game/combat'
@@ -44,6 +45,7 @@ export default function RunScreen() {
   const [roomDone, setRoomDone] = useState(false)
   const [infoTab, setInfoTab] = useState<'deck' | 'equips' | null>(null)
   const [brokenCarryNotice, setBrokenCarryNotice] = useState<string | null>(null)
+  const [eventCardRemoval, setEventCardRemoval] = useState<number | null>(null)
 
   // Initialize run if not active
   useEffect(() => {
@@ -317,6 +319,7 @@ export default function RunScreen() {
       <ShopScreen
         shards={run.shards}
         sector={run.sector}
+        deck={run.deck}
         carriedPart={permanent.carriedPart}
         onBuyCard={(cardId, cost) => {
           if (run.shards < cost) return
@@ -329,6 +332,11 @@ export default function RunScreen() {
           if (!part) return
           run.addShards(-cost)
           run.addPart(part)
+        }}
+        onRecycle={(instanceId) => {
+          if (run.shards < 60) return
+          run.removeCardFromDeck(instanceId)
+          run.addShards(-60)
         }}
         onRepair={() => {
           const cp = permanent.carriedPart
@@ -345,25 +353,46 @@ export default function RunScreen() {
 
   if (currentRoom.type === 'Event') {
     return (
-      <EventScreen
-        room={currentRoom}
-        nameDiscovered={run.nameDiscovered}
-        onChoice={(outcome) => {
-          if (outcome.type === 'health') run.heal(outcome.value)
-          if (outcome.type === 'shards') run.addShards(outcome.value)
-          if (outcome.type === 'card') {
-            const sectorPool = run.sector >= 2 ? SECTOR2_CARD_POOL : SECTOR1_CARD_POOL
-            const nonBasics = sectorPool.filter((c) => !['boost', 'emergency-strike', 'coolant-flush', 'diagnostics'].includes(c.id))
-            const picked = nonBasics[Math.floor(Math.random() * nonBasics.length)]
-            if (picked) run.addCardToDeck(makeCardInstance(picked.id))
-          }
-          if (!run.nameDiscovered && !permanent.nameEverDiscovered) {
-            run.discoverName()
-            permanent.setNameDiscovered()
-          }
-          finishRoom()
-        }}
-      />
+      <>
+        <EventScreen
+          room={currentRoom}
+          nameDiscovered={run.nameDiscovered}
+          onChoice={(outcome) => {
+            if (outcome.type === 'health') run.heal(outcome.value)
+            if (outcome.type === 'shards') run.addShards(outcome.value)
+            if (outcome.type === 'card') {
+              const sectorPool = run.sector >= 2 ? SECTOR2_CARD_POOL : SECTOR1_CARD_POOL
+              const nonBasics = sectorPool.filter((c) => !['boost', 'emergency-strike', 'coolant-flush', 'diagnostics'].includes(c.id))
+              const picked = nonBasics[Math.floor(Math.random() * nonBasics.length)]
+              if (picked) run.addCardToDeck(makeCardInstance(picked.id))
+            }
+            if (!run.nameDiscovered && !permanent.nameEverDiscovered) {
+              run.discoverName()
+              permanent.setNameDiscovered()
+            }
+            if (outcome.type === 'removeCard') {
+              setEventCardRemoval(outcome.value)
+              return
+            }
+            finishRoom()
+          }}
+        />
+        {eventCardRemoval !== null && (
+          <CardPicker
+            deck={run.deck}
+            onSelect={(instanceId) => {
+              run.removeCardFromDeck(instanceId)
+              if (eventCardRemoval > 0) run.heal(eventCardRemoval)
+              setEventCardRemoval(null)
+              finishRoom()
+            }}
+            onCancel={() => {
+              setEventCardRemoval(null)
+              finishRoom()
+            }}
+          />
+        )}
+      </>
     )
   }
 
