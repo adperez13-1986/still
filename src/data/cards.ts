@@ -435,7 +435,7 @@ const precisionStrike: ModifierCardDefinition = {
   id: 'precision-strike',
   name: 'Precision Strike',
   description: 'Deal 8 damage. While Cool: deal 12.',
-  heatCost: 0,
+  heatCost: 1,
   category: {
     type: 'system',
     modifier: 'Conditional',
@@ -450,7 +450,7 @@ const precisionStrike: ModifierCardDefinition = {
     id: 'precision-strike',
     name: 'Precision Strike+',
     description: 'Deal 10 damage. While Cool: deal 15.',
-    heatCost: 0,
+    heatCost: 1,
     category: {
       type: 'system',
       modifier: 'Conditional',
@@ -468,7 +468,7 @@ const coldEfficiency: ModifierCardDefinition = {
   id: 'cold-efficiency',
   name: 'Cold Efficiency',
   description: 'Draw 2 cards. While Cool: draw 3.',
-  heatCost: 0,
+  heatCost: 1,
   category: {
     type: 'system',
     modifier: 'Draw',
@@ -483,7 +483,7 @@ const coldEfficiency: ModifierCardDefinition = {
     id: 'cold-efficiency',
     name: 'Cold Efficiency+',
     description: 'Draw 3 cards. While Cool: draw 4.',
-    heatCost: 0,
+    heatCost: 1,
     category: {
       type: 'system',
       modifier: 'Draw',
@@ -621,7 +621,7 @@ const failsafeProtocol: ModifierCardDefinition = {
   id: 'failsafe-protocol',
   name: 'Failsafe Protocol',
   description: 'Gain 10 Block. Draw 1 card.',
-  heatCost: 0,
+  heatCost: 1,
   category: {
     type: 'system',
     modifier: 'Conditional',
@@ -632,7 +632,7 @@ const failsafeProtocol: ModifierCardDefinition = {
     id: 'failsafe-protocol',
     name: 'Failsafe Protocol+',
     description: 'Gain 14 Block. Draw 1 card.',
-    heatCost: 0,
+    heatCost: 1,
     category: {
       type: 'system',
       modifier: 'Conditional',
@@ -679,7 +679,7 @@ const glacierLance: ModifierCardDefinition = {
   id: 'glacier-lance',
   name: 'Glacier Lance',
   description: 'Deal 10 damage. While Cool: deal 16 + apply 1 Weak.',
-  heatCost: 0,
+  heatCost: 1,
   category: {
     type: 'system',
     modifier: 'Conditional',
@@ -697,7 +697,7 @@ const glacierLance: ModifierCardDefinition = {
     id: 'glacier-lance',
     name: 'Glacier Lance+',
     description: 'Deal 12 damage. While Cool: deal 20 + apply 2 Weak.',
-    heatCost: 0,
+    heatCost: 1,
     category: {
       type: 'system',
       modifier: 'Conditional',
