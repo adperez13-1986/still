@@ -354,7 +354,11 @@ export default function CombatScreen() {
           }))
           // Decrement carried part durability
           if (permanent.carriedPart && permanent.carriedPart.durability > 0) {
-            permanent.updateCarriedPart({ durability: permanent.carriedPart.durability - 1 })
+            const newDurability = permanent.carriedPart.durability - 1
+            permanent.updateCarriedPart({ durability: newDurability })
+            if (newDurability === 0) {
+              run.removePart(permanent.carriedPart.partId)
+            }
           }
 
           // Post-reward: boss staging/victory, or return to map
