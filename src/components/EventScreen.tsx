@@ -1,16 +1,29 @@
 import { useState } from 'react'
-import { SECTOR1_EVENTS, SECTOR2_EVENTS, NAME_DISCOVERY_EVENT } from '../data/narrative'
+import { SECTOR1_EVENTS, SECTOR2_EVENTS, NAME_DISCOVERY_EVENT, COMPANION_EVENTS } from '../data/narrative'
 import type { GridRoom } from '../game/types'
 import type { EventChoice } from '../data/narrative'
 
 interface Props {
   room: GridRoom
   nameDiscovered: boolean
+  companionsUnlocked: string[]
+  companionsAcquired: string[]
   onChoice: (outcome: EventChoice['outcome']) => void
 }
 
-export default function EventScreen({ room, nameDiscovered, onChoice }: Props) {
+export default function EventScreen({ room, nameDiscovered, companionsUnlocked, companionsAcquired, onChoice }: Props) {
   const [event] = useState(() => {
+    // Check for available companion events (unlocked but not yet acquired this run)
+    const availableCompanionEvents = COMPANION_EVENTS.filter(e => {
+      const companionId = e.choices.find(c => c.outcome.companionId)?.outcome.companionId
+      return companionId && companionsUnlocked.includes(companionId) && !companionsAcquired.includes(companionId)
+    })
+
+    // 30% chance to trigger a companion event if one is available
+    if (availableCompanionEvents.length > 0 && Math.random() < 0.3) {
+      return availableCompanionEvents[Math.floor(Math.random() * availableCompanionEvents.length)]
+    }
+
     const pool = room.sector >= 2 ? SECTOR2_EVENTS : SECTOR1_EVENTS
     // In Sector 2+, name discovery takes priority if not yet found
     return (room.sector >= 2 && !nameDiscovered && Math.random() < 0.3)

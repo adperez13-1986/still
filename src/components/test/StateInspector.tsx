@@ -38,7 +38,6 @@ export default function StateInspector({ combat, stillHealth, maxHealth, equipme
     ['Heat', `${combat.heat} (${getHeatThreshold(combat.heat)})`],
     ['Health', `${stillHealth}/${maxHealth}`],
     ['Block', combat.block],
-    ['Shutdown', combat.shutdown ? 'YES' : 'no'],
     ['Hand', assignedCount > 0 ? `${visibleHand} cards (+${assignedCount} assigned)` : `${visibleHand} cards`],
     ['Draw Pile', `${combat.drawPile.length} cards`],
     ['Discard', `${combat.discardPile.length} cards`],

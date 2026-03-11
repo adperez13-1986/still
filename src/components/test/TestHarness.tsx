@@ -9,7 +9,6 @@ import type {
   EnemyDefinition,
   StatusEffect,
 } from '../../game/types'
-import { HEAT_MAX } from '../../game/types'
 import {
   initCombat,
   makeEnemyInstance,
@@ -178,7 +177,7 @@ function reducer(state: HarnessState, action: HarnessAction): HarnessState {
       if (!state.combat) return state
       return {
         ...state,
-        combat: { ...state.combat, heat: Math.max(0, Math.min(HEAT_MAX, action.heat)) },
+        combat: { ...state.combat, heat: Math.max(0, action.heat) },
       }
     }
 
@@ -374,7 +373,7 @@ function reducer(state: HarnessState, action: HarnessAction): HarnessState {
 
     case 'DEBUG_SET_HEAT': {
       if (!state.combat) return state
-      const heat = Math.max(0, Math.min(HEAT_MAX, action.heat))
+      const heat = Math.max(0, action.heat)
       return {
         ...state,
         combat: { ...state.combat, heat },
@@ -432,16 +431,6 @@ function reducer(state: HarnessState, action: HarnessAction): HarnessState {
           statusEffects: state.combat.statusEffects.filter(s => s.type !== action.statusType),
         },
         log: [...state.log, `[DEBUG] Removed ${action.statusType}`],
-      }
-    }
-
-    case 'DEBUG_TOGGLE_SHUTDOWN': {
-      if (!state.combat) return state
-      const shutdown = !state.combat.shutdown
-      return {
-        ...state,
-        combat: { ...state.combat, shutdown },
-        log: [...state.log, `[DEBUG] Shutdown ${shutdown ? 'ON' : 'OFF'}`],
       }
     }
 

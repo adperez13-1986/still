@@ -25,7 +25,7 @@ export default function Hand({ combat, selectedCardId, onSelectSlotCard, onPlayS
   )
   const visibleHand = combat.hand.filter(c => !assignedIds.has(c.instanceId))
 
-  const canPlay = combat.phase === 'planning' && !combat.shutdown
+  const canPlay = combat.phase === 'planning'
 
   // Long-press preview for compact mode
   const [previewCardId, setPreviewCardId] = useState<string | null>(null)
@@ -124,7 +124,7 @@ export default function Hand({ combat, selectedCardId, onSelectSlotCard, onPlayS
           })}
           {visibleHand.length === 0 && (
             <div style={{ color: '#555', fontSize: '11px' }}>
-              {combat.shutdown ? 'SHUTDOWN' : 'Empty'}
+              Empty
             </div>
           )}
         </div>
@@ -255,7 +255,7 @@ export default function Hand({ combat, selectedCardId, onSelectSlotCard, onPlayS
       })}
       {visibleHand.length === 0 && (
         <div style={{ color: '#555', fontSize: '13px', alignSelf: 'center' }}>
-          {combat.shutdown ? 'SHUTDOWN — no cards playable' : 'Hand is empty'}
+          Hand is empty
         </div>
       )}
     </div>

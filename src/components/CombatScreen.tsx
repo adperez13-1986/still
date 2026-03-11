@@ -8,7 +8,7 @@ import { makeCardInstance, projectSlotActions } from '../game/combat'
 import { ALL_PARTS, ALL_EQUIPMENT } from '../data/parts'
 import { ALL_CARDS } from '../data/cards'
 import type { BodySlot, EquipmentDefinition, CombatEvent } from '../game/types'
-import { HEAT_MAX, OVERHEAT_RESET, applyPassiveCooling } from '../game/types'
+import { applyPassiveCooling } from '../game/types'
 
 import useIsMobile from '../hooks/useIsMobile'
 import StillPanel from './StillPanel'
@@ -175,7 +175,7 @@ export default function CombatScreen() {
           })
         }, 600)
         playNext()
-      } else if (event.type === 'overheatShutdown') {
+      } else if (event.type === 'overheatDamage') {
         setTimeout(playNext, 400)
       } else {
         setTimeout(playNext, 300)
@@ -187,19 +187,18 @@ export default function CombatScreen() {
   }, [combat?.combatLog.length])
 
   const projections = useMemo(() => {
-    if (!combat || combat.shutdown) return []
+    if (!combat) return []
     return projectSlotActions(combat, run.equipment, ALL_CARDS, run.parts)
   }, [combat, run.equipment, run.parts])
 
   const projectedHeat = useMemo(() => {
     if (!combat) return 0
     const totalHeatCost = projections.reduce((sum, p) => sum + p.heatCost, 0)
-    return Math.min(HEAT_MAX, combat.heat + totalHeatCost)
+    return combat.heat + totalHeatCost
   }, [combat, projections])
 
   const nextRoundHeat = useMemo(() => {
-    const postExecute = projectedHeat >= HEAT_MAX ? OVERHEAT_RESET : projectedHeat
-    return applyPassiveCooling(postExecute, run.passiveCoolingBonus)
+    return applyPassiveCooling(projectedHeat, run.passiveCoolingBonus)
   }, [projectedHeat, run.passiveCoolingBonus])
 
   // ─── Card Interaction ─────────────────────────────────────────────
@@ -510,7 +509,6 @@ export default function CombatScreen() {
               heat={combat.heat}
               block={displayBlock ?? combat.block}
               statusEffects={combat.statusEffects}
-              shutdown={combat.shutdown}
               compact
               projectedHeat={projectedHeat}
               nextRoundHeat={nextRoundHeat}
@@ -554,7 +552,6 @@ export default function CombatScreen() {
               heat={combat.heat}
               block={displayBlock ?? combat.block}
               statusEffects={combat.statusEffects}
-              shutdown={combat.shutdown}
             />
             {damageNumbers.filter(dn => dn.target === 'still').map(dn => (
               <DamageNumber key={dn.id} value={dn.value} color={dn.color} x="50%" y="20%" />

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { CombatState, StatusEffectType } from '../../game/types'
-import { BODY_SLOTS, HEAT_MAX } from '../../game/types'
+import { BODY_SLOTS } from '../../game/types'
 import { ALL_CARDS } from '../../data/cards'
 
 type TurnStep = 'planning' | 'body_done' | 'enemy_done' | 'end_done'
@@ -86,7 +86,7 @@ export default function DebugControls({
         <input
           type="range"
           min={0}
-          max={HEAT_MAX}
+          max={15}
           value={combat.heat}
           onChange={(e) => dispatch({ type: 'DEBUG_SET_HEAT', heat: Number(e.target.value) })}
           style={{ flex: 1, maxWidth: 120 }}
@@ -104,20 +104,6 @@ export default function DebugControls({
           style={{ flex: 1, maxWidth: 120 }}
         />
         <span style={{ fontSize: 12, fontFamily: 'monospace', width: 20 }}>{stillHealth}</span>
-      </div>
-
-      {/* Toggle shutdown */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 4 }}>
-        <button
-          onClick={() => dispatch({ type: 'DEBUG_TOGGLE_SHUTDOWN' })}
-          style={{
-            ...btnStyle,
-            background: combat.shutdown ? 'var(--danger)' : 'var(--bg-surface)',
-            color: combat.shutdown ? '#fff' : 'var(--text)',
-          }}
-        >
-          Shutdown: {combat.shutdown ? 'ON' : 'OFF'}
-        </button>
       </div>
 
       {/* Disabled slots */}

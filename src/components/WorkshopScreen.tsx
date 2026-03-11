@@ -14,13 +14,13 @@ const COMPANIONS = [
   {
     id: 'yanah',
     name: 'Yanah',
-    description: 'Draw 2 cards. Gain 1 Inspired. (Inspired: draw 1 extra card next turn)',
+    description: 'Unlocks event: find Yanah during runs. Gain 4 Block (8 while Cool).',
     cost: 80,
   },
   {
     id: 'yuri',
     name: 'Yuri',
-    description: 'Heal 6 HP. Remove 1 debuff.',
+    description: 'Unlocks event: find Yuri during runs. Deal 8 damage (14 while Hot).',
     cost: 80,
   },
 ]

@@ -256,9 +256,9 @@ const momentumCore: BehavioralPartDefinition = {
 const pressureValve: BehavioralPartDefinition = {
   id: 'pressure-valve',
   name: 'Pressure Valve',
-  description: 'When you would Overheat, instead set Heat to 8 and deal 5 damage to all enemies.',
+  description: 'When Heat reaches 10+, set Heat to 7 and deal 5 damage to all enemies.',
   trigger: { type: 'onWouldOverheat' },
-  effect: { type: 'preventOverheat', setHeat: 8, damage: 5 },
+  effect: { type: 'preventOverheat', setHeat: 7, damage: 5 },
   rarity: 'uncommon',
 }
 
@@ -390,7 +390,7 @@ const thermalDamper: BehavioralPartDefinition = {
 const overheatReactor: BehavioralPartDefinition = {
   id: 'overheat-reactor',
   name: 'Overheat Reactor',
-  description: 'When you Overheat: don\'t shut down. All slots deal 2x, heat resets to 5, max HP permanently reduced by 5.',
+  description: 'When Heat reaches 10+, all slots deal 2x damage this turn, heat resets to 5, max HP permanently reduced by 5.',
   trigger: { type: 'onWouldOverheat' },
   effect: { type: 'overheatReactor', heatReset: 5, maxHpCost: 5 },
   rarity: 'rare',

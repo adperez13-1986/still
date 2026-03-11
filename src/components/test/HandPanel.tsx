@@ -53,12 +53,12 @@ export default function HandPanel({ combat, selectedCardId, onSelectCard, onPlay
           const isSlot = def.category.type === 'slot'
           const isSystem = def.category.type === 'system'
           const isSelected = selectedCardId === card.instanceId
-          const canPlay = combat.phase === 'planning' && !combat.shutdown
+          const canPlay = combat.phase === 'planning'
 
           // Check heat condition
           const heatMet = !def.heatCondition || (() => {
             const order = ['Cool', 'Warm', 'Hot', 'Overheat']
-            const current = combat.heat >= 10 ? 'Overheat' : combat.heat >= 8 ? 'Hot' : combat.heat >= 5 ? 'Warm' : 'Cool'
+            const current = combat.heat >= 10 ? 'Overheat' : combat.heat >= 7 ? 'Hot' : combat.heat >= 4 ? 'Warm' : 'Cool'
             return order.indexOf(current) >= order.indexOf(def.heatCondition!)
           })()
 

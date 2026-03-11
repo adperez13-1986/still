@@ -32,9 +32,10 @@ export const RUN_END_MESSAGES = {
 export interface EventChoice {
   text: string
   outcome: {
-    type: 'health' | 'shards' | 'card' | 'status' | 'removeCard'
+    type: 'health' | 'shards' | 'card' | 'status' | 'removeCard' | 'companion'
     value: number
     description: string
+    companionId?: string
   }
 }
 
@@ -228,6 +229,41 @@ export const SECTOR2_EVENTS: EventVignette[] = [
       {
         text: 'Walk past',
         outcome: { type: 'shards', value: 22, description: 'Found shards lodged in the chute\'s frame. Gained 22 shards.' },
+      },
+    ],
+  },
+]
+
+// ─── Companion Events ────────────────────────────────────────────────────────
+
+export const COMPANION_EVENTS: EventVignette[] = [
+  {
+    id: 'find-yanah',
+    title: 'A Small Garden',
+    body: 'There is a room off the corridor that shouldn\'t be here. No terminal, no scrap. Just soil — actual soil — in a cracked container, and green things growing from it. Small, stubborn, alive.\n\nShe is kneeling beside it, adjusting something. She doesn\'t look up right away. She already knows.\n\n"I knew you\'d come," she says. Quiet. Certain. She\'s already packing.',
+    choices: [
+      {
+        text: '"Come with me."',
+        outcome: { type: 'companion', value: 0, companionId: 'yanah', description: 'Yanah joins your journey. Card added to deck.' },
+      },
+      {
+        text: '"Stay safe. I\'ll come back for you."',
+        outcome: { type: 'health', value: 10, description: 'She nods. She understands. Recovered 10 health.' },
+      },
+    ],
+  },
+  {
+    id: 'find-yuri',
+    title: 'Sounds of a Scuffle',
+    body: 'Around the corner — noise. Metal on metal. Not the careful kind. The reckless kind.\n\nHe\'s there, swinging a pipe at a half-broken turret that probably wasn\'t even active. Sparks everywhere. He\'s grinning.\n\nHe sees you and doesn\'t stop swinging. "Took you long enough."',
+    choices: [
+      {
+        text: '"Let\'s go, troublemaker."',
+        outcome: { type: 'companion', value: 0, companionId: 'yuri', description: 'Yuri joins your journey. Card added to deck.' },
+      },
+      {
+        text: '"Stay safe. I\'ll come back for you."',
+        outcome: { type: 'health', value: 10, description: 'He rolls his eyes but nods. He\'ll be fine. Recovered 10 health.' },
       },
     ],
   },

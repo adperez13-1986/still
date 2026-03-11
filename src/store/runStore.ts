@@ -76,6 +76,9 @@ interface RunActions {
 
   // Narrative
   discoverName: () => void
+
+  // Companions
+  acquireCompanion: (id: string) => void
 }
 
 const emptyRunState: RunState = {
@@ -93,6 +96,7 @@ const emptyRunState: RunState = {
   combat: null,
   nameDiscovered: false,
   equipPity: 0,
+  companionsAcquired: [],
 }
 
 function calcBlockAbsorb(block: number, damage: number): { newBlock: number; healthDamage: number } {
@@ -213,7 +217,6 @@ export const useRunStore = create<RunState & RunActions>()(
     playCard: (instanceId, targetSlot, targetEnemyId) =>
       set((state) => {
         if (!state.combat) return
-        if (state.combat.shutdown) return
         const cardInst = state.combat.hand.find(c => c.instanceId === instanceId)
         if (!cardInst) return
         const def = ALL_CARDS[cardInst.definitionId]
@@ -453,6 +456,13 @@ export const useRunStore = create<RunState & RunActions>()(
     discoverName: () =>
       set((state) => {
         state.nameDiscovered = true
+      }),
+
+    acquireCompanion: (id) =>
+      set((state) => {
+        if (!state.companionsAcquired.includes(id)) {
+          state.companionsAcquired.push(id)
+        }
       }),
   }))
 )

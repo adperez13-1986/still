@@ -17,11 +17,10 @@ import type {
 
 import {
   BODY_SLOTS,
-  HEAT_MAX,
   HOT_DAMAGE,
-  OVERHEAT_RESET,
+  OVERHEAT_THRESHOLD,
+  OVERHEAT_DAMAGE_PER_POINT,
   getHeatThreshold,
-  getThresholdBonus,
   applyPassiveCooling,
   isHot,
 } from '../game/types'
@@ -141,7 +140,6 @@ export function initCombat(
     discardPile: [],
     exhaustPile: [],
     heat: 0,
-    shutdown: false,
     block: 0,
     statusEffects: [...startingStatuses],
     roundNumber: 1,
@@ -239,10 +237,9 @@ export function resolveBodyAction(
     return result
   }
 
-  // Apply Heat threshold bonus
-  const thresholdBonus = getThresholdBonus(heat)
+  // No universal threshold bonus — archetype power comes from equipment/parts
   const { value, targetMode } = applyStatusToAction(action, slot, combat.statusEffects, isOverride)
-  let finalValue = value + thresholdBonus
+  let finalValue = value
 
   // Apply equipment-specific heat bonus (Task 5.5)
   if (equipment?.heatBonusThreshold && equipment?.heatBonusValue) {
@@ -409,24 +406,36 @@ function isThresholdMet(current: HeatThreshold, required: HeatThreshold): boolea
 
 // ─── Heat Tracking (Tasks 5.1-5.3) ─────────────────────────────────────────
 
-function applyHeatChange(combat: CombatState, delta: number): boolean {
+interface HeatChangeResult {
+  crossed: boolean
+  overheatDamage: number
+}
+
+function applyHeatChange(combat: CombatState, delta: number): HeatChangeResult {
   const oldHeat = combat.heat
 
   // Thermal Damper: positive heat goes to debt while locked (cooling still applies normally)
   if (combat.heatLocked && delta > 0) {
     combat.heatDebt += delta
-    return false
+    return { crossed: false, overheatDamage: 0 }
   }
 
   const oldThreshold = getHeatThreshold(oldHeat)
-  combat.heat = Math.min(HEAT_MAX, Math.max(0, oldHeat + delta))
+  combat.heat = Math.max(0, oldHeat + delta) // no upper cap
   const newThreshold = getHeatThreshold(combat.heat)
   combat.heatChangeThisTurn += Math.abs(combat.heat - oldHeat)
   const crossed = oldThreshold !== newThreshold
   if (crossed) {
     combat.thresholdCrossedThisTurn = true
   }
-  return crossed
+
+  // Overheat damage: on any heat INCREASE while over 9, deal 3 per point over 9
+  let overheatDamage = 0
+  if (delta > 0 && combat.heat > 9) {
+    overheatDamage = (combat.heat - 9) * OVERHEAT_DAMAGE_PER_POINT
+  }
+
+  return { crossed, overheatDamage }
 }
 
 function fireThresholdCrossTriggers(
@@ -461,12 +470,6 @@ export function executeBodyActions(ctx: CombatContext): CombatResult {
     combat: JSON.parse(JSON.stringify(ctx.combat)) as CombatState,
     stillHealth: ctx.stillHealth,
     log: [],
-  }
-
-  // If shutdown, skip all body actions
-  if (result.combat.shutdown) {
-    result.log.push('SHUTDOWN — body actions skipped')
-    return result
   }
 
   // Fire onPlanningEnd part triggers (Empty Chamber: block per unplayed card)
@@ -513,14 +516,19 @@ export function executeBodyActions(ctx: CombatContext): CombatResult {
       modInstanceId2
     )
 
-    // Apply Heat generation (with threshold tracking)
-    const crossedOnGen = applyHeatChange(result.combat, actionResult.heatGenerated)
-    if (crossedOnGen) fireThresholdCrossTriggers(ctx.parts, result, ctx)
+    // Apply Heat generation (with threshold tracking + overheat damage)
+    const genResult = applyHeatChange(result.combat, actionResult.heatGenerated)
+    if (genResult.crossed) fireThresholdCrossTriggers(ctx.parts, result, ctx)
+    if (genResult.overheatDamage > 0) {
+      result.stillHealth -= genResult.overheatDamage
+      result.combat.combatLog.push({ type: 'overheatDamage', damage: genResult.overheatDamage })
+      result.log.push(`Overheat: took ${genResult.overheatDamage} damage (heat ${result.combat.heat})`)
+    }
 
     // Apply Heat reduction from coolHeat actions
     const heatBeforeReduce = result.combat.heat
-    const crossedOnReduce = applyHeatChange(result.combat, -actionResult.heatReduced)
-    if (crossedOnReduce) fireThresholdCrossTriggers(ctx.parts, result, ctx)
+    const reduceResult = applyHeatChange(result.combat, -actionResult.heatReduced)
+    if (reduceResult.crossed) fireThresholdCrossTriggers(ctx.parts, result, ctx)
 
     // Bonus block per heat lost (e.g., Adaptive Treads)
     if (equip?.bonusBlockPerHeatLost && actionResult.heatReduced > 0) {
@@ -586,10 +594,10 @@ export function executeBodyActions(ctx: CombatContext): CombatResult {
     }
     result.combat.combatLog.push(slotEvent)
 
-    // Check Overheat after each action (Task 2.9)
-    if (result.combat.heat >= HEAT_MAX) {
-      // Pressure Valve: prevent overheat, set heat and deal AOE damage (highest priority)
+    // Fire onWouldOverheat part triggers (Pressure Valve, Overheat Reactor) if heat >= 10
+    if (result.combat.heat >= OVERHEAT_THRESHOLD) {
       const pressureValve = ctx.parts.find(p => p.trigger.type === 'onWouldOverheat' && p.effect.type === 'preventOverheat')
+      const reactor = ctx.parts.find(p => p.effect.type === 'overheatReactor')
       if (pressureValve && pressureValve.effect.type === 'preventOverheat') {
         result.combat.combatLog.push({ type: 'partTrigger', partId: pressureValve.id })
         result.combat.heat = pressureValve.effect.setHeat
@@ -602,22 +610,14 @@ export function executeBodyActions(ctx: CombatContext): CombatResult {
             if (enemy.currentHealth === 0) enemy.isDefeated = true
           }
         }
-        result.log.push(`${pressureValve.name}: prevented overheat! Heat → ${pressureValve.effect.setHeat}, dealt ${pressureValve.effect.damage} AOE damage`)
-      } else {
-        // Overheat Reactor: don't shut down, reset heat, 2x damage, cost max HP
-        const reactor = ctx.parts.find(p => p.effect.type === 'overheatReactor')
-        if (reactor && reactor.effect.type === 'overheatReactor') {
-          result.combat.combatLog.push({ type: 'partTrigger', partId: reactor.id })
-          result.combat.heat = reactor.effect.heatReset
-          result.combat.overheatReactorFired = true
-          result.stillHealth = Math.max(1, result.stillHealth - reactor.effect.maxHpCost)
-          result._maxHpReduction = (result._maxHpReduction ?? 0) + reactor.effect.maxHpCost
-          result.log.push(`${reactor.name}: Overheat harnessed! Heat → ${reactor.effect.heatReset}, max HP -${reactor.effect.maxHpCost}, 2x damage this turn`)
-        } else {
-          result.combat.shutdown = true
-          result.combat.combatLog.push({ type: 'overheatShutdown' })
-          result.log.push('OVERHEAT — shutdown next turn')
-        }
+        result.log.push(`${pressureValve.name}: heat reduced! Heat → ${pressureValve.effect.setHeat}, dealt ${pressureValve.effect.damage} AOE damage`)
+      } else if (reactor && reactor.effect.type === 'overheatReactor') {
+        result.combat.combatLog.push({ type: 'partTrigger', partId: reactor.id })
+        result.combat.heat = reactor.effect.heatReset
+        result.combat.overheatReactorFired = true
+        result.stillHealth = Math.max(1, result.stillHealth - reactor.effect.maxHpCost)
+        result._maxHpReduction = (result._maxHpReduction ?? 0) + reactor.effect.maxHpCost
+        result.log.push(`${reactor.name}: Overheat harnessed! Heat → ${reactor.effect.heatReset}, 2x damage, max HP -${reactor.effect.maxHpCost}`)
       }
     }
 
@@ -664,12 +664,6 @@ export function playModifierCard(
     log: [],
   }
 
-  // Cannot play cards during shutdown
-  if (result.combat.shutdown) {
-    result.log.push(`Cannot play ${card.name}: shutdown active`)
-    return result
-  }
-
   // Check Heat condition if present
   if (card.heatCondition) {
     const currentThreshold = getHeatThreshold(result.combat.heat)
@@ -683,8 +677,13 @@ export function playModifierCard(
   const effectiveHeatCost = card.heatCost < 0
     ? card.heatCost
     : Math.max(0, card.heatCost - result.combat.heatCostReduction)
-  const crossedOnPlay = applyHeatChange(result.combat, effectiveHeatCost)
-  if (crossedOnPlay) fireThresholdCrossTriggers(ctx.parts, result, ctx)
+  const heatResult = applyHeatChange(result.combat, effectiveHeatCost)
+  if (heatResult.crossed) fireThresholdCrossTriggers(ctx.parts, result, ctx)
+  if (heatResult.overheatDamage > 0) {
+    result.stillHealth -= heatResult.overheatDamage
+    result.combat.combatLog.push({ type: 'overheatDamage', damage: heatResult.overheatDamage })
+    result.log.push(`Overheat: took ${heatResult.overheatDamage} damage (heat ${result.combat.heat})`)
+  }
 
   if (card.category.type === 'slot') {
     // Slot modifier — assign to target slot
@@ -892,10 +891,10 @@ export function playModifierCard(
     }
   }
 
-  // Check Overheat
-  if (result.combat.heat >= HEAT_MAX) {
-    // Pressure Valve: prevent overheat (highest priority)
+  // Fire onWouldOverheat part triggers if heat >= 10
+  if (result.combat.heat >= OVERHEAT_THRESHOLD) {
     const pressureValve = ctx.parts.find(p => p.trigger.type === 'onWouldOverheat' && p.effect.type === 'preventOverheat')
+    const reactor = ctx.parts.find(p => p.effect.type === 'overheatReactor')
     if (pressureValve && pressureValve.effect.type === 'preventOverheat') {
       result.combat.combatLog.push({ type: 'partTrigger', partId: pressureValve.id })
       result.combat.heat = pressureValve.effect.setHeat
@@ -908,21 +907,14 @@ export function playModifierCard(
           if (enemy.currentHealth === 0) enemy.isDefeated = true
         }
       }
-      result.log.push(`${pressureValve.name}: prevented overheat! Heat → ${pressureValve.effect.setHeat}, dealt ${pressureValve.effect.damage} AOE damage`)
-    } else {
-      // Overheat Reactor: don't shut down, reset heat, 2x damage, cost max HP
-      const reactor = ctx.parts.find(p => p.effect.type === 'overheatReactor')
-      if (reactor && reactor.effect.type === 'overheatReactor') {
-        result.combat.combatLog.push({ type: 'partTrigger', partId: reactor.id })
-        result.combat.heat = reactor.effect.heatReset
-        result.combat.overheatReactorFired = true
-        result.stillHealth = Math.max(1, result.stillHealth - reactor.effect.maxHpCost)
-        result._maxHpReduction = (result._maxHpReduction ?? 0) + reactor.effect.maxHpCost
-        result.log.push(`${reactor.name}: Overheat harnessed! Heat → ${reactor.effect.heatReset}, max HP -${reactor.effect.maxHpCost}, 2x damage this turn`)
-      } else {
-        result.combat.shutdown = true
-        result.log.push('OVERHEAT — shutdown next turn')
-      }
+      result.log.push(`${pressureValve.name}: heat reduced! Heat → ${pressureValve.effect.setHeat}, dealt ${pressureValve.effect.damage} AOE damage`)
+    } else if (reactor && reactor.effect.type === 'overheatReactor') {
+      result.combat.combatLog.push({ type: 'partTrigger', partId: reactor.id })
+      result.combat.heat = reactor.effect.heatReset
+      result.combat.overheatReactorFired = true
+      result.stillHealth = Math.max(1, result.stillHealth - reactor.effect.maxHpCost)
+      result._maxHpReduction = (result._maxHpReduction ?? 0) + reactor.effect.maxHpCost
+      result.log.push(`${reactor.name}: Overheat harnessed! Heat → ${reactor.effect.heatReset}, 2x damage, max HP -${reactor.effect.maxHpCost}`)
     }
   }
 
@@ -1143,42 +1135,7 @@ export function endTurn(ctx: CombatContext): CombatResult {
   }
   result.combat.hand = []
 
-  // Clear shutdown flag at end of shutdown turn
-  if (result.combat.shutdown) {
-    result.combat.shutdown = false
-    result.log.push('Shutdown cleared')
-  }
-
-  // Check Overheat triggers shutdown for NEXT turn
-  if (result.combat.heat >= HEAT_MAX) {
-    const pressureValve = ctx.parts.find(p => p.trigger.type === 'onWouldOverheat' && p.effect.type === 'preventOverheat')
-    if (pressureValve && pressureValve.effect.type === 'preventOverheat') {
-      result.combat.combatLog.push({ type: 'partTrigger', partId: pressureValve.id })
-      result.combat.heat = pressureValve.effect.setHeat
-      for (const enemy of result.combat.enemies) {
-        if (!enemy.isDefeated) {
-          const pvAbsorbed = Math.min(enemy.block, pressureValve.effect.damage)
-          enemy.block -= pvAbsorbed
-          const pvActual = pressureValve.effect.damage - pvAbsorbed
-          enemy.currentHealth = Math.max(0, enemy.currentHealth - pvActual)
-          if (enemy.currentHealth === 0) enemy.isDefeated = true
-        }
-      }
-      result.log.push(`${pressureValve.name}: prevented overheat! Heat → ${pressureValve.effect.setHeat}`)
-    } else {
-      const reactor = ctx.parts.find(p => p.effect.type === 'overheatReactor')
-      if (reactor && reactor.effect.type === 'overheatReactor') {
-        result.combat.combatLog.push({ type: 'partTrigger', partId: reactor.id })
-        result.combat.heat = reactor.effect.heatReset
-        result.combat.overheatReactorFired = true
-        result.stillHealth = Math.max(1, result.stillHealth - reactor.effect.maxHpCost)
-        result._maxHpReduction = (result._maxHpReduction ?? 0) + reactor.effect.maxHpCost
-        result.log.push(`${reactor.name}: Overheat harnessed! Heat → ${reactor.effect.heatReset}, max HP -${reactor.effect.maxHpCost}`)
-      } else {
-        result.combat.shutdown = true
-      }
-    }
-  }
+  // No shutdown mechanic — overheat damage is applied during execution/planning via applyHeatChange
 
   // Store inspired bonus for next turn draw
   // (will be used by startTurn)
@@ -1202,19 +1159,18 @@ export function startTurn(ctx: CombatContext, inspiredBonus = 0): CombatResult {
       result.combat.heatLocked = false
       if (result.combat.heatDebt > 0) {
         result.log.push(`Thermal Damper expired: +${result.combat.heatDebt} deferred heat`)
-        applyHeatChange(result.combat, result.combat.heatDebt)
+        const debtResult = applyHeatChange(result.combat, result.combat.heatDebt)
+        if (debtResult.overheatDamage > 0) {
+          result.stillHealth -= debtResult.overheatDamage
+          result.combat.combatLog.push({ type: 'overheatDamage', damage: debtResult.overheatDamage })
+          result.log.push(`Overheat from deferred heat: took ${debtResult.overheatDamage} damage`)
+        }
         result.combat.heatDebt = 0
       }
     }
   }
 
-  // Step 1: Overheat shutdown setup
-  if (result.combat.shutdown) {
-    result.combat.heat = OVERHEAT_RESET
-    result.log.push(`Shutdown: Heat reset to ${OVERHEAT_RESET}`)
-  }
-
-  // Step 1: Passive cooling
+  // Passive cooling
   result.combat.heat = applyPassiveCooling(result.combat.heat, ctx.passiveCoolingBonus)
   result.log.push(`Passive cooling: Heat → ${result.combat.heat}`)
 
@@ -1285,7 +1241,7 @@ export function projectHeat(
     }
   }
 
-  return Math.min(HEAT_MAX, projected)
+  return projected // no cap — heat can exceed 9
 }
 
 // ─── Slot Projection (UI preview of body actions) ────────────────────────────
@@ -1365,8 +1321,8 @@ export function projectSlotActions(
 
     const heatAtExecution = simulatedHeat
 
-    // Advance simulated heat so subsequent slots see correct threshold
-    simulatedHeat = Math.min(HEAT_MAX, simulatedHeat + result.heatGenerated)
+    // Advance simulated heat so subsequent slots see correct threshold (no cap)
+    simulatedHeat = simulatedHeat + result.heatGenerated
     simulatedHeat = Math.max(0, simulatedHeat - result.heatReduced)
 
     const totalDamage = result.damage.reduce((sum, d) => sum + d.amount, 0)
@@ -1435,9 +1391,9 @@ function applyPartEffect(
       // Applied during resolveBodyAction, not here
       break
     case 'reduceHeat': {
-      const crossed = applyHeatChange(result.combat, -part.effect.value)
+      const heatRes = applyHeatChange(result.combat, -part.effect.value)
       result.log.push(`${part.name}: -${part.effect.value} Heat`)
-      if (crossed) fireThresholdCrossTriggers(ctx.parts, result, ctx)
+      if (heatRes.crossed) fireThresholdCrossTriggers(ctx.parts, result, ctx)
       break
     }
     case 'drawCards': {

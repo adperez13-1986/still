@@ -912,62 +912,82 @@ const resonance: ModifierCardDefinition = {
 export const yanah: ModifierCardDefinition = {
   id: 'yanah',
   name: 'Yanah',
-  description: 'Heal 6 HP. Remove 1 debuff.',
+  description: 'Gain 4 Block. While Cool: gain 8 Block instead.',
   heatCost: 0,
   category: {
     type: 'system',
     modifier: 'Cooling',
     effects: [
-      { type: 'heal', value: 6 },
-      { type: 'removeDebuff', count: 1 },
+      { type: 'gainBlock', value: 4 },
     ],
   },
   keywords: [],
+  heatBonus: {
+    threshold: 'Cool',
+    effects: [
+      { type: 'gainBlock', value: 8 },
+    ],
+  },
   upgraded: {
     id: 'yanah',
     name: 'Yanah+',
-    description: 'Heal 10 HP. Remove 1 debuff.',
+    description: 'Gain 6 Block. While Cool: gain 12 Block instead.',
     heatCost: 0,
     category: {
       type: 'system',
       modifier: 'Cooling',
       effects: [
-        { type: 'heal', value: 10 },
-        { type: 'removeDebuff', count: 1 },
+        { type: 'gainBlock', value: 6 },
       ],
     },
     keywords: [],
+    heatBonus: {
+      threshold: 'Cool',
+      effects: [
+        { type: 'gainBlock', value: 12 },
+      ],
+    },
   },
 }
 
 export const yuri: ModifierCardDefinition = {
   id: 'yuri',
   name: 'Yuri',
-  description: 'Gain 1 Strength. Gain 1 Inspired.',
+  description: 'Deal 8 damage. While Hot: deal 14 instead.',
   heatCost: 1,
   category: {
     type: 'system',
     modifier: 'Conditional',
     effects: [
-      { type: 'applyStatus', status: 'Strength', stacks: 1, target: 'self' },
-      { type: 'applyStatus', status: 'Inspired', stacks: 1, target: 'self' },
+      { type: 'damage', value: 8, targetMode: 'single_enemy' },
     ],
   },
   keywords: [],
+  heatBonus: {
+    threshold: 'Hot',
+    effects: [
+      { type: 'damage', value: 14, targetMode: 'single_enemy' },
+    ],
+  },
   upgraded: {
     id: 'yuri',
     name: 'Yuri+',
-    description: 'Gain 1 Strength. Gain 1 Inspired.',
-    heatCost: 0,
+    description: 'Deal 10 damage. While Hot: deal 18 instead.',
+    heatCost: 1,
     category: {
       type: 'system',
       modifier: 'Conditional',
       effects: [
-        { type: 'applyStatus', status: 'Strength', stacks: 1, target: 'self' },
-        { type: 'applyStatus', status: 'Inspired', stacks: 1, target: 'self' },
+        { type: 'damage', value: 10, targetMode: 'single_enemy' },
       ],
     },
     keywords: [],
+    heatBonus: {
+      threshold: 'Hot',
+      effects: [
+        { type: 'damage', value: 18, targetMode: 'single_enemy' },
+      ],
+    },
   },
 }
 

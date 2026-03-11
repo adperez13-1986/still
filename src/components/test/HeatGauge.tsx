@@ -1,4 +1,4 @@
-import { getHeatThreshold, getThresholdBonus, applyPassiveCooling, HEAT_MAX } from '../../game/types'
+import { getHeatThreshold, applyPassiveCooling, OVERHEAT_THRESHOLD } from '../../game/types'
 
 interface HeatGaugeProps {
   heat: number
@@ -16,7 +16,6 @@ const thresholdColor = (heat: number): string => {
 
 export default function HeatGauge({ heat, passiveCoolingBonus, onSetHeat }: HeatGaugeProps) {
   const threshold = getHeatThreshold(heat)
-  const bonus = getThresholdBonus(heat)
   const cooledTo = applyPassiveCooling(heat, passiveCoolingBonus)
 
   return (
@@ -29,7 +28,7 @@ export default function HeatGauge({ heat, passiveCoolingBonus, onSetHeat }: Heat
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
         <span style={{ fontWeight: 'bold' }}>Heat</span>
         <span style={{ color: thresholdColor(heat), fontWeight: 'bold' }}>
-          {heat}/{HEAT_MAX} — {threshold}
+          {heat}/{OVERHEAT_THRESHOLD} — {threshold}
         </span>
       </div>
 
@@ -39,7 +38,7 @@ export default function HeatGauge({ heat, passiveCoolingBonus, onSetHeat }: Heat
         gap: 2,
         marginBottom: 12,
       }}>
-        {Array.from({ length: HEAT_MAX }, (_, i) => (
+        {Array.from({ length: OVERHEAT_THRESHOLD }, (_, i) => (
           <div
             key={i}
             onClick={() => onSetHeat(i + 1)}
@@ -79,7 +78,6 @@ export default function HeatGauge({ heat, passiveCoolingBonus, onSetHeat }: Heat
 
       {/* Info */}
       <div style={{ fontSize: 13, color: 'var(--muted)', display: 'flex', flexDirection: 'column', gap: 4 }}>
-        <div>Threshold Bonus: <span style={{ color: 'var(--text)' }}>+{bonus}</span></div>
         <div>After Passive Cooling: <span style={{ color: 'var(--text)' }}>{cooledTo}</span> (base 2 + bonus {passiveCoolingBonus})</div>
       </div>
     </div>

@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from 'react'
 import type { StatusEffect } from '../game/types'
-import { getHeatThreshold, HEAT_MAX } from '../game/types'
+import { getHeatThreshold, OVERHEAT_THRESHOLD } from '../game/types'
 import Sprite from './Sprite'
 import { STILL_SPRITE } from '../data/sprites'
 
@@ -10,7 +10,6 @@ interface Props {
   heat: number
   block: number
   statusEffects: StatusEffect[]
-  shutdown: boolean
   compact?: boolean
   projectedHeat?: number
   nextRoundHeat?: number
@@ -24,7 +23,7 @@ const HEAT_COLORS: Record<string, string> = {
 }
 
 export default function StillPanel({
-  health, maxHealth, heat, block, statusEffects, shutdown, compact, projectedHeat, nextRoundHeat,
+  health, maxHealth, heat, block, statusEffects, compact, projectedHeat, nextRoundHeat,
 }: Props) {
   const healthPct = Math.max(0, (health / maxHealth) * 100)
   const healthColor = healthPct > 50 ? '#27ae60' : healthPct > 25 ? '#f39c12' : '#c0392b'
@@ -88,7 +87,7 @@ export default function StillPanel({
         </div>
         {/* Heat */}
         <span style={{ fontWeight: 'bold' }}>
-          <span style={{ color: heatColor }}>H {heat}/{HEAT_MAX}</span>
+          <span style={{ color: heatColor }}>H {heat}</span>
           {projectedHeat != null && projectedHeat !== heat && (
             <span style={{ color: '#888', fontWeight: 'normal', fontSize: '10px' }}>
               {' '}→<span style={{ color: HEAT_COLORS[getHeatThreshold(projectedHeat)], fontWeight: 'bold' }}>{projectedHeat}</span>
@@ -101,10 +100,6 @@ export default function StillPanel({
         {/* Block */}
         {block > 0 && (
           <span style={{ color: '#74b9ff', fontWeight: 'bold' }}>Blk {block}</span>
-        )}
-        {/* Shutdown */}
-        {shutdown && (
-          <span style={{ color: '#e74c3c', fontWeight: 'bold', letterSpacing: '1px' }}>SHUTDOWN</span>
         )}
         {/* Status pills */}
         {statusEffects.map((s) => (
@@ -201,29 +196,12 @@ export default function StillPanel({
       }}>
         <span style={{ color: '#aaa' }}>Heat</span>
         <span style={{ fontWeight: 'bold', fontSize: '16px', color: heatColor }}>
-          {heat}/{HEAT_MAX}
+          {heat}
         </span>
         <span style={{ fontSize: '11px', color: heatColor }}>
           {threshold}
         </span>
       </div>
-
-      {/* Shutdown warning */}
-      {shutdown && (
-        <div style={{
-          backgroundColor: 'rgba(231,76,60,0.15)',
-          border: '1px solid #e74c3c',
-          borderRadius: '4px',
-          padding: '4px 8px',
-          fontSize: '11px',
-          color: '#e74c3c',
-          fontWeight: 'bold',
-          marginBottom: '8px',
-          letterSpacing: '1px',
-        }}>
-          SHUTDOWN
-        </div>
-      )}
 
       {/* Status effects */}
       {statusEffects.length > 0 && (

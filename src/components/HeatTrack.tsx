@@ -1,4 +1,4 @@
-import { getHeatThreshold, HEAT_MAX } from '../game/types'
+import { getHeatThreshold, OVERHEAT_THRESHOLD } from '../game/types'
 
 interface Props {
   heat: number
@@ -37,7 +37,7 @@ export default function HeatTrack({ heat, projectedHeat, nextRoundHeat, heatLock
         fontSize: '12px',
       }}>
         <span style={{ color: '#aaa' }}>
-          Heat: <span style={{ color: segmentColor(heat), fontWeight: 'bold' }}>{heat}/{HEAT_MAX}</span>
+          Heat: <span style={{ color: segmentColor(heat), fontWeight: 'bold' }}>{heat}/{OVERHEAT_THRESHOLD}</span>
           <span style={{ color: '#555', marginLeft: '6px' }}>({threshold})</span>
           {heatLocked && (
             <span style={{
@@ -77,7 +77,7 @@ export default function HeatTrack({ heat, projectedHeat, nextRoundHeat, heatLock
 
       {/* Bar */}
       <div style={{ display: 'flex', gap: '2px' }}>
-        {Array.from({ length: HEAT_MAX }, (_, i) => {
+        {Array.from({ length: OVERHEAT_THRESHOLD }, (_, i) => {
           const idx = i + 1
           const isFilled = idx <= heat
           const isProjected = !isFilled && idx <= projectedHeat

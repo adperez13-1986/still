@@ -18,7 +18,7 @@ import {
   SECTOR2_ENCOUNTERS, SECTOR2_ELITE_ENCOUNTERS,
   ALL_ENEMIES,
 } from '../data/enemies'
-import { STARTING_CARDS, SECTOR1_CARD_POOL, SECTOR2_CARD_POOL, yanah, yuri } from '../data/cards'
+import { STARTING_CARDS, SECTOR1_CARD_POOL, SECTOR2_CARD_POOL } from '../data/cards'
 import { ALL_PARTS, ALL_EQUIPMENT, STARTING_TORSO, STARTING_ARMS } from '../data/parts'
 
 function pickEnemiesForRoom(room: GridRoom, sector: number, combatsCleared: number) {
@@ -84,6 +84,7 @@ export default function RunScreen() {
         combat: null,
         nameDiscovered: true,
         equipPity: 0,
+        companionsAcquired: [],
         isDebug: true,
       })
       return
@@ -108,8 +109,6 @@ export default function RunScreen() {
     }
 
     const starterDeck = STARTING_CARDS.map((c) => makeCardInstance(c.id))
-    if (permanent.companionsUnlocked.includes('yanah')) starterDeck.push(makeCardInstance(yanah.id))
-    if (permanent.companionsUnlocked.includes('yuri')) starterDeck.push(makeCardInstance(yuri.id))
     if (permanent.workshopUpgrades['practiced-routine']) {
       const nonBasics = SECTOR1_CARD_POOL.filter((c) => !['boost', 'emergency-strike', 'coolant-flush', 'diagnostics'].includes(c.id))
       const picked = nonBasics[Math.floor(Math.random() * nonBasics.length)]
@@ -144,6 +143,7 @@ export default function RunScreen() {
       combat: null,
       nameDiscovered: permanent.nameEverDiscovered,
       equipPity: 0,
+      companionsAcquired: [],
     })
   }, [])
 
@@ -362,6 +362,8 @@ export default function RunScreen() {
         <EventScreen
           room={currentRoom}
           nameDiscovered={run.nameDiscovered}
+          companionsUnlocked={permanent.companionsUnlocked}
+          companionsAcquired={run.companionsAcquired}
           onChoice={(outcome) => {
             if (outcome.type === 'health') run.heal(outcome.value)
             if (outcome.type === 'shards') run.addShards(outcome.value)
@@ -374,6 +376,10 @@ export default function RunScreen() {
             if (!run.nameDiscovered && !permanent.nameEverDiscovered) {
               run.discoverName()
               permanent.setNameDiscovered()
+            }
+            if (outcome.type === 'companion' && outcome.companionId) {
+              run.addCardToDeck(makeCardInstance(outcome.companionId))
+              run.acquireCompanion(outcome.companionId)
             }
             if (outcome.type === 'removeCard') {
               setEventCardRemoval(outcome.value)
