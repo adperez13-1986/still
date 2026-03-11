@@ -514,8 +514,8 @@ export default function CombatScreen() {
               block={displayBlock ?? combat.block}
               statusEffects={combat.statusEffects}
               compact
-              projectedHeat={projectedHeat}
-              nextRoundHeat={nextRoundHeat}
+              projectedHeat={animating ? combat.heat : projectedHeat}
+              nextRoundHeat={animating ? undefined : nextRoundHeat}
             />
             {damageNumbers.filter(dn => dn.target === 'still').map(dn => (
               <DamageNumber key={dn.id} value={dn.value} color={dn.color} x="50%" y="0%" />
@@ -526,7 +526,8 @@ export default function CombatScreen() {
               const def = ALL_ENEMIES[enemy.definitionId]
               if (!def) return null
               const dispHp = displayEnemyHealth?.[enemy.instanceId]
-              const inst = dispHp != null ? { ...enemy, currentHealth: dispHp } : enemy
+              const dispDefeated = dispHp != null ? dispHp <= 0 : enemy.isDefeated
+              const inst = dispHp != null ? { ...enemy, currentHealth: Math.max(0, dispHp), isDefeated: dispDefeated } : enemy
               return (
                 <div key={enemy.instanceId} style={{ position: 'relative' }}>
                   <EnemyCard
@@ -534,7 +535,7 @@ export default function CombatScreen() {
                     definition={def}
                     selected={effectiveTarget === enemy.instanceId}
                     onClick={() => {
-                      if (!enemy.isDefeated) setTargetEnemyId(enemy.instanceId)
+                      if (!dispDefeated) setTargetEnemyId(enemy.instanceId)
                     }}
                     compact
                   />
@@ -571,7 +572,8 @@ export default function CombatScreen() {
               const def = ALL_ENEMIES[enemy.definitionId]
               if (!def) return null
               const dispHp = displayEnemyHealth?.[enemy.instanceId]
-              const inst = dispHp != null ? { ...enemy, currentHealth: dispHp } : enemy
+              const dispDefeated = dispHp != null ? dispHp <= 0 : enemy.isDefeated
+              const inst = dispHp != null ? { ...enemy, currentHealth: Math.max(0, dispHp), isDefeated: dispDefeated } : enemy
               return (
                 <div key={enemy.instanceId} style={{ position: 'relative' }}>
                   <EnemyCard
@@ -579,7 +581,7 @@ export default function CombatScreen() {
                     definition={def}
                     selected={effectiveTarget === enemy.instanceId}
                     onClick={() => {
-                      if (!enemy.isDefeated) setTargetEnemyId(enemy.instanceId)
+                      if (!dispDefeated) setTargetEnemyId(enemy.instanceId)
                     }}
                   />
                   {damageNumbers.filter(dn => dn.target === enemy.instanceId).map(dn => (
@@ -609,8 +611,8 @@ export default function CombatScreen() {
       {!isMobile && (
         <HeatTrack
           heat={combat.heat}
-          projectedHeat={projectedHeat}
-          nextRoundHeat={nextRoundHeat}
+          projectedHeat={animating ? combat.heat : projectedHeat}
+          nextRoundHeat={animating ? undefined : nextRoundHeat}
           heatLocked={combat.heatLocked}
           heatLockTurnsLeft={combat.heatLockTurnsLeft}
           heatDebt={combat.heatDebt}
