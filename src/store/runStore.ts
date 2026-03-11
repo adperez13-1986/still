@@ -246,6 +246,10 @@ export const useRunStore = create<RunState & RunActions>()(
           state.maxHealth = Math.max(1, state.maxHealth - result._maxHpReduction)
           if (state.health > state.maxHealth) state.health = state.maxHealth
         }
+        // System card killed last enemy — skip to reward
+        if (allEnemiesDefeated(state.combat)) {
+          state.combat.phase = 'reward'
+        }
       }),
 
     // Unassign modifier from slot (return to hand, refund heat)
