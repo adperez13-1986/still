@@ -113,6 +113,16 @@ export interface CombatResult {
   _maxHpReduction?: number // Overheat Reactor: accumulated max HP reduction this turn
 }
 
+/** Resolve single-enemy target with overflow: if the preferred target is dead, fall back to first alive. */
+function resolveSingleTarget(enemies: EnemyInstance[], preferredId?: string): EnemyInstance[] {
+  if (preferredId) {
+    const preferred = enemies.find(e => !e.isDefeated && e.instanceId === preferredId)
+    if (preferred) return [preferred]
+  }
+  const fallback = enemies.find(e => !e.isDefeated)
+  return fallback ? [fallback] : []
+}
+
 // ─── Combat Initialisation (Task 2.11) ───────────────────────────────────────
 
 export function initCombat(
@@ -557,9 +567,7 @@ export function executeBodyActions(ctx: CombatContext): CombatResult {
     for (const dmg of actionResult.damage) {
       const targets = dmg.enemyId === '__all__'
         ? result.combat.enemies.filter(e => !e.isDefeated)
-        : ctx.targetEnemyId
-          ? result.combat.enemies.filter(e => !e.isDefeated && e.instanceId === ctx.targetEnemyId)
-          : result.combat.enemies.filter(e => !e.isDefeated).slice(0, 1)
+        : resolveSingleTarget(result.combat.enemies, ctx.targetEnemyId)
 
       for (const enemy of targets) {
         // Apply Vulnerable on defender
@@ -802,9 +810,7 @@ export function playModifierCard(
         case 'damage': {
           const targets = effect.targetMode === 'all_enemies'
             ? result.combat.enemies.filter(e => !e.isDefeated)
-            : ctx.targetEnemyId
-              ? result.combat.enemies.filter(e => !e.isDefeated && e.instanceId === ctx.targetEnemyId)
-              : result.combat.enemies.filter(e => !e.isDefeated).slice(0, 1)
+            : resolveSingleTarget(result.combat.enemies, ctx.targetEnemyId)
           for (const enemy of targets) {
             let dealt = effect.value
             if (getStatus(enemy.statusEffects, 'Vulnerable') > 0) {
@@ -826,9 +832,7 @@ export function playModifierCard(
     if (card.id === 'thermal-flux') {
       const fluxDmg = result.combat.heatChangeThisTurn
       if (fluxDmg > 0) {
-        const targets = ctx.targetEnemyId
-          ? result.combat.enemies.filter(e => !e.isDefeated && e.instanceId === ctx.targetEnemyId)
-          : result.combat.enemies.filter(e => !e.isDefeated).slice(0, 1)
+        const targets = resolveSingleTarget(result.combat.enemies, ctx.targetEnemyId)
         for (const enemy of targets) {
           let dealt = fluxDmg
           if (getStatus(enemy.statusEffects, 'Vulnerable') > 0) {
