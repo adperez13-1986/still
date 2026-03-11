@@ -123,6 +123,121 @@ const adaptiveTreads: EquipmentDefinition = {
   bonusBlockPerHeatLost: 1,
 }
 
+// ─── Tradeoff Equipment ────────────────────────────────────────────────────
+
+// ARMS uncommon: 5 dmg all, lose 2 Block on fire
+const shrapnelLauncher: EquipmentDefinition = {
+  id: 'shrapnel-launcher',
+  name: 'Shrapnel Launcher',
+  description: 'Deal 5 damage to ALL enemies. Lose 2 Block.',
+  slot: 'Arms',
+  action: { type: 'damage', baseValue: 5, targetMode: 'all_enemies' },
+  rarity: 'uncommon',
+  blockCost: 2,
+}
+
+// ARMS rare: 12 dmg single, only while Cool
+const cryoCannon: EquipmentDefinition = {
+  id: 'cryo-cannon',
+  name: 'Cryo Cannon',
+  description: 'Deal 12 damage to one enemy. Only fires while Cool.',
+  slot: 'Arms',
+  action: { type: 'damage', baseValue: 12, targetMode: 'single_enemy' },
+  rarity: 'rare',
+  heatConditionOnly: 'Cool',
+}
+
+// ARMS rare: 4 dmg all, fires twice while Hot
+const meltdownCannon: EquipmentDefinition = {
+  id: 'meltdown-cannon',
+  name: 'Meltdown Cannon',
+  description: 'Deal 4 damage to ALL enemies. Fires twice while Hot.',
+  slot: 'Arms',
+  action: { type: 'damage', baseValue: 4, targetMode: 'all_enemies' },
+  rarity: 'rare',
+  multiFire: { threshold: 'Hot', extraFirings: 1 },
+}
+
+// HEAD uncommon: draw 1 + foresight 1
+const tacticalVisor: EquipmentDefinition = {
+  id: 'tactical-visor',
+  name: 'Tactical Visor',
+  description: 'Draw 1 card. Reveal 1 extra enemy intent.',
+  slot: 'Head',
+  action: { type: 'draw', baseValue: 1, targetMode: 'self' },
+  rarity: 'uncommon',
+  bonusForesight: 1,
+}
+
+// HEAD rare: draw 2 + foresight 1
+const neuralSync: EquipmentDefinition = {
+  id: 'neural-sync',
+  name: 'Neural Sync',
+  description: 'Draw 2 cards. Reveal 1 extra enemy intent.',
+  slot: 'Head',
+  action: { type: 'draw', baseValue: 2, targetMode: 'self' },
+  rarity: 'rare',
+  bonusForesight: 1,
+}
+
+// HEAD rare: draw 1, draw 3 while Hot
+const pyroclastScanner: EquipmentDefinition = {
+  id: 'pyroclast-scanner',
+  name: 'Pyroclast Scanner',
+  description: 'Draw 1 card. While Hot: draw 3.',
+  slot: 'Head',
+  action: { type: 'draw', baseValue: 1, targetMode: 'self' },
+  rarity: 'rare',
+  heatBonusThreshold: 'Hot',
+  heatBonusValue: 2,
+}
+
+// TORSO rare: 6 Block, no conditions
+const ablativePlates: EquipmentDefinition = {
+  id: 'ablative-plates',
+  name: 'Ablative Plates',
+  description: 'Gain 6 Block.',
+  slot: 'Torso',
+  action: { type: 'block', baseValue: 6, targetMode: 'self' },
+  rarity: 'rare',
+}
+
+// TORSO rare: 4 Block, heal 2 while Cool
+const cryoShell: EquipmentDefinition = {
+  id: 'cryo-shell',
+  name: 'Cryo Shell',
+  description: 'Gain 4 Block. While Cool: also heal 2.',
+  slot: 'Torso',
+  action: { type: 'block', baseValue: 4, targetMode: 'self' },
+  rarity: 'rare',
+  heatBonusThreshold: 'Cool',
+  bonusHeal: 2,
+}
+
+// LEGS rare: -1 Heat, +5 Block while Cool
+const cryoLock: EquipmentDefinition = {
+  id: 'cryo-lock',
+  name: 'Cryo Lock',
+  description: 'Lose 1 Heat. While Cool: gain 5 Block.',
+  slot: 'Legs',
+  action: { type: 'coolHeat', baseValue: 1, targetMode: 'self' },
+  rarity: 'rare',
+  heatBonusThreshold: 'Cool',
+  heatBonusBlock: 5,
+}
+
+// LEGS rare: -1 Heat, -3 Heat while Hot
+const thermalExhaust: EquipmentDefinition = {
+  id: 'thermal-exhaust',
+  name: 'Thermal Exhaust',
+  description: 'Lose 1 Heat. While Hot: lose 3 Heat.',
+  slot: 'Legs',
+  action: { type: 'coolHeat', baseValue: 1, targetMode: 'self' },
+  rarity: 'rare',
+  heatBonusThreshold: 'Hot',
+  heatBonusValue: 2,
+}
+
 // ─── Sector 2 Equipment ────────────────────────────────────────────────────
 
 // HEAD slot
@@ -399,10 +514,21 @@ const overheatReactor: BehavioralPartDefinition = {
 // ─── Exports ────────────────────────────────────────────────────────────────
 
 export const EQUIPMENT: EquipmentDefinition[] = [
-  basicScanner, crackedLens, calibratedOptics,
-  scrapPlating, patchedHull, thermalPlating,
-  pistonArm, weldingTorch, overclockedPistons,
-  wornActuators, salvagedTreads, adaptiveTreads,
+  // Sector 1 (common)
+  basicScanner, crackedLens,
+  scrapPlating, patchedHull,
+  pistonArm, weldingTorch,
+  wornActuators, salvagedTreads,
+  // Archetype (uncommon)
+  calibratedOptics, thermalPlating,
+  overclockedPistons, adaptiveTreads,
+  // Tradeoff (uncommon + rare)
+  shrapnelLauncher, tacticalVisor,
+  cryoCannon, meltdownCannon,
+  neuralSync, pyroclastScanner,
+  ablativePlates, cryoShell,
+  cryoLock, thermalExhaust,
+  // Sector 2
   thermalImager, predictiveArray,
   reactivePlating, heatShield,
   plasmaCutter, arcWelder,

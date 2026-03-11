@@ -98,11 +98,31 @@ function EquipPopup({ equip, onClose }: { equip: EquipmentDefinition; onClose: (
           {equip.heatBonusThreshold && equip.heatBonusValue && (
             <span style={{ color: '#e67e22' }}>@{equip.heatBonusThreshold}: +{equip.heatBonusValue}</span>
           )}
+          {equip.heatBonusBlock && equip.heatBonusThreshold && (
+            <span style={{ color: '#3498db' }}>@{equip.heatBonusThreshold}: +{equip.heatBonusBlock} Block</span>
+          )}
           {equip.extraHeatGenerated ? (
             <span style={{ color: '#e67e22' }}>+{equip.extraHeatGenerated} Heat generated</span>
           ) : null}
           {equip.bonusBlockPerHeatLost ? (
             <span style={{ color: '#3498db' }}>+{equip.bonusBlockPerHeatLost} Block per Heat cooled</span>
+          ) : null}
+          {equip.blockCost ? (
+            <span style={{ color: '#e74c3c' }}>-{equip.blockCost} Block on fire</span>
+          ) : null}
+          {equip.bonusForesight ? (
+            <span style={{ color: '#9b59b6' }}>+{equip.bonusForesight} Foresight</span>
+          ) : null}
+          {equip.heatConditionOnly && (
+            <span style={{ color: '#e74c3c' }}>Only fires while {equip.heatConditionOnly}</span>
+          )}
+          {equip.multiFire && (
+            <span style={{ color: '#e67e22' }}>Fires {equip.multiFire.extraFirings + 1}x while {equip.multiFire.threshold}</span>
+          )}
+          {equip.bonusHeal ? (
+            <span style={{ color: '#2ecc71' }}>
+              +{equip.bonusHeal} Heal{equip.heatBonusThreshold ? ` while ${equip.heatBonusThreshold}` : ''}
+            </span>
           ) : null}
         </div>
       </div>
@@ -247,15 +267,26 @@ export default function BodySlotPanel({ combat, equipment, parts, selectedCardId
                   {equip ? equip.name : '(empty)'}
                 </span>
                 {/* Projection inline */}
+                {proj && proj.isInactive && (
+                  <span style={{ color: '#e74c3c', fontSize: '9px', fontWeight: 'bold', opacity: 0.7 }}>INACTIVE</span>
+                )}
                 {proj && proj.willFire && (
                   <>
                     <ThresholdBadge heat={proj.heatAtExecution} fontSize="9px" />
+                    {proj.isMultiFire && (
+                      <span style={{ color: '#e67e22', fontSize: '9px', fontWeight: 'bold' }}>x2</span>
+                    )}
                     <HeatValueDisplay total={proj.damage} heatContrib={proj.heatDmgContrib} suffix={`dmg${proj.targetMode === 'all' ? ' ALL' : ''}`} color="#e74c3c" fontSize="10px" />
                     <HeatValueDisplay total={proj.block} heatContrib={proj.heatBlkContrib} suffix="blk" color="#3498db" fontSize="10px" />
                     <HeatValueDisplay total={proj.heal} heatContrib={proj.heatHealContrib} suffix="hp" color="#2ecc71" fontSize="10px" />
                     {proj.draw > 0 && (
                       <span style={{ color: '#dfe6e9', fontWeight: 'bold', fontSize: '10px' }}>
                         draw {proj.draw}
+                      </span>
+                    )}
+                    {proj.foresight > 0 && (
+                      <span style={{ color: '#9b59b6', fontWeight: 'bold', fontSize: '10px' }}>
+                        eye {proj.foresight}
                       </span>
                     )}
                     {proj.heatCost !== 0 && (
@@ -389,17 +420,30 @@ export default function BodySlotPanel({ combat, equipment, parts, selectedCardId
               )}
 
               {/* Projection display */}
+              {proj?.isInactive && (
+                <div style={{ color: '#e74c3c', fontSize: '10px', fontWeight: 'bold', marginTop: '4px', opacity: 0.7 }}>
+                  INACTIVE — not in {equip?.heatConditionOnly} zone
+                </div>
+              )}
               {(() => {
                 if (!proj || !proj.willFire) return null
                 return (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px', fontSize: '11px', alignItems: 'center' }}>
                     <ThresholdBadge heat={proj.heatAtExecution} fontSize="10px" />
+                    {proj.isMultiFire && (
+                      <span style={{ color: '#e67e22', fontWeight: 'bold', fontSize: '10px' }}>x2 FIRE</span>
+                    )}
                     <HeatValueDisplay total={proj.damage} heatContrib={proj.heatDmgContrib} suffix={` dmg${proj.targetMode === 'all' ? ' ALL' : ''}`} color="#e74c3c" fontSize="11px" />
                     <HeatValueDisplay total={proj.block} heatContrib={proj.heatBlkContrib} suffix=" block" color="#3498db" fontSize="11px" />
                     <HeatValueDisplay total={proj.heal} heatContrib={proj.heatHealContrib} suffix=" heal" color="#2ecc71" fontSize="11px" />
                     {proj.draw > 0 && (
                       <span style={{ color: '#dfe6e9', fontWeight: 'bold' }}>
                         → draw {proj.draw}
+                      </span>
+                    )}
+                    {proj.foresight > 0 && (
+                      <span style={{ color: '#9b59b6', fontWeight: 'bold' }}>
+                        → eye {proj.foresight}
                       </span>
                     )}
                     {proj.heatCost !== 0 && (

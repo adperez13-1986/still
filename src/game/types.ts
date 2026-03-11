@@ -50,6 +50,11 @@ export interface EquipmentDefinition {
   extraHeatGenerated?: number // extra heat produced when this equipment fires
   bonusBlockPerHeatLost?: number // block gained per point of heat actually cooled
   bonusHeal?: number // bonus healing applied alongside the main action
+  heatConditionOnly?: HeatThreshold // only fires when in this heat zone; produces nothing outside
+  multiFire?: { threshold: HeatThreshold; extraFirings: number } // fires extra times while in zone
+  blockCost?: number // lose this much Block when the slot fires
+  bonusForesight?: number // reveal extra enemy intents alongside primary action
+  heatBonusBlock?: number // bonus block gained when at heatBonusThreshold (Cryo Lock)
 }
 
 // ─── Modifier Cards ─────────────────────────────────────────────────────────

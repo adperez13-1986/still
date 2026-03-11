@@ -104,6 +104,7 @@ export interface ActionResult {
   cardsDrawn: number
   heatReduced: number
   heatGenerated: number
+  foresight: number
 }
 
 export interface CombatResult {
@@ -213,6 +214,15 @@ export function resolveBodyAction(
     cardsDrawn: 0,
     heatReduced: 0,
     heatGenerated: 1, // each body action generates +1 Heat
+    foresight: 0,
+  }
+
+  // heatConditionOnly: produce nothing if not in required zone
+  if (equipment?.heatConditionOnly) {
+    if (getHeatThreshold(heat) !== equipment.heatConditionOnly) {
+      result.heatGenerated = 0
+      return result
+    }
   }
 
   // Resolve both modifier definitions
@@ -263,9 +273,35 @@ export function resolveBodyAction(
     result.heatGenerated += equipment.extraHeatGenerated
   }
 
+  // multiFire: extra firings when in threshold zone
+  let multiFirings = 0
+  if (equipment?.multiFire && getHeatThreshold(heat) === equipment.multiFire.threshold) {
+    multiFirings = equipment.multiFire.extraFirings
+  }
+
   // Apply bonus heal from equipment (e.g., Patched Hull)
+  // Cryo Shell: bonusHeal only applies when at heatBonusThreshold
   if (equipment?.bonusHeal) {
-    result.healAmount += equipment.bonusHeal
+    if (equipment.heatBonusThreshold) {
+      // Conditional heal: only when at the threshold
+      if (getHeatThreshold(heat) === equipment.heatBonusThreshold) {
+        result.healAmount += equipment.bonusHeal
+      }
+    } else {
+      result.healAmount += equipment.bonusHeal
+    }
+  }
+
+  // bonusForesight: reveal extra enemy intents alongside primary action
+  if (equipment?.bonusForesight) {
+    result.foresight += equipment.bonusForesight
+  }
+
+  // heatBonusBlock: conditional block when at threshold (e.g., Cryo Lock)
+  if (equipment?.heatBonusBlock && equipment.heatBonusThreshold) {
+    if (getHeatThreshold(heat) === equipment.heatBonusThreshold) {
+      result.blockGained += equipment.heatBonusBlock
+    }
   }
 
   // Apply modifier effects (non-override) from both modifiers
@@ -358,6 +394,12 @@ export function resolveBodyAction(
     }
   }
 
+  // multiFire: add extra firings (each generates +1 heat)
+  if (multiFirings > 0) {
+    repeatCount += multiFirings
+    result.heatGenerated += multiFirings
+  }
+
   // Overheat Reactor: double damage output when fired this turn
   if (combat.overheatReactorFired && action.type === 'damage') {
     finalValue *= 2
@@ -383,7 +425,7 @@ export function resolveBodyAction(
         result.heatReduced += finalValue
         break
       case 'foresight':
-        // Foresight is UI-only (reveal extra intents); tracked but not resolved here
+        result.foresight += finalValue
         break
     }
   }
@@ -526,6 +568,12 @@ export function executeBodyActions(ctx: CombatContext): CombatResult {
       modInstanceId2
     )
 
+    // heatConditionOnly: slot produces nothing if outside zone
+    if (equip?.heatConditionOnly && actionResult.heatGenerated === 0 && actionResult.damage.length === 0) {
+      result.log.push(`${slot}: ${equip.name} inactive — not in ${equip.heatConditionOnly} zone`)
+      continue
+    }
+
     // Apply Heat generation (with threshold tracking + overheat damage)
     const genResult = applyHeatChange(result.combat, actionResult.heatGenerated)
     if (genResult.crossed) fireThresholdCrossTriggers(ctx.parts, result, ctx)
@@ -589,6 +637,16 @@ export function executeBodyActions(ctx: CombatContext): CombatResult {
     if (actionResult.cardsDrawn > 0) {
       drawCards(result.combat, actionResult.cardsDrawn)
     }
+
+    // Apply blockCost: reduce Block after action resolves (e.g., Shrapnel Launcher)
+    if (equip?.blockCost) {
+      const cost = Math.min(result.combat.block, equip.blockCost)
+      result.combat.block -= cost
+      if (cost > 0) result.log.push(`${slot}: lost ${cost} Block (block cost)`)
+    }
+
+    // Apply foresight (reveals handled by UI via projection)
+    // foresight value is already tracked in actionResult.foresight
 
     // Emit combat event for animation
     const targetMode = equip?.action.targetMode ?? 'single_enemy' as const
@@ -1257,10 +1315,13 @@ export interface SlotProjection {
   block: number
   heal: number
   draw: number
+  foresight: number
   heatCost: number
   targetMode: 'single' | 'all'
   isOverride: boolean
   isDisabled: boolean
+  isInactive: boolean // heatConditionOnly equipment that can't fire at current heat
+  isMultiFire: boolean // multiFire equipment currently in zone
   heatAtExecution: number
   heatDmgContrib: number
   heatBlkContrib: number
@@ -1282,6 +1343,10 @@ export function projectSlotActions(
     const modInstanceId = combat.slotModifiers[slot]
     const hasOverride = hasOverrideModifier(modInstanceId, cardDefs, combat)
 
+    // Check heatConditionOnly: equipment can't fire outside its zone
+    const isInactive = !!(equip?.heatConditionOnly && getHeatThreshold(simulatedHeat) !== equip.heatConditionOnly)
+    const isMultiFire = !!(equip?.multiFire && getHeatThreshold(simulatedHeat) === equip.multiFire.threshold)
+
     if (isDisabled || (!equip && !hasOverride)) {
       projections.push({
         slot,
@@ -1290,10 +1355,13 @@ export function projectSlotActions(
         block: 0,
         heal: 0,
         draw: 0,
+        foresight: 0,
         heatCost: 0,
         targetMode: 'single',
         isOverride: false,
         isDisabled,
+        isInactive: false,
+        isMultiFire: false,
         heatAtExecution: simulatedHeat,
         heatDmgContrib: 0,
         heatBlkContrib: 0,
@@ -1335,15 +1403,18 @@ export function projectSlotActions(
 
     projections.push({
       slot,
-      willFire: true,
+      willFire: !isInactive,
       damage: totalDamage,
       block: result.blockGained,
       heal: result.healAmount,
       draw: result.cardsDrawn,
+      foresight: result.foresight,
       heatCost: result.heatGenerated - result.heatReduced,
       targetMode: isAoe ? 'all' : 'single',
       isOverride: hasOverride,
       isDisabled: false,
+      isInactive,
+      isMultiFire,
       heatAtExecution,
       heatDmgContrib: totalDamage - coolDamage,
       heatBlkContrib: result.blockGained - coolResult.blockGained,
