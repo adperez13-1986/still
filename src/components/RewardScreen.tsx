@@ -1,3 +1,4 @@
+import { useState, useRef, useCallback } from 'react'
 import CardDisplay from './CardDisplay'
 import { ALL_CARDS } from '../data/cards'
 import { ALL_PARTS, ALL_EQUIPMENT } from '../data/parts'
@@ -8,11 +9,47 @@ interface Props {
   onChoose: (cardId?: string) => void
 }
 
+function useLongPress(onLongPress: () => void, ms = 500) {
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const firedRef = useRef(false)
+
+  const start = useCallback(() => {
+    firedRef.current = false
+    timerRef.current = setTimeout(() => {
+      firedRef.current = true
+      onLongPress()
+    }, ms)
+  }, [onLongPress, ms])
+
+  const cancel = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current)
+    timerRef.current = null
+  }, [])
+
+  return {
+    onTouchStart: start,
+    onTouchEnd: cancel,
+    onTouchMove: cancel,
+    onMouseDown: start,
+    onMouseUp: cancel,
+    onMouseLeave: cancel,
+    didFire: () => firedRef.current,
+  }
+}
+
+interface DetailPopover {
+  name: string
+  description: string
+  slot?: string
+  color: string
+}
+
 export default function RewardScreen({ drops, onChoose }: Props) {
   const cardDrops = drops.filter((d) => d.type === 'card')
   const shardDrop = drops.find((d) => d.type === 'shards')
   const partDrops = drops.filter((d) => d.type === 'part')
   const equipDrops = drops.filter((d) => d.type === 'equipment')
+  const [detail, setDetail] = useState<DetailPopover | null>(null)
 
   return (
     <div style={{
@@ -45,39 +82,96 @@ export default function RewardScreen({ drops, onChoose }: Props) {
         )}
         {partDrops.map((d) => {
           if (d.type !== 'part') return null
-          const name = ALL_PARTS[d.partId]?.name ?? d.partId
+          const part = ALL_PARTS[d.partId]
+          if (!part) return null
           return (
-            <span key={d.partId} style={{
-              padding: '4px 12px',
-              backgroundColor: 'rgba(46,204,113,0.15)',
-              border: '1px solid #2ecc71',
-              borderRadius: '6px',
-              color: '#2ecc71',
-              fontSize: '13px',
-              fontWeight: 'bold',
-            }}>
-              Found: {name}
-            </span>
+            <DropBadge
+              key={d.partId}
+              label={`Found: ${part.name}`}
+              color="#2ecc71"
+              onLongPress={() => setDetail({
+                name: part.name,
+                description: part.description,
+                color: '#2ecc71',
+              })}
+            />
           )
         })}
         {equipDrops.map((d) => {
           if (d.type !== 'equipment') return null
-          const name = ALL_EQUIPMENT[d.equipmentId]?.name ?? d.equipmentId
+          const equip = ALL_EQUIPMENT[d.equipmentId]
+          if (!equip) return null
           return (
-            <span key={d.equipmentId} style={{
-              padding: '4px 12px',
-              backgroundColor: 'rgba(52,152,219,0.15)',
-              border: '1px solid #3498db',
-              borderRadius: '6px',
-              color: '#3498db',
-              fontSize: '13px',
-              fontWeight: 'bold',
-            }}>
-              Found: {name}
-            </span>
+            <DropBadge
+              key={d.equipmentId}
+              label={`Found: ${equip.name}`}
+              color="#3498db"
+              onLongPress={() => setDetail({
+                name: equip.name,
+                description: equip.description,
+                slot: equip.slot,
+                color: '#3498db',
+              })}
+            />
           )
         })}
       </div>
+
+      {/* Detail popover */}
+      {detail && (
+        <div
+          onClick={() => setDetail(null)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0,0,0,0.6)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 100,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: '#1a1a2e',
+              border: `1px solid ${detail.color}`,
+              borderRadius: '10px',
+              padding: '20px 24px',
+              maxWidth: '320px',
+              width: '90%',
+            }}
+          >
+            <div style={{ fontWeight: 'bold', fontSize: '16px', color: detail.color, marginBottom: '4px' }}>
+              {detail.name}
+            </div>
+            {detail.slot && (
+              <div style={{ fontSize: '11px', color: '#888', marginBottom: '8px' }}>
+                {detail.slot} slot
+              </div>
+            )}
+            <div style={{ fontSize: '13px', color: '#ccc', lineHeight: '1.6' }}>
+              {detail.description}
+            </div>
+            <button
+              onClick={() => setDetail(null)}
+              style={{
+                marginTop: '16px',
+                width: '100%',
+                padding: '8px',
+                backgroundColor: 'transparent',
+                border: `1px solid ${detail.color}`,
+                color: detail.color,
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '12px',
+              }}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
 
       {cardDrops.length > 0 ? (
         <>
@@ -133,5 +227,30 @@ export default function RewardScreen({ drops, onChoose }: Props) {
         </button>
       )}
     </div>
+  )
+}
+
+function DropBadge({ label, color, onLongPress }: { label: string; color: string; onLongPress: () => void }) {
+  const lp = useLongPress(onLongPress)
+
+  return (
+    <span
+      {...lp}
+      style={{
+        padding: '4px 12px',
+        backgroundColor: `${color}15`,
+        border: `1px solid ${color}`,
+        borderRadius: '6px',
+        color,
+        fontSize: '13px',
+        fontWeight: 'bold',
+        cursor: 'pointer',
+        userSelect: 'none',
+        WebkitUserSelect: 'none',
+      }}
+    >
+      {label}
+      <span style={{ fontSize: '10px', color: '#888', marginLeft: '6px' }}>hold for details</span>
+    </span>
   )
 }
