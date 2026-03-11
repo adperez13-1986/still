@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from 'react'
 import type { StatusEffect } from '../game/types'
-import { getHeatThreshold, OVERHEAT_THRESHOLD } from '../game/types'
+import { getHeatThreshold } from '../game/types'
 import Sprite from './Sprite'
 import { STILL_SPRITE } from '../data/sprites'
 
