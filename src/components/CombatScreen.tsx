@@ -191,10 +191,11 @@ export default function CombatScreen() {
     return projectSlotActions(combat, run.equipment, ALL_CARDS, run.parts)
   }, [combat, run.equipment, run.parts])
 
+  // Projected heat after execution: current heat + LEGS cooling (slots no longer generate heat)
   const projectedHeat = useMemo(() => {
     if (!combat) return 0
-    const totalHeatCost = projections.reduce((sum, p) => sum + p.heatCost, 0)
-    return combat.heat + totalHeatCost
+    const legsCooling = projections.reduce((sum, p) => sum + p.heatCost, 0)
+    return Math.max(0, combat.heat + legsCooling)
   }, [combat, projections])
 
   const nextRoundHeat = useMemo(() => {

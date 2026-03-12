@@ -102,7 +102,7 @@ function EquipPopup({ equip, onClose }: { equip: EquipmentDefinition; onClose: (
             <span style={{ color: '#3498db' }}>@{equip.heatBonusThreshold}: +{equip.heatBonusBlock} Block</span>
           )}
           {equip.extraHeatGenerated ? (
-            <span style={{ color: '#e67e22' }}>+{equip.extraHeatGenerated} Heat generated</span>
+            <span style={{ color: '#e67e22' }}>+{equip.extraHeatGenerated} Heat on assign</span>
           ) : null}
           {equip.bonusBlockPerHeatLost ? (
             <span style={{ color: '#3498db' }}>+{equip.bonusBlockPerHeatLost} Block per Heat cooled</span>

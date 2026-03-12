@@ -52,33 +52,56 @@ export default function RunScreen() {
   useEffect(() => {
     if (run.active) return
 
-    // Debug shortcut: /run?debug=s2 starts directly in Sector 2 with a loaded build
+    // Debug shortcut: /run?debug=<preset> starts directly in Sector 2 with a loaded build
+    // Presets: s2 (generic), cool (Cool Runner), hot (Pyromaniac), warm (Warm Surfer)
     const params = new URLSearchParams(location.search)
-    if (params.get('debug') === 's2') {
+    const debugPreset = params.get('debug')
+    if (debugPreset && ['s2', 'cool', 'hot', 'warm'].includes(debugPreset)) {
+      const presets: Record<string, {
+        deck: string[]
+        parts: string[]
+        equipment: Record<string, string>
+      }> = {
+        s2: {
+          deck: ['overcharge', 'spread-shot', 'thermal-flux', 'glacier-lance', 'controlled-burn', 'failsafe-protocol', 'salvage-burst'],
+          parts: ['thermal-oscillator', 'momentum-core'],
+          equipment: { Head: 'calibrated-optics', Torso: 'reactive-plating', Arms: 'overclocked-pistons', Legs: 'coolant-injector' },
+        },
+        cool: {
+          deck: ['precision-strike', 'cold-efficiency', 'coolant-flush', 'glacier-lance', 'thermal-equilibrium', 'salvage-burst'],
+          parts: ['zero-point-field', 'cryo-engine'],
+          equipment: { Head: 'predictive-array', Torso: 'cryo-shell', Arms: 'cryo-cannon', Legs: 'cryo-lock' },
+        },
+        hot: {
+          deck: ['overcharge', 'controlled-burn', 'spread-shot', 'heat-vent', 'thermal-flux', 'meltdown', 'salvage-burst'],
+          parts: ['reactive-frame', 'pressure-valve'],
+          equipment: { Head: 'pyroclast-scanner', Torso: 'heat-shield', Arms: 'meltdown-cannon', Legs: 'thermal-exhaust' },
+        },
+        warm: {
+          deck: ['overcharge', 'spread-shot', 'thermal-flux', 'precision-strike', 'controlled-burn', 'failsafe-protocol', 'salvage-burst'],
+          parts: ['momentum-core', 'ablative-shell'],
+          equipment: { Head: 'tactical-visor', Torso: 'ablative-plates', Arms: 'arc-welder', Legs: 'stabilizer-treads' },
+        },
+      }
+      const preset = presets[debugPreset]
       const deck = [
         ...STARTING_CARDS.map(c => makeCardInstance(c.id)),
-        makeCardInstance('overcharge'),
-        makeCardInstance('spread-shot'),
-        makeCardInstance('thermal-flux'),
-        makeCardInstance('glacier-lance'),
-        makeCardInstance('controlled-burn'),
-        makeCardInstance('failsafe-protocol'),
-        makeCardInstance('salvage-burst'),
+        ...preset.deck.map(id => makeCardInstance(id)),
       ]
       run.startRun({
         sector: 2,
         map: generateGridMaze(2),
-        health: 60,
+        health: 70,
         maxHealth: 70,
         drawCount: 5,
         passiveCoolingBonus: 0,
         deck,
-        parts: [ALL_PARTS['feedback-loop'], ALL_PARTS['thermal-oscillator']].filter(Boolean),
+        parts: preset.parts.map(id => ALL_PARTS[id]).filter(Boolean),
         equipment: {
-          Head: ALL_EQUIPMENT['thermal-imager'] ?? null,
-          Torso: ALL_EQUIPMENT['reactive-plating'] ?? null,
-          Arms: ALL_EQUIPMENT['plasma-cutter'] ?? null,
-          Legs: ALL_EQUIPMENT['coolant-injector'] ?? null,
+          Head: ALL_EQUIPMENT[preset.equipment.Head] ?? null,
+          Torso: ALL_EQUIPMENT[preset.equipment.Torso] ?? null,
+          Arms: ALL_EQUIPMENT[preset.equipment.Arms] ?? null,
+          Legs: ALL_EQUIPMENT[preset.equipment.Legs] ?? null,
         },
         shards: 80,
         combat: null,

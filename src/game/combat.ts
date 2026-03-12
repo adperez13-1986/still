@@ -213,7 +213,7 @@ export function resolveBodyAction(
     healAmount: 0,
     cardsDrawn: 0,
     heatReduced: 0,
-    heatGenerated: 1, // each body action generates +1 Heat
+    heatGenerated: 0, // slots no longer generate heat — all heat management lives in planning phase
     foresight: 0,
   }
 
@@ -268,10 +268,7 @@ export function resolveBodyAction(
     }
   }
 
-  // Apply extra heat generation from equipment (Task 5.5)
-  if (equipment?.extraHeatGenerated) {
-    result.heatGenerated += equipment.extraHeatGenerated
-  }
+  // extraHeatGenerated now applies at modifier-assignment time, not during execution
 
   // multiFire: extra firings when in threshold zone
   let multiFirings = 0
@@ -380,7 +377,6 @@ export function resolveBodyAction(
           case 'extraFiring':
             if (part.effect.slot === slot) {
               repeatCount += 1
-              result.heatGenerated += 1
             }
             break
           case 'bonusDamage':
@@ -578,7 +574,7 @@ export function executeBodyActions(ctx: CombatContext): CombatResult {
     )
 
     // heatConditionOnly: slot produces nothing if outside zone
-    if (equip?.heatConditionOnly && actionResult.heatGenerated === 0 && actionResult.damage.length === 0) {
+    if (equip?.heatConditionOnly && getHeatThreshold(result.combat.heat) !== equip.heatConditionOnly) {
       result.log.push(`${slot}: ${equip.name} inactive — not in ${equip.heatConditionOnly} zone`)
       continue
     }
@@ -787,11 +783,17 @@ export function playModifierCard(
       result.combat.slotModifiers[targetSlot] = instanceId
     }
 
-    // Fire onModifierAssign part triggers (Feedback Loop)
-    for (const part of ctx.parts) {
-      if (part.trigger.type === 'onModifierAssign') {
-        applyPartEffect(part, result, ctx)
+    // Apply extra heat from equipment (e.g., Overclocked Pistons: +1 heat on assignment)
+    const slotEquip = ctx.equipment[targetSlot]
+    if (slotEquip?.extraHeatGenerated) {
+      const extraResult = applyHeatChange(result.combat, slotEquip.extraHeatGenerated)
+      if (extraResult.crossed) fireThresholdCrossTriggers(ctx.parts, result, ctx)
+      if (extraResult.overheatDamage > 0) {
+        result.stillHealth -= extraResult.overheatDamage
+        result.combat.combatLog.push({ type: 'overheatDamage', damage: extraResult.overheatDamage })
+        result.log.push(`Overheat: took ${extraResult.overheatDamage} damage (heat ${result.combat.heat})`)
       }
+      result.log.push(`${slotEquip.name}: +${slotEquip.extraHeatGenerated} Heat on assignment`)
     }
 
     result.log.push(`Assigned ${card.name} to ${targetSlot}`)
@@ -998,14 +1000,18 @@ export function unassignModifier(
   const secondaryId = result.combat.slotModifiers2[slot]
   const primaryId = result.combat.slotModifiers[slot]
 
+  // Refund extra-heat equipment cost on unassignment (no threshold triggers — prevents oscillator exploit)
+  const slotEquip = ctx.equipment[slot]
+  const extraHeatRefund = slotEquip?.extraHeatGenerated ?? 0
+
   if (secondaryId) {
     // Unassign from secondary slot (most recent assignment)
-    result.combat.heat = Math.max(0, result.combat.heat - card.heatCost)
+    result.combat.heat = Math.max(0, result.combat.heat - card.heatCost - extraHeatRefund)
     result.combat.slotModifiers2[slot] = null
     result.log.push(`Unassigned ${card.name} from ${slot} (secondary)`)
   } else if (primaryId) {
     // Unassign from primary slot
-    result.combat.heat = Math.max(0, result.combat.heat - card.heatCost)
+    result.combat.heat = Math.max(0, result.combat.heat - card.heatCost - extraHeatRefund)
     result.combat.slotModifiers[slot] = null
     result.log.push(`Unassigned ${card.name} from ${slot}`)
   } else {
@@ -1265,43 +1271,14 @@ export function startTurn(ctx: CombatContext, inspiredBonus = 0): CombatResult {
 
 export function projectHeat(
   currentHeat: number,
-  equipment: Record<BodySlot, EquipmentDefinition | null>,
-  slotModifiers: Record<BodySlot, string | null>,
-  cardDefs: Record<string, ModifierCardDefinition>,
-  combat: CombatState,
+  _equipment: Record<BodySlot, EquipmentDefinition | null>,
+  _slotModifiers: Record<BodySlot, string | null>,
+  _cardDefs: Record<string, ModifierCardDefinition>,
+  _combat: CombatState,
   _passiveCoolingBonus: number
 ): number {
-  // Start from current heat (already reflects any cards played this planning phase)
-  let projected = currentHeat
-
-  // Count body actions that will fire
-  for (const slot of BODY_SLOTS) {
-    if (combat.disabledSlots.includes(slot)) continue
-
-    const hasEquip = equipment[slot] !== null
-    const modId = slotModifiers[slot]
-    let hasOverride = false
-
-    if (modId) {
-      const cardInst = findAssignedCard(combat, modId)
-      if (cardInst) {
-        const def = cardDefs[cardInst.definitionId]
-        if (def?.category.type === 'slot' && def.category.effect.type === 'override') {
-          hasOverride = true
-        }
-        // Also account for Repeat extra firings
-        if (def?.category.type === 'slot' && def.category.effect.type === 'repeat') {
-          projected += def.category.effect.extraFirings // extra firings generate +1 Heat each
-        }
-      }
-    }
-
-    if (hasEquip || hasOverride) {
-      projected += 1 // base body action Heat
-    }
-  }
-
-  return projected // no cap — heat can exceed 9
+  // Slots no longer generate heat — planning-end heat IS execution heat
+  return currentHeat
 }
 
 // ─── Slot Projection (UI preview of body actions) ────────────────────────────
@@ -1320,7 +1297,7 @@ export interface SlotProjection {
   isDisabled: boolean
   isInactive: boolean // heatConditionOnly equipment that can't fire at current heat
   isMultiFire: boolean // multiFire equipment currently in zone
-  heatAtExecution: number
+  heatAtExecution: number // same for all slots (planning-end heat)
   heatDmgContrib: number
   heatBlkContrib: number
   heatHealContrib: number
@@ -1333,7 +1310,8 @@ export function projectSlotActions(
   parts: BehavioralPartDefinition[]
 ): SlotProjection[] {
   const projections: SlotProjection[] = []
-  let simulatedHeat = combat.heat
+  // All slots use the same heat — no per-slot drift
+  const executionHeat = combat.heat
 
   for (const slot of BODY_SLOTS) {
     const isDisabled = combat.disabledSlots.includes(slot)
@@ -1342,8 +1320,8 @@ export function projectSlotActions(
     const hasOverride = hasOverrideModifier(modInstanceId, cardDefs, combat)
 
     // Check heatConditionOnly: equipment can't fire outside its zone
-    const isInactive = !!(equip?.heatConditionOnly && getHeatThreshold(simulatedHeat) !== equip.heatConditionOnly)
-    const isMultiFire = !!(equip?.multiFire && getHeatThreshold(simulatedHeat) === equip.multiFire.threshold)
+    const isInactive = !!(equip?.heatConditionOnly && getHeatThreshold(executionHeat) !== equip.heatConditionOnly)
+    const isMultiFire = !!(equip?.multiFire && getHeatThreshold(executionHeat) === equip.multiFire.threshold)
 
     if (isDisabled || (!equip && !hasOverride)) {
       projections.push({
@@ -1360,7 +1338,7 @@ export function projectSlotActions(
         isDisabled,
         isInactive: false,
         isMultiFire: false,
-        heatAtExecution: simulatedHeat,
+        heatAtExecution: executionHeat,
         heatDmgContrib: 0,
         heatBlkContrib: 0,
         heatHealContrib: 0,
@@ -1374,7 +1352,7 @@ export function projectSlotActions(
       modInstanceId,
       cardDefs,
       combat,
-      simulatedHeat,
+      executionHeat,
       parts
     )
 
@@ -1388,12 +1366,6 @@ export function projectSlotActions(
       0, // Cool = no threshold bonus, no heat-triggered parts
       parts
     )
-
-    const heatAtExecution = simulatedHeat
-
-    // Advance simulated heat so subsequent slots see correct threshold (no cap)
-    simulatedHeat = simulatedHeat + result.heatGenerated
-    simulatedHeat = Math.max(0, simulatedHeat - result.heatReduced)
 
     const totalDamage = result.damage.reduce((sum, d) => sum + d.amount, 0)
     const coolDamage = coolResult.damage.reduce((sum, d) => sum + d.amount, 0)
@@ -1413,7 +1385,7 @@ export function projectSlotActions(
       isDisabled: false,
       isInactive,
       isMultiFire,
-      heatAtExecution,
+      heatAtExecution: executionHeat,
       heatDmgContrib: totalDamage - coolDamage,
       heatBlkContrib: result.blockGained - coolResult.blockGained,
       heatHealContrib: result.healAmount - coolResult.healAmount,

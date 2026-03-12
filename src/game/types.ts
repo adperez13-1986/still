@@ -125,7 +125,7 @@ export type PartTrigger =
   | { type: 'onCombatStart' }
   | { type: 'onCardPlay' }
   | { type: 'onCardExhaust' }
-  | { type: 'onModifierAssign' }
+
   | { type: 'onWouldOverheat' }
   | { type: 'onPlanningEnd' }
   | { type: 'onDamageTaken' }

@@ -323,23 +323,7 @@ const stabilizerTreads: EquipmentDefinition = {
 
 // ─── Sector 1 Behavioral Parts ──────────────────────────────────────────────
 
-const feedbackLoop: BehavioralPartDefinition = {
-  id: 'feedback-loop',
-  name: 'Feedback Loop',
-  description: 'When you assign a modifier to a slot, reduce Heat by 1.',
-  trigger: { type: 'onModifierAssign' },
-  effect: { type: 'reduceHeat', value: 1 },
-  rarity: 'uncommon',
-}
-
-const residualCharge: BehavioralPartDefinition = {
-  id: 'residual-charge',
-  name: 'Residual Charge',
-  description: 'System cards you play also reduce Heat by 1.',
-  trigger: { type: 'onCardPlay' },
-  effect: { type: 'reduceHeat', value: 1 },
-  rarity: 'uncommon',
-}
+// Feedback Loop and Residual Charge removed — passive cooling undermines planning-authority heat model
 
 const scrapRecycler: BehavioralPartDefinition = {
   id: 'scrap-recycler',
@@ -536,7 +520,7 @@ export const EQUIPMENT: EquipmentDefinition[] = [
 ]
 
 export const SECTOR1_PART_POOL: BehavioralPartDefinition[] = [
-  feedbackLoop, residualCharge, scrapRecycler, ablativeShell,
+  scrapRecycler, ablativeShell,
   momentumCore, pressureValve, reactiveFrame, fluxCapacitor,
 ]
 
