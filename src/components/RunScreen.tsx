@@ -325,6 +325,7 @@ export default function RunScreen() {
         shards={run.shards}
         sector={run.sector}
         deck={run.deck}
+        ownedPartIds={run.parts.map(p => p.id)}
         carriedPart={permanent.carriedPart}
         onBuyCard={(cardId, cost) => {
           if (run.shards < cost) return

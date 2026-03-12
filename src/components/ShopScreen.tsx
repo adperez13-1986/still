@@ -12,6 +12,7 @@ interface Props {
   shards: number
   sector: number
   deck: CardInstance[]
+  ownedPartIds: string[]
   onBuyCard: (cardId: string, cost: number) => void
   onBuyPart: (partId: string, cost: number) => void
   onRecycle: (instanceId: string) => void
@@ -31,13 +32,17 @@ const PART_COSTS: Record<string, number> = {
   rare: 90, uncommon: 65, common: 45,
 }
 
-export default function ShopScreen({ shards, sector, deck, onBuyCard, onBuyPart, onRecycle, onRepair, carriedPart, onLeave }: Props) {
+export default function ShopScreen({ shards, sector, deck, ownedPartIds, onBuyCard, onBuyPart, onRecycle, onRepair, carriedPart, onLeave }: Props) {
   const [showRecyclePicker, setShowRecyclePicker] = useState(false)
+  const [purchasedPartIds, setPurchasedPartIds] = useState<string[]>([])
   const SHOP_CARDS = useMemo(() => {
     const pool = sector >= 2 ? SECTOR2_CARD_POOL : SECTOR1_CARD_POOL
     return shuffle(pool).slice(0, 3)
   }, [sector])
-  const SHOP_PARTS = useMemo(() => shuffle(PARTS).slice(0, 2), [])
+  const SHOP_PARTS = useMemo(() => {
+    const available = PARTS.filter(p => !ownedPartIds.includes(p.id))
+    return shuffle(available).slice(0, 2)
+  }, [ownedPartIds])
 
   const showRepair = carriedPart !== null && carriedPart.durability === 0 && carriedPart.repairsLeft > 0
   const canAffordRepair = shards >= REPAIR_COST
@@ -94,11 +99,16 @@ export default function ShopScreen({ shards, sector, deck, onBuyCard, onBuyPart,
         <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', justifyContent: 'center' }}>
           {SHOP_PARTS.map((part) => {
             const cost = PART_COSTS[part.rarity]
-            const canAfford = shards >= cost
+            const sold = purchasedPartIds.includes(part.id)
+            const canAfford = shards >= cost && !sold
             return (
               <div
                 key={part.id}
-                onClick={() => canAfford && onBuyPart(part.id, cost)}
+                onClick={() => {
+                  if (!canAfford || sold) return
+                  onBuyPart(part.id, cost)
+                  setPurchasedPartIds(prev => [...prev, part.id])
+                }}
                 style={{
                   backgroundColor: '#16213e',
                   border: `1px solid ${canAfford ? '#a29bfe' : '#333'}`,
@@ -112,8 +122,8 @@ export default function ShopScreen({ shards, sector, deck, onBuyCard, onBuyPart,
               >
                 <div style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '6px' }}>{part.name}</div>
                 <div style={{ fontSize: '12px', color: '#aaa', marginBottom: '10px' }}>{part.description}</div>
-                <div style={{ fontSize: '12px', color: canAfford ? '#f1c40f' : '#555', fontWeight: 'bold' }}>
-                  {cost} shards
+                <div style={{ fontSize: '12px', color: sold ? '#27ae60' : canAfford ? '#f1c40f' : '#555', fontWeight: 'bold' }}>
+                  {sold ? 'SOLD' : `${cost} shards`}
                 </div>
               </div>
             )
