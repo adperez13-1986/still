@@ -32,10 +32,8 @@ function resolveShardDrop(entry: DropPool): ResolvedDrop {
 function resolveBonusDrop(entry: DropPool, sector: number, ownedPartIds: string[] = []): ResolvedDrop[] {
   if (entry.type === 'card') {
     const cardPool = getCardPoolForSector(sector)
-    const pool = entry.ids
-      ? cardPool.filter((c) => entry.ids!.includes(c.id))
-      : cardPool
-    const shuffled = [...pool].sort(() => Math.random() - 0.5)
+    // Always offer 3 choices from full sector pool (enemy ids ignored — they're too restrictive)
+    const shuffled = [...cardPool].sort(() => Math.random() - 0.5)
     return shuffled.slice(0, 3).map((c) => ({ type: 'card', cardId: c.id }))
   }
 
