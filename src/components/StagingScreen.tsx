@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useRunStore } from '../store/runStore'
 import { ALL_CARDS, SECTOR1_CARD_POOL, SECTOR2_CARD_POOL } from '../data/cards'
@@ -7,6 +7,42 @@ import { makeCardInstance } from '../game/combat'
 import CardDisplay from './CardDisplay'
 import EquipCompareOverlay from './EquipCompareOverlay'
 import type { EquipmentDefinition } from '../game/types'
+
+function useLongPress(onLongPress: () => void, ms = 500) {
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const firedRef = useRef(false)
+
+  const start = useCallback(() => {
+    firedRef.current = false
+    timerRef.current = setTimeout(() => {
+      firedRef.current = true
+      onLongPress()
+    }, ms)
+  }, [onLongPress, ms])
+
+  const cancel = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current)
+    timerRef.current = null
+  }, [])
+
+  return {
+    onTouchStart: start,
+    onTouchEnd: cancel,
+    onTouchMove: cancel,
+    onMouseDown: start,
+    onMouseUp: cancel,
+    onMouseLeave: cancel,
+    didFire: () => firedRef.current,
+  }
+}
+
+interface DetailPopover {
+  name: string
+  description: string
+  slot?: string
+  rarity?: string
+  color: string
+}
 
 const SECTOR_FLAVOR: Record<number, string> = {
   1: 'The corridor opens into warmth. Something ahead hums with purpose.',
@@ -28,6 +64,7 @@ export default function StagingScreen() {
   const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1)
   const [equipConflict, setEquipConflict] = useState<EquipmentDefinition | null>(null)
 
+  const [detail, setDetail] = useState<DetailPopover | null>(null)
   const nextSector = run.sector + 1
 
   const nextCardPool = useMemo(() => {
@@ -219,11 +256,18 @@ export default function StagingScreen() {
             <BonusOption
               title="Part"
               description={bonusPart.name}
+              hint="hold for details"
               color="#27ae60"
               onClick={() => {
                 run.addPart(bonusPart)
                 setStep(5)
               }}
+              onLongPress={() => setDetail({
+                name: bonusPart.name,
+                description: bonusPart.description,
+                rarity: bonusPart.rarity,
+                color: '#27ae60',
+              })}
             />
           )}
           {/* Equipment option */}
@@ -231,6 +275,7 @@ export default function StagingScreen() {
             <BonusOption
               title="Equipment"
               description={bonusEquip.name}
+              hint="hold for details"
               color="#74b9ff"
               onClick={() => {
                 if (run.equipment[bonusEquip.slot] !== null) {
@@ -240,9 +285,73 @@ export default function StagingScreen() {
                   setStep(5)
                 }
               }}
+              onLongPress={() => setDetail({
+                name: bonusEquip.name,
+                description: bonusEquip.description,
+                slot: bonusEquip.slot,
+                rarity: bonusEquip.rarity,
+                color: '#74b9ff',
+              })}
             />
           )}
         </div>
+        {detail && (
+          <div
+            onClick={() => setDetail(null)}
+            style={{
+              position: 'fixed',
+              top: 0, left: 0, right: 0, bottom: 0,
+              zIndex: 100,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: 'rgba(0,0,0,0.6)',
+            }}
+          >
+            <div
+              onClick={e => e.stopPropagation()}
+              style={{
+                backgroundColor: '#1e1e2e',
+                border: `2px solid ${detail.color}`,
+                borderRadius: '10px',
+                padding: '20px',
+                maxWidth: '300px',
+                width: '85%',
+                color: '#e8e8e8',
+              }}
+            >
+              <div style={{ fontWeight: 'bold', fontSize: '16px', marginBottom: '4px' }}>{detail.name}</div>
+              {(detail.rarity || detail.slot) && (
+                <div style={{
+                  fontSize: '10px',
+                  color: detail.rarity === 'rare' ? '#f1c40f' : detail.rarity === 'uncommon' ? '#74b9ff' : '#888',
+                  marginBottom: '8px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '1px',
+                }}>
+                  {detail.rarity}{detail.slot ? ` · ${detail.slot}` : ''}
+                </div>
+              )}
+              <div style={{ fontSize: '13px', color: '#aaa', lineHeight: '1.5' }}>{detail.description}</div>
+              <button
+                onClick={() => setDetail(null)}
+                style={{
+                  marginTop: '12px',
+                  padding: '6px 20px',
+                  background: 'none',
+                  border: `1px solid ${detail.color}`,
+                  color: detail.color,
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                  width: '100%',
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     )
   }
@@ -306,15 +415,22 @@ export default function StagingScreen() {
   )
 }
 
-function BonusOption({ title, description, color, onClick }: {
+function BonusOption({ title, description, hint, color, onClick, onLongPress }: {
   title: string
   description: string
+  hint?: string
   color: string
   onClick: () => void
+  onLongPress?: () => void
 }) {
+  const lp = useLongPress(onLongPress ?? (() => {}))
   return (
     <button
-      onClick={onClick}
+      onClick={() => {
+        if (lp.didFire()) return // don't select after long press
+        onClick()
+      }}
+      {...(onLongPress ? lp : {})}
       style={{
         backgroundColor: '#16213e',
         border: `2px solid ${color}`,
@@ -332,6 +448,11 @@ function BonusOption({ title, description, color, onClick }: {
       <div style={{ fontSize: '12px', color: '#aaa' }}>
         {description}
       </div>
+      {hint && (
+        <div style={{ fontSize: '9px', color: '#555', marginTop: '4px' }}>
+          {hint}
+        </div>
+      )}
     </button>
   )
 }
