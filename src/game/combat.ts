@@ -437,6 +437,15 @@ export function resolveBodyAction(
     }
   }
 
+  // bonusBlockPerHeatLost: estimate block from cooling
+  if (equipment?.bonusBlockPerHeatLost && result.heatReduced > 0) {
+    // Actual heat reduced is clamped by available heat after generation
+    const estimatedActualReduced = Math.min(result.heatReduced, Math.max(0, heat + result.heatGenerated))
+    if (estimatedActualReduced > 0) {
+      result.blockGained += estimatedActualReduced * equipment.bonusBlockPerHeatLost
+    }
+  }
+
   return result
 }
 
@@ -584,21 +593,10 @@ export function executeBodyActions(ctx: CombatContext): CombatResult {
     }
 
     // Apply Heat reduction from coolHeat actions
-    const heatBeforeReduce = result.combat.heat
     const reduceResult = applyHeatChange(result.combat, -actionResult.heatReduced)
     if (reduceResult.crossed) fireThresholdCrossTriggers(ctx.parts, result, ctx)
 
-    // Bonus block per heat lost (e.g., Adaptive Treads)
-    if (equip?.bonusBlockPerHeatLost && actionResult.heatReduced > 0) {
-      const actualReduced = heatBeforeReduce - result.combat.heat
-      if (actualReduced > 0) {
-        const bonusBlock = actualReduced * equip.bonusBlockPerHeatLost
-        result.combat.block += bonusBlock
-        result.log.push(`${slot}: gained ${bonusBlock} Block from heat lost`)
-      }
-    }
-
-    // Apply block
+    // Apply block (includes bonusBlockPerHeatLost computed in resolveBodyAction)
     if (actionResult.blockGained > 0) {
       result.combat.block += actionResult.blockGained
       result.log.push(`${slot}: gained ${actionResult.blockGained} Block`)
