@@ -39,7 +39,7 @@ Slot modifiers SHALL fall into four categories, each altering the body action di
 
 #### Scenario: Repeat modifier triggers the action again
 - **WHEN** a Repeat modifier is assigned to a slot
-- **THEN** the slot's action fires an additional time during execution; the Repeat card's printed Heat cost is paid when assigned, and the extra body-action firing generates +1 Heat per the standard body-action Heat rule (total Heat = card's printed cost + 1 for the extra firing)
+- **THEN** the slot's action fires an additional time during execution; the Repeat card's printed Heat cost is paid when assigned during the planning phase (slots do not generate additional heat during execution)
 
 #### Scenario: Override modifier replaces the action
 - **WHEN** an Override modifier is assigned to a slot

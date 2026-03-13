@@ -1,7 +1,7 @@
 ## MODIFIED Requirements
 
 ### Requirement: Still's base stats
-Still SHALL have three core stats: Health (maximum and current), Heat (0-10, the central combat resource), and Block (resets each turn, absorbs incoming damage before health). Energy is removed as a stat.
+Still SHALL have three core stats: Health (maximum and current), Heat (integer, minimum 0, no maximum â€” the central combat resource), and Block (resets each turn, absorbs incoming damage before health). Energy is removed as a stat.
 
 #### Scenario: Heat replaces energy
 - **WHEN** the player wants to play modifier cards or push body actions
@@ -70,7 +70,7 @@ At the beginning of every run, Still SHALL start with only a TORSO slot filled â
 
 #### Scenario: Finding equipment changes combat capability
 - **WHEN** the player equips a new item in a previously empty slot
-- **THEN** a new body action becomes available each turn, expanding Still's combat capability and increasing Heat generation per turn
+- **THEN** a new body action becomes available each turn, expanding Still's combat capability
 
 ## REMOVED Requirements
 

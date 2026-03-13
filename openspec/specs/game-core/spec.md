@@ -5,15 +5,15 @@ Combat SHALL follow a three-phase turn structure: planning phase (player assigns
 
 #### Scenario: Canonical turn step order
 - **WHEN** a turn begins (or combat starts for the first turn)
-- **THEN** steps execute in this exact order: (1) passive cooling −2 Heat, (2) Block resets to 0, (3) draw modifier cards up to hand size, (4) planning phase — player assigns modifiers and plays system cards, (5) player clicks "Execute", (6) execution phase — body actions fire HEAD → TORSO → ARMS → LEGS, (7) enemy phase — all living enemies execute intents, (8) end-of-turn — Hot damage penalty if Heat 8-9, status durations decrement, (9) discard remaining hand, (10) check win/loss, (11) next turn begins at step 1
+- **THEN** steps execute in this exact order: (1) Block resets to 0, (2) draw modifier cards up to hand size, (3) planning phase — player assigns modifiers and plays system cards (heat generated here), (4) player clicks "Execute", (5) execution phase — body actions fire HEAD → TORSO → ARMS → LEGS, (6) enemy phase — all living enemies execute intents (ablative heat may absorb damage), (7) end-of-turn — Hot damage penalty if Heat 7-9 (3 damage), status durations decrement, (8) discard remaining hand, (9) check win/loss, (10) next turn begins at step 1
 
 #### Scenario: Planning phase
-- **WHEN** steps 1-3 complete (cooling, block reset, draw)
-- **THEN** the player may assign modifier cards to body slots and play system cards freely until clicking "Execute"
+- **WHEN** steps 1-2 complete (block reset, draw)
+- **THEN** the player may assign modifier cards to body slots and play system cards freely until clicking "Execute"; all heat costs are paid during this phase
 
 #### Scenario: Execution phase resolves body actions
 - **WHEN** the player clicks "Execute"
-- **THEN** body actions fire in fixed order (HEAD → TORSO → ARMS → LEGS), each modified by any assigned modifier card, each generating +1 Heat, with output affected by the current Heat threshold at the moment of firing
+- **THEN** body actions fire in fixed order (HEAD → TORSO → ARMS → LEGS), each modified by any assigned modifier card; slots do not generate heat during execution
 
 #### Scenario: Enemy phase follows execution
 - **WHEN** the execution phase completes
@@ -21,7 +21,7 @@ Combat SHALL follow a three-phase turn structure: planning phase (player assigns
 
 #### Scenario: End-of-turn effects
 - **WHEN** the enemy phase completes
-- **THEN** Hot damage penalty applies (3 damage if Heat 8-9), status effect durations decrement, remaining hand is discarded, and win/loss is checked before the next turn
+- **THEN** Hot damage penalty applies (3 damage if Heat 7-9), status effect durations decrement, remaining hand is discarded, and win/loss is checked before the next turn
 
 ### Requirement: Run structure
 The game SHALL be organized into discrete runs. Each run begins with Still in an initial state and ends when Still reaches the final room of the current sector or is defeated. A run consists of navigating the maze room by room, engaging in encounters, and collecting rewards.
@@ -46,7 +46,7 @@ A combat encounter SHALL be won when all enemies reach zero health, and lost whe
 - **THEN** combat ends, the reward screen is shown, Block and Heat are reset
 
 #### Scenario: Still is defeated
-- **WHEN** Still's health reaches zero during enemy attack or Hot damage penalty
+- **WHEN** Still's health reaches zero during enemy attack, overheat damage, or Hot damage penalty
 - **THEN** combat ends immediately, no rewards are granted for that encounter, and run-end logic triggers
 
 ### Requirement: Post-run persistence

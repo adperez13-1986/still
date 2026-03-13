@@ -41,20 +41,16 @@ During the execution phase, body actions SHALL fire in a fixed order: HEAD first
 - **WHEN** a slot in the middle of the order is empty (e.g., TORSO is empty)
 - **THEN** execution proceeds to the next filled slot without pause
 
-### Requirement: Body action output is affected by Heat thresholds
-Body action output values SHALL be modified by the current Heat threshold at the moment of execution.
+### Requirement: Body action output is not affected by Heat thresholds
+Body action output values SHALL NOT receive any universal bonus from heat thresholds. Equipment-specific heat-conditional bonuses (e.g., Heat Shield's +5 Block while Hot) continue to function — those are per-item effects, not universal.
 
-#### Scenario: Warm bonus applies to body actions
-- **WHEN** a body action fires while Heat is in the Warm range (5-7)
-- **THEN** the action's output value is increased by 1 (e.g., "deal 6 damage" becomes "deal 7 damage")
+#### Scenario: No bonus at any threshold
+- **WHEN** a body action fires at any Heat threshold (Cool, Warm, Hot, Overheat)
+- **THEN** the action's output value is its base value with no threshold bonus
 
-#### Scenario: Hot bonus applies to body actions
-- **WHEN** a body action fires while Heat is in the Hot range (8-9)
-- **THEN** the action's output value is increased by 2
-
-#### Scenario: Heat threshold checked per action
-- **WHEN** body actions fire sequentially and earlier actions change the Heat level (each action adds +1 Heat)
-- **THEN** each action uses the Heat threshold at the moment it fires, not the threshold at the start of execution
+#### Scenario: Equipment-specific bonuses still apply
+- **WHEN** a body action fires from equipment with a heat-conditional bonus and Still is at the matching threshold
+- **THEN** the equipment's specific bonus applies to the action output
 
 ### Requirement: Body actions can be modified by modifier cards
 During the planning phase, the player SHALL be able to assign modifier cards to body slots, altering how that slot's action behaves during execution.
@@ -135,9 +131,9 @@ The Sector 1 equipment pool SHALL include at least 3 items per slot, providing m
 - **WHEN** Legs equipment drops in Sector 1
 - **THEN** the pool includes Adaptive Treads (lose 2 Heat, gain 1 Block per heat lost) alongside Worn Actuators and Salvaged Treads
 
-### Requirement: Shutdown disables all body actions
-When Still is in Overheat shutdown, no body actions SHALL fire.
+### Requirement: Body actions always fire regardless of heat
+Body actions SHALL always fire during the execution phase regardless of heat level. There is no shutdown mechanic.
 
-#### Scenario: Shutdown turn
-- **WHEN** a turn begins in Overheat shutdown state
-- **THEN** no body actions execute, no body-action Heat is generated, and the player may only play system cards
+#### Scenario: Body actions fire at high heat
+- **WHEN** the execution phase begins and Still's heat is above 9
+- **THEN** all filled equipment slots fire normally; overheat damage is the only penalty for high heat

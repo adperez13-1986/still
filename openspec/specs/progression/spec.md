@@ -46,4 +46,4 @@ The Workshop SHALL passively generate a secondary resource (Fragments) over real
 
 ### Requirement: Idle resource generation (energyCap Fragment bonus)
 **Reason**: The "Overcharged" Fragment bonus (+1 max energy) is removed because the energy system no longer exists. Heat replaces energy as the central resource.
-**Migration**: The energyCap Fragment bonus is replaced with a "Cooled Start" bonus — begin combat with +1 passive cooling for the first 3 turns (cool 3 Heat per turn instead of 2). The `FragmentBonusType` enum replaces `energyCap` with `passiveCooling`. The Fragment screen shows "Cooled Start" in place of "Overcharged."
+**Migration**: The energyCap Fragment bonus has been fully removed. There is no passive cooling in the game — all cooling comes from LEGS equipment and cooling cards. The `passiveCooling` FragmentBonusType and "Cooled Start" bonus have been removed.
