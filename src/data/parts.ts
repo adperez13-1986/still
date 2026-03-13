@@ -495,6 +495,15 @@ const overheatReactor: BehavioralPartDefinition = {
   rarity: 'rare',
 }
 
+const perpetualCore: BehavioralPartDefinition = {
+  id: 'perpetual-core',
+  name: 'Perpetual Core',
+  description: 'When your draw pile is empty, shuffle your discard pile back in.',
+  trigger: { type: 'onDrawPileEmpty' },
+  effect: { type: 'reshuffleDiscard' },
+  rarity: 'rare',
+}
+
 // ─── Exports ────────────────────────────────────────────────────────────────
 
 export const EQUIPMENT: EquipmentDefinition[] = [
@@ -530,7 +539,7 @@ export const SECTOR2_PART_POOL: BehavioralPartDefinition[] = [
 ]
 
 export const RUN_WARPING_PARTS: BehavioralPartDefinition[] = [
-  dualLoader, thermalDamper, overheatReactor,
+  dualLoader, thermalDamper, overheatReactor, perpetualCore,
 ]
 
 export const BEHAVIORAL_PARTS: BehavioralPartDefinition[] = [

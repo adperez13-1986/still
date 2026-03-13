@@ -627,7 +627,7 @@ export function executeBodyActions(ctx: CombatContext): CombatResult {
 
     // Apply card draw from body actions
     if (actionResult.cardsDrawn > 0) {
-      drawCards(result.combat, actionResult.cardsDrawn)
+      drawCards(result.combat, actionResult.cardsDrawn, ctx.parts)
     }
 
     // Apply blockCost: reduce Block after action resolves (e.g., Shrapnel Launcher)
@@ -687,7 +687,7 @@ export function executeBodyActions(ctx: CombatContext): CombatResult {
     for (const part of ctx.parts) {
       if (part.id === 'momentum-core') {
         applyPartEffect(part, result, ctx)
-        const drawn = drawCards(result.combat, 1)
+        const drawn = drawCards(result.combat, 1, ctx.parts)
         result.log.push(`${part.name}: all 4 slots fired! Drew ${drawn} card(s)`)
       }
     }
@@ -811,7 +811,7 @@ export function playModifierCard(
     for (const effect of effectsToApply) {
       switch (effect.type) {
         case 'draw': {
-          const actualDrawn = drawCards(result.combat, effect.count)
+          const actualDrawn = drawCards(result.combat, effect.count, ctx.parts)
           result.log.push(`Drew ${actualDrawn}/${effect.count} card(s)`)
           break
         }
@@ -1255,9 +1255,13 @@ export function startTurn(ctx: CombatContext, inspiredBonus = 0): CombatResult {
   // Step 2: Block resets to 0
   result.combat.block = 0
 
-  // Step 3: Draw modifier cards
+  // Step 3: Reshuffle discard into draw pile if needed, then draw
+  if (result.combat.drawPile.length < ctx.drawCount + inspiredBonus && result.combat.discardPile.length > 0) {
+    result.combat.drawPile = shuffle([...result.combat.drawPile, ...result.combat.discardPile])
+    result.combat.discardPile = []
+  }
   const drawCount = ctx.drawCount + inspiredBonus
-  const actualDrawn = drawCards(result.combat, drawCount)
+  const actualDrawn = drawCards(result.combat, drawCount, ctx.parts)
   result.log.push(`Drew ${actualDrawn}/${drawCount} cards`)
 
   // Set phase
@@ -1403,11 +1407,13 @@ export function projectSlotActions(
 
 // ─── Draw Cards Helper ──────────────────────────────────────────────────────
 
-function drawCards(combat: CombatState, count: number): number {
+function drawCards(combat: CombatState, count: number, parts: BehavioralPartDefinition[] = []): number {
   let drawn = 0
   for (let i = 0; i < count; i++) {
     if (combat.drawPile.length === 0) {
-      if (combat.discardPile.length === 0) break
+      // Only reshuffle mid-turn if player has Perpetual Core
+      const hasPerpetualCore = parts.some(p => p.id === 'perpetual-core')
+      if (!hasPerpetualCore || combat.discardPile.length === 0) break
       combat.drawPile = shuffle(combat.discardPile)
       combat.discardPile = []
     }
@@ -1448,7 +1454,7 @@ function applyPartEffect(
       break
     }
     case 'drawCards': {
-      const actualDrawn = drawCards(result.combat, part.effect.count)
+      const actualDrawn = drawCards(result.combat, part.effect.count, ctx.parts)
       result.log.push(`${part.name}: drew ${actualDrawn}/${part.effect.count} card(s)`)
       break
     }

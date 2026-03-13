@@ -287,7 +287,8 @@ export default function CombatScreen() {
       let drops: import('../game/drops').ResolvedDrop[] = []
       if (primaryEnemy) {
         const def = ALL_ENEMIES[primaryEnemy.definitionId]!
-        const result = resolveDrops(def.dropPool, run.equipPity, run.sector, run.parts.map(p => p.id))
+        const ownedEquipIds = Object.values(run.equipment).filter(Boolean).map(e => e!.id)
+        const result = resolveDrops(def.dropPool, run.equipPity, run.sector, run.parts.map(p => p.id), ownedEquipIds)
         if (result.droppedEquipment) anyEquip = true
         // Replace card drops with a clean 3-pick from sector pool
         const nonCards = result.drops.filter(d => d.type !== 'card')

@@ -74,13 +74,15 @@ export default function StagingScreen() {
   // Bonus reward options (generated once)
   const bonusCards = useMemo(() => shuffle(nextCardPool).slice(0, 3), [nextCardPool])
   const bonusPart = useMemo(() => {
-    const parts = shuffle(BEHAVIORAL_PARTS)
+    const ownedIds = new Set(run.parts.map(p => p.id))
+    const parts = shuffle(BEHAVIORAL_PARTS.filter(p => !ownedIds.has(p.id)))
     return parts[0] ?? null
-  }, [])
+  }, [run.parts])
   const bonusEquip = useMemo(() => {
-    const equips = shuffle(EQUIPMENT)
+    const ownedIds = new Set(Object.values(run.equipment).filter(Boolean).map(e => e!.id))
+    const equips = shuffle(EQUIPMENT.filter(e => !ownedIds.has(e.id)))
     return equips[0] ?? null
-  }, [])
+  }, [run.equipment])
 
   // Step 1: Repair (auto-heal)
   if (step === 1) {

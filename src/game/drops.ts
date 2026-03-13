@@ -29,7 +29,7 @@ function resolveShardDrop(entry: DropPool): ResolvedDrop {
   return { type: 'shards', amount }
 }
 
-function resolveBonusDrop(entry: DropPool, sector: number, ownedPartIds: string[] = []): ResolvedDrop[] {
+function resolveBonusDrop(entry: DropPool, sector: number, ownedPartIds: string[] = [], ownedEquipIds: string[] = []): ResolvedDrop[] {
   if (entry.type === 'card') {
     const cardPool = getCardPoolForSector(sector)
     // Always offer 3 choices from full sector pool (enemy ids ignored — they're too restrictive)
@@ -49,9 +49,11 @@ function resolveBonusDrop(entry: DropPool, sector: number, ownedPartIds: string[
   }
 
   if (entry.type === 'equipment') {
-    const pool = entry.ids
+    const base = entry.ids
       ? EQUIPMENT.filter((e) => entry.ids!.includes(e.id))
       : EQUIPMENT
+    const pool = base.filter((e) => !ownedEquipIds.includes(e.id))
+    if (pool.length === 0) return [{ type: 'shards', amount: 15 }]
     const picked = pool[Math.floor(Math.random() * pool.length)]
     return [{ type: 'equipment', equipmentId: picked.id }]
   }
@@ -64,7 +66,7 @@ export interface DropResult {
   droppedEquipment: boolean
 }
 
-export function resolveDrops(dropPool: DropPool[], equipPity = 0, sector = 1, ownedPartIds: string[] = []): DropResult {
+export function resolveDrops(dropPool: DropPool[], equipPity = 0, sector = 1, ownedPartIds: string[] = [], ownedEquipIds: string[] = []): DropResult {
   const shardEntries = dropPool.filter((d) => d.type === 'shards')
   const bonusEntries = dropPool.filter((d) => d.type !== 'shards')
 
@@ -96,7 +98,7 @@ export function resolveDrops(dropPool: DropPool[], equipPity = 0, sector = 1, ow
   // Roll for a bonus drop
   if (weighted.length > 0) {
     const chosen = weightedRandom(weighted)
-    results.push(...resolveBonusDrop(chosen, sector, ownedPartIds))
+    results.push(...resolveBonusDrop(chosen, sector, ownedPartIds, ownedEquipIds))
   }
 
   const droppedEquipment = results.some((r) => r.type === 'equipment')

@@ -124,6 +124,7 @@ export type PartTrigger =
   | { type: 'onWouldOverheat' }
   | { type: 'onPlanningEnd' }
   | { type: 'onDamageTaken' }
+  | { type: 'onDrawPileEmpty' }
 
 export type PartEffect =
   | { type: 'bonusBlock'; value: number }
@@ -145,6 +146,7 @@ export type PartEffect =
   | { type: 'dualLoader' }
   | { type: 'heatLock'; turns: number }
   | { type: 'overheatReactor'; heatReset: number; maxHpCost: number }
+  | { type: 'reshuffleDiscard' }
 
 export interface BehavioralPartDefinition {
   id: string
