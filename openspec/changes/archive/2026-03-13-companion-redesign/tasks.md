@@ -27,7 +27,7 @@
 
 ## 6. Verification
 
-- [ ] 6.1 Playtest: verify companion events appear only when unlocked and not yet acquired
-- [ ] 6.2 Playtest: verify accepting adds card to deck and prevents re-encounter
-- [ ] 6.3 Playtest: verify declining gives health and companion event can still appear later
-- [ ] 6.4 Playtest: verify Yanah block bonus activates only while Cool, Yuri damage bonus only while Hot
+- [x]6.1 Playtest: verify companion events appear only when unlocked and not yet acquired
+- [x]6.2 Playtest: verify accepting adds card to deck and prevents re-encounter
+- [x]6.3 Playtest: verify declining gives health and companion event can still appear later
+- [x]6.4 Playtest: verify Yanah block bonus activates only while Cool, Yuri damage bonus only while Hot

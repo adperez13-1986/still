@@ -21,7 +21,6 @@ import {
   OVERHEAT_THRESHOLD,
   OVERHEAT_DAMAGE_PER_POINT,
   getHeatThreshold,
-  applyPassiveCooling,
   isHot,
 } from '../game/types'
 
@@ -89,7 +88,6 @@ export interface CombatContext {
   stillHealth: number
   maxHealth: number
   drawCount: number
-  passiveCoolingBonus: number
   equipment: Record<BodySlot, EquipmentDefinition | null>
   parts: BehavioralPartDefinition[]
   cardDefs: Record<string, ModifierCardDefinition>
@@ -486,7 +484,7 @@ function applyHeatChange(combat: CombatState, delta: number): HeatChangeResult {
     combat.thresholdCrossedThisTurn = true
   }
 
-  // Overheat damage: on any heat INCREASE while over 9, deal 3 per point over 9
+  // Overheat damage: on any heat INCREASE while over 9, deal 2 per point over 9
   let overheatDamage = 0
   if (delta > 0 && combat.heat > 9) {
     overheatDamage = (combat.heat - 9) * OVERHEAT_DAMAGE_PER_POINT
@@ -1074,11 +1072,24 @@ export function executeEnemyTurn(ctx: CombatContext): CombatResult {
         }
         const absorbed = Math.min(result.combat.block, dealt)
         result.combat.block -= absorbed
-        const actual = dealt - absorbed
+        let actual = dealt - absorbed
+        // Ablative heat: while Hot (7+), damage reduces Heat at 1:2 ratio, drain to Warm floor (4)
+        let heatAbsorbed = 0
+        if (actual > 0 && result.combat.heat >= 7) {
+          const maxDrain = result.combat.heat - 4 // can drain to Warm floor
+          heatAbsorbed = Math.min(maxDrain, Math.floor(actual / 2))
+          const damageAbsorbed = heatAbsorbed * 2
+          result.combat.heat -= heatAbsorbed
+          actual -= damageAbsorbed
+          if (heatAbsorbed > 0) {
+            result.log.push(`Ablative heat absorbed ${damageAbsorbed} damage (heat ${result.combat.heat + heatAbsorbed} → ${result.combat.heat})`)
+          }
+        }
         result.stillHealth = Math.max(0, result.stillHealth - actual)
         eventDamage = actual
         eventBlocked = absorbed
-        result.log.push(`${def.name} attacks for ${actual} (${absorbed} blocked)`)
+        result.log.push(`${def.name} attacks for ${actual} (${absorbed} blocked${heatAbsorbed > 0 ? `, ${heatAbsorbed * 2} ablated` : ''})`)
+
         if (intent.type === 'AttackDebuff' && intent.status) {
           result.combat.statusEffects = addStatus(
             result.combat.statusEffects,
@@ -1236,10 +1247,6 @@ export function startTurn(ctx: CombatContext, inspiredBonus = 0): CombatResult {
     }
   }
 
-  // Passive cooling
-  result.combat.heat = applyPassiveCooling(result.combat.heat, ctx.passiveCoolingBonus)
-  result.log.push(`Passive cooling: Heat → ${result.combat.heat}`)
-
   // Reset per-turn heat tracking (Tasks 5.2-5.3)
   result.combat.heatChangeThisTurn = 0
   result.combat.thresholdCrossedThisTurn = false
@@ -1274,8 +1281,7 @@ export function projectHeat(
   _equipment: Record<BodySlot, EquipmentDefinition | null>,
   _slotModifiers: Record<BodySlot, string | null>,
   _cardDefs: Record<string, ModifierCardDefinition>,
-  _combat: CombatState,
-  _passiveCoolingBonus: number
+  _combat: CombatState
 ): number {
   // Slots no longer generate heat — planning-end heat IS execution heat
   return currentHeat

@@ -201,6 +201,11 @@ export default function StillPanel({
         <span style={{ fontSize: '11px', color: heatColor }}>
           {threshold}
         </span>
+        {heat >= 7 && (
+          <span style={{ fontSize: '11px', color: '#e67e22', marginLeft: '4px' }}>
+            [ablative: {(heat - 4) * 2} dmg]
+          </span>
+        )}
       </div>
 
       {/* Status effects */}

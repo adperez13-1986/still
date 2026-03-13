@@ -39,11 +39,22 @@ The combat UI SHALL display a real-time projection of Still's Heat at end of tur
 
 #### Scenario: Projection updates on modifier assignment
 - **WHEN** the player assigns or removes a modifier card during the planning phase
-- **THEN** the projected end-of-turn Heat updates immediately, accounting for: current Heat, passive cooling, body action generation (filled slots), LEGS cooling, and all assigned modifier costs
+- **THEN** the projected end-of-turn Heat updates immediately, accounting for: current Heat, LEGS equipment cooling, and all assigned modifier costs
 
 #### Scenario: Projection shows threshold warnings
 - **WHEN** the projected end-of-turn Heat would be in Hot (7-9) or Overheat (10+)
 - **THEN** the display shows a warning indicator — "HOT: -3 HP" for Hot, or estimated overheat damage total for Overheat
+
+### Requirement: No free passive cooling
+There SHALL be no automatic passive cooling per turn. All cooling comes from LEGS equipment effects and cooling cards. The `PASSIVE_COOLING` constant and `applyPassiveCooling()` function are removed.
+
+#### Scenario: Start of turn with no LEGS cooling
+- **WHEN** a new turn begins and Still has no LEGS equipment that cools
+- **THEN** Heat remains unchanged from end of previous turn (no automatic reduction)
+
+#### Scenario: Start of turn with LEGS cooling equipment
+- **WHEN** a new turn begins and Still has LEGS equipment that reduces heat
+- **THEN** Heat is reduced only by the amount specified by the LEGS equipment effect during execution
 
 ## REMOVED Requirements
 

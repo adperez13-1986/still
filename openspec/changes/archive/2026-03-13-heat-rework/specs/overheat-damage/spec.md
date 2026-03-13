@@ -1,31 +1,27 @@
 ## ADDED Requirements
 
 ### Requirement: Overheat damage applies on any heat increase while over 9
-When Still's heat exceeds 9, any further heat increase SHALL deal instant damage equal to 3 times the number of heat points over 9 (at the new heat value). This applies regardless of the source of the heat increase — card plays, body action generation, equipment effects, or any other source.
+When Still's heat exceeds 9, any further heat increase SHALL deal instant damage equal to 2 times the number of heat points over 9 (at the new heat value). This applies regardless of the source of the heat increase — card plays, equipment effects, or any other source.
 
 #### Scenario: Heat increases from 9 to 10
 - **WHEN** Still's heat is 9 and an effect increases heat by 1
-- **THEN** heat becomes 10 and Still takes 3 damage instantly (1 point over 9 × 3)
+- **THEN** heat becomes 10 and Still takes 2 damage instantly (1 point over 9 × 2)
 
 #### Scenario: Heat increases from 8 to 10
 - **WHEN** Still's heat is 8 and an effect increases heat by 2
-- **THEN** heat becomes 10 and Still takes 3 damage instantly (1 point over 9 × 3)
+- **THEN** heat becomes 10 and Still takes 2 damage instantly (1 point over 9 × 2)
 
 #### Scenario: Heat increases from 10 to 11
 - **WHEN** Still's heat is already 10 and an effect increases heat by 1
-- **THEN** heat becomes 11 and Still takes 6 damage instantly (2 points over 9 × 3)
+- **THEN** heat becomes 11 and Still takes 4 damage instantly (2 points over 9 × 2)
 
 #### Scenario: Heat increases from 10 to 12
 - **WHEN** Still's heat is already 10 and an effect increases heat by 2
-- **THEN** heat becomes 12 and Still takes 9 damage instantly (3 points over 9 × 3)
+- **THEN** heat becomes 12 and Still takes 6 damage instantly (3 points over 9 × 2)
 
 #### Scenario: Overheat damage during planning phase
 - **WHEN** Still plays a modifier card with heat cost 2 while at heat 9
-- **THEN** heat becomes 11 and Still takes 6 damage instantly, before any other planning actions
-
-#### Scenario: Overheat damage during execution phase
-- **WHEN** a body action fires and generates +1 heat while Still is at heat 10
-- **THEN** heat becomes 11 and Still takes 6 damage instantly, before the next slot fires
+- **THEN** heat becomes 11 and Still takes 4 damage instantly, before any other planning actions
 
 #### Scenario: LEGS cooling reduces future overheat ticks
 - **WHEN** LEGS fires and cools heat from 12 to 9

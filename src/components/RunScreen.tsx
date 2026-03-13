@@ -94,7 +94,6 @@ export default function RunScreen() {
         health: 70,
         maxHealth: 70,
         drawCount: 5,
-        passiveCoolingBonus: 0,
         deck,
         parts: preset.parts.map(id => ALL_PARTS[id]).filter(Boolean),
         equipment: {
@@ -158,7 +157,6 @@ export default function RunScreen() {
       health: startMaxHealth,
       maxHealth: startMaxHealth,
       drawCount: 5 + sumBonus('drawCount'),
-      passiveCoolingBonus: sumBonus('passiveCooling'),
       deck: starterDeck,
       parts: initialParts,
       equipment: startingEquipment,

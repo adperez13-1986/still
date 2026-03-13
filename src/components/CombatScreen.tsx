@@ -6,9 +6,8 @@ import { ALL_ENEMIES } from '../data/enemies'
 import { resolveDrops, resolveWarperDrop } from '../game/drops'
 import { makeCardInstance, projectSlotActions } from '../game/combat'
 import { ALL_PARTS, ALL_EQUIPMENT } from '../data/parts'
-import { ALL_CARDS } from '../data/cards'
+import { ALL_CARDS, SECTOR1_CARD_POOL, SECTOR2_CARD_POOL } from '../data/cards'
 import type { BodySlot, EquipmentDefinition, CombatEvent } from '../game/types'
-import { applyPassiveCooling } from '../game/types'
 
 import useIsMobile from '../hooks/useIsMobile'
 import StillPanel from './StillPanel'
@@ -198,9 +197,8 @@ export default function CombatScreen() {
     return Math.max(0, combat.heat + legsCooling)
   }, [combat, projections])
 
-  const nextRoundHeat = useMemo(() => {
-    return applyPassiveCooling(projectedHeat, run.passiveCoolingBonus)
-  }, [projectedHeat, run.passiveCoolingBonus])
+  // No free passive cooling — heat persists between turns (only LEGS equipment cools)
+  const nextRoundHeat = projectedHeat
 
   // ─── Card Interaction ─────────────────────────────────────────────
   const handleSelectSlotCard = useCallback((instanceId: string | null) => {
@@ -280,13 +278,26 @@ export default function CombatScreen() {
       rewardPhaseKey.current = phaseKey
       const defeatedEnemies = combat.enemies.filter(e => e.isDefeated)
       let anyEquip = false
-      const drops = defeatedEnemies.flatMap(e => {
+      // Use the first enemy with a drop pool to resolve ONE set of drops for the encounter
+      const primaryEnemy = defeatedEnemies.find(e => {
         const def = ALL_ENEMIES[e.definitionId]
-        if (!def?.dropPool.length) return []
+        return def?.dropPool.length
+      })
+      let drops: import('../game/drops').ResolvedDrop[] = []
+      if (primaryEnemy) {
+        const def = ALL_ENEMIES[primaryEnemy.definitionId]!
         const result = resolveDrops(def.dropPool, run.equipPity, run.sector, run.parts.map(p => p.id))
         if (result.droppedEquipment) anyEquip = true
-        return result.drops
-      })
+        // Replace card drops with a clean 3-pick from sector pool
+        const nonCards = result.drops.filter(d => d.type !== 'card')
+        const hasCards = result.drops.some(d => d.type === 'card')
+        drops = [...nonCards]
+        if (hasCards) {
+          const pool = run.sector >= 2 ? SECTOR2_CARD_POOL : SECTOR1_CARD_POOL
+          const shuffled = [...pool].sort(() => Math.random() - 0.5)
+          drops.push(...shuffled.slice(0, 3).map(c => ({ type: 'card' as const, cardId: c.id })))
+        }
+      }
 
       // Run-warping part drop chance for elite/boss encounters
       const hasEliteOrBoss = defeatedEnemies.some(e => {

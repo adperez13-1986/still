@@ -2,20 +2,15 @@
 
 export type HeatThreshold = 'Cool' | 'Warm' | 'Hot' | 'Overheat'
 
-export const PASSIVE_COOLING = 2
 export const HOT_DAMAGE = 3
 export const OVERHEAT_THRESHOLD = 10
-export const OVERHEAT_DAMAGE_PER_POINT = 3
+export const OVERHEAT_DAMAGE_PER_POINT = 2
 
 export function getHeatThreshold(heat: number): HeatThreshold {
   if (heat >= 10) return 'Overheat'
   if (heat >= 7) return 'Hot'
   if (heat >= 4) return 'Warm'
   return 'Cool'
-}
-
-export function applyPassiveCooling(heat: number, bonus = 0): number {
-  return Math.max(0, heat - PASSIVE_COOLING - bonus)
 }
 
 export function isCool(heat: number): boolean { return heat <= 3 }
@@ -281,7 +276,6 @@ export interface RunState {
   health: number
   maxHealth: number
   drawCount: number
-  passiveCoolingBonus: number
   deck: CardInstance[]
   parts: BehavioralPartDefinition[]
   equipment: Record<BodySlot, EquipmentDefinition | null>
@@ -304,7 +298,7 @@ export interface CarriedPart {
 
 // ─── Fragment Bonuses ─────────────────────────────────────────────────────────
 
-export type FragmentBonusType = 'health' | 'shards' | 'passiveCooling' | 'drawCount'
+export type FragmentBonusType = 'health' | 'shards' | 'drawCount'
 
 export interface FragmentBonus {
   id: string

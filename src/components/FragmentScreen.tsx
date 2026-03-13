@@ -21,14 +21,6 @@ const BONUSES: FragmentBonus[] = [
     value: 10,
   },
   {
-    id: 'cooled-start',
-    name: 'Cooled Start',
-    description: 'Start with +1 passive cooling bonus.',
-    cost: 20,
-    type: 'passiveCooling',
-    value: 1,
-  },
-  {
     id: 'sharp-draw',
     name: 'Sharp Draw',
     description: 'Draw 1 extra card each turn.',

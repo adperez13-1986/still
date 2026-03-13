@@ -88,7 +88,6 @@ const emptyRunState: RunState = {
   health: 70,
   maxHealth: 70,
   drawCount: 4,
-  passiveCoolingBonus: 0,
   deck: [],
   parts: [],
   equipment: { Head: null, Torso: null, Arms: null, Legs: null },
@@ -155,8 +154,7 @@ export const useRunStore = create<RunState & RunActions>()(
         state.equipment,
         state.combat.slotModifiers,
         ALL_CARDS,
-        state.combat,
-        state.passiveCoolingBonus
+        state.combat
       )
     },
 
@@ -230,7 +228,7 @@ export const useRunStore = create<RunState & RunActions>()(
           stillHealth: state.health,
           maxHealth: state.maxHealth,
           drawCount: state.drawCount,
-          passiveCoolingBonus: state.passiveCoolingBonus,
+
           equipment: JSON.parse(JSON.stringify(state.equipment)),
           parts: JSON.parse(JSON.stringify(state.parts)),
           cardDefs: ALL_CARDS,
@@ -277,7 +275,7 @@ export const useRunStore = create<RunState & RunActions>()(
           stillHealth: state.health,
           maxHealth: state.maxHealth,
           drawCount: state.drawCount,
-          passiveCoolingBonus: state.passiveCoolingBonus,
+
           equipment: JSON.parse(JSON.stringify(state.equipment)),
           parts: JSON.parse(JSON.stringify(state.parts)),
           cardDefs: ALL_CARDS,
@@ -299,7 +297,7 @@ export const useRunStore = create<RunState & RunActions>()(
           stillHealth: state.health,
           maxHealth: state.maxHealth,
           drawCount: state.drawCount,
-          passiveCoolingBonus: state.passiveCoolingBonus,
+
           equipment: JSON.parse(JSON.stringify(state.equipment)),
           parts: JSON.parse(JSON.stringify(state.parts)),
           cardDefs: ALL_CARDS,

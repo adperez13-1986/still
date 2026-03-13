@@ -537,6 +537,39 @@ const fuelTheFire: ModifierCardDefinition = {
   },
 }
 
+const heatSurge: ModifierCardDefinition = {
+  id: 'heat-surge',
+  name: 'Heat Surge',
+  description: 'Draw 2 cards. While Hot: draw 3.',
+  heatCost: 1,
+  category: {
+    type: 'system',
+    modifier: 'Draw',
+    effects: [{ type: 'draw', count: 2 }],
+  },
+  keywords: [],
+  heatBonus: {
+    threshold: 'Hot',
+    effects: [{ type: 'draw', count: 3 }],
+  },
+  upgraded: {
+    id: 'heat-surge',
+    name: 'Heat Surge+',
+    description: 'Draw 3 cards. While Hot: draw 4.',
+    heatCost: 1,
+    category: {
+      type: 'system',
+      modifier: 'Draw',
+      effects: [{ type: 'draw', count: 3 }],
+    },
+    keywords: [],
+    heatBonus: {
+      threshold: 'Hot',
+      effects: [{ type: 'draw', count: 4 }],
+    },
+  },
+}
+
 const recklessCharge: ModifierCardDefinition = {
   id: 'reckless-charge',
   name: 'Reckless Charge',
@@ -1004,7 +1037,7 @@ export const SECTOR1_CARD_POOL: ModifierCardDefinition[] = [
   overcharge, spreadShot, echoProtocol, shieldBash, emergencyShield,
   deepFreeze, heatVent, quickScan, thermalSurge, meltdown,
   fieldRepair, targetLock,
-  precisionStrike, coldEfficiency, fuelTheFire, recklessCharge,
+  precisionStrike, coldEfficiency, fuelTheFire, heatSurge, recklessCharge,
   thermalFlux, overclock,
 ]
 
@@ -1019,7 +1052,7 @@ const allCardList: ModifierCardDefinition[] = [
   overcharge, spreadShot, echoProtocol, shieldBash, emergencyShield,
   deepFreeze, heatVent, quickScan, thermalSurge, meltdown,
   fieldRepair, targetLock,
-  precisionStrike, coldEfficiency, fuelTheFire, recklessCharge,
+  precisionStrike, coldEfficiency, fuelTheFire, heatSurge, recklessCharge,
   thermalFlux, overclock,
   failsafeProtocol, reroute,
   glacierLance, controlledBurn, fluxSpike, thermalEquilibrium,

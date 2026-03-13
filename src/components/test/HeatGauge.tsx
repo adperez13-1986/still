@@ -1,8 +1,7 @@
-import { getHeatThreshold, applyPassiveCooling, OVERHEAT_THRESHOLD } from '../../game/types'
+import { getHeatThreshold, OVERHEAT_THRESHOLD } from '../../game/types'
 
 interface HeatGaugeProps {
   heat: number
-  passiveCoolingBonus: number
   onSetHeat: (heat: number) => void
 }
 
@@ -14,9 +13,8 @@ const thresholdColor = (heat: number): string => {
   return '#27ae60'
 }
 
-export default function HeatGauge({ heat, passiveCoolingBonus, onSetHeat }: HeatGaugeProps) {
+export default function HeatGauge({ heat, onSetHeat }: HeatGaugeProps) {
   const threshold = getHeatThreshold(heat)
-  const cooledTo = applyPassiveCooling(heat, passiveCoolingBonus)
 
   return (
     <div style={{
@@ -77,8 +75,8 @@ export default function HeatGauge({ heat, passiveCoolingBonus, onSetHeat }: Heat
       </div>
 
       {/* Info */}
-      <div style={{ fontSize: 13, color: 'var(--muted)', display: 'flex', flexDirection: 'column', gap: 4 }}>
-        <div>After Passive Cooling: <span style={{ color: 'var(--text)' }}>{cooledTo}</span> (base 2 + bonus {passiveCoolingBonus})</div>
+      <div style={{ fontSize: 13, color: 'var(--muted)' }}>
+        No passive cooling — heat persists between turns (LEGS equipment only)
       </div>
     </div>
   )

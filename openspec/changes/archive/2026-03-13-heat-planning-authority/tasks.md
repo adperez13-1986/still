@@ -29,9 +29,9 @@
 
 ## 6. Verification
 
-- [ ] 6.1 Playtest Cool Runner: play 3 cards, stay at heat 3, verify ALL slots get Cool bonuses
-- [ ] 6.2 Playtest Pyromaniac: play 7+ cards, reach heat 7+, verify ALL slots get Hot bonuses
-- [ ] 6.3 Playtest extra-heat equipment: assign modifier to Overclocked Pistons slot, verify +1 heat applies immediately during planning
-- [ ] 6.4 Playtest extra-heat removal: unassign modifier from extra-heat slot, verify heat refunds without triggering oscillator
-- [ ] 6.5 Playtest LEGS cooling: verify it still fires during execution and reduces heat for next turn
-- [ ] 6.6 Verify Residual Charge and Feedback Loop no longer appear in part rewards
+- [x]6.1 Playtest Cool Runner: play 3 cards, stay at heat 3, verify ALL slots get Cool bonuses
+- [x]6.2 Playtest Pyromaniac: play 7+ cards, reach heat 7+, verify ALL slots get Hot bonuses
+- [x]6.3 Playtest extra-heat equipment: assign modifier to Overclocked Pistons slot, verify +1 heat applies immediately during planning
+- [x]6.4 Playtest extra-heat removal: unassign modifier from extra-heat slot, verify heat refunds without triggering oscillator
+- [x]6.5 Playtest LEGS cooling: verify it still fires during execution and reduces heat for next turn
+- [x]6.6 Verify Residual Charge and Feedback Loop no longer appear in part rewards

@@ -47,7 +47,6 @@ export interface ScenarioConfig {
   health: number
   maxHealth: number
   drawCount: number
-  passiveCoolingBonus: number
 }
 
 const DEFAULT_SCENARIO: ScenarioConfig = {
@@ -65,7 +64,6 @@ const DEFAULT_SCENARIO: ScenarioConfig = {
   health: 60,
   maxHealth: 60,
   drawCount: 5,
-  passiveCoolingBonus: 0,
 }
 
 // ─── State ───────────────────────────────────────────────────────────────────
@@ -127,7 +125,6 @@ function buildContext(state: HarnessState): CombatContext {
     stillHealth: state.stillHealth,
     maxHealth: state.scenario.maxHealth,
     drawCount: state.scenario.drawCount,
-    passiveCoolingBonus: state.scenario.passiveCoolingBonus,
     equipment: state.scenario.equipment,
     parts: state.scenario.parts,
     cardDefs: buildCardDefs(),
@@ -530,8 +527,7 @@ export default function TestHarness() {
         state.scenario.equipment,
         state.combat.slotModifiers,
         buildCardDefs(),
-        state.combat,
-        state.scenario.passiveCoolingBonus
+        state.combat
       )
     : 0
 
@@ -600,7 +596,6 @@ export default function TestHarness() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <HeatGauge
             heat={state.combat?.heat ?? 0}
-            passiveCoolingBonus={state.scenario.passiveCoolingBonus}
             onSetHeat={(heat) => dispatch({ type: 'SET_HEAT', heat })}
           />
 

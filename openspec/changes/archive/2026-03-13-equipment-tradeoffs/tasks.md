@@ -41,8 +41,8 @@
 
 ## 6. Verification
 
-- [ ] 6.1 Playtest: Cryo Cannon does nothing outside Cool, 12 dmg while Cool
-- [ ] 6.2 Playtest: Meltdown Cannon fires twice while Hot, once otherwise
-- [ ] 6.3 Playtest: Shrapnel Launcher costs 2 Block on fire
-- [ ] 6.4 Playtest: Thermal Exhaust cools -3 while Hot, -1 otherwise
-- [ ] 6.5 Playtest: Cryo Lock grants 5 Block while Cool
+- [x]6.1 Playtest: Cryo Cannon does nothing outside Cool, 12 dmg while Cool
+- [x]6.2 Playtest: Meltdown Cannon fires twice while Hot, once otherwise
+- [x]6.3 Playtest: Shrapnel Launcher costs 2 Block on fire
+- [x]6.4 Playtest: Thermal Exhaust cools -3 while Hot, -1 otherwise
+- [x]6.5 Playtest: Cryo Lock grants 5 Block while Cool

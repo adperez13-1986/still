@@ -11,8 +11,8 @@ interface Props {
 
 function segmentColor(i: number): string {
   if (i >= 10) return '#e74c3c'
-  if (i >= 8) return '#e67e22'
-  if (i >= 5) return '#f1c40f'
+  if (i >= 7) return '#e67e22'
+  if (i >= 4) return '#f1c40f'
   return '#27ae60'
 }
 
@@ -109,10 +109,10 @@ export default function HeatTrack({ heat, projectedHeat, nextRoundHeat, heatLock
         fontSize: '9px',
         color: '#555',
       }}>
-        <span>Cool 0-4</span>
-        <span>Warm 5-7</span>
-        <span>Hot 8-9</span>
-        <span>OVH 10</span>
+        <span>Cool 0-3</span>
+        <span>Warm 4-6</span>
+        <span>Hot 7-9</span>
+        <span>OVH 10+</span>
       </div>
     </div>
   )

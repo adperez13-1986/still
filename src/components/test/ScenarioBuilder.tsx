@@ -245,16 +245,6 @@ export default function ScenarioBuilder({ scenario, onChange, onStart }: Scenari
               style={{ ...selectStyle, width: 60, marginLeft: 4 }}
             />
           </label>
-          <label style={{ fontSize: 13 }}>
-            Passive Cooling Bonus:
-            <input
-              type="number"
-              value={scenario.passiveCoolingBonus}
-              onChange={(e) => onChange({ ...scenario, passiveCoolingBonus: Number(e.target.value) })}
-              min={0} max={5}
-              style={{ ...selectStyle, width: 60, marginLeft: 4 }}
-            />
-          </label>
         </div>
       </div>
 
