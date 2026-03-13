@@ -96,6 +96,8 @@ const emptyRunState: RunState = {
   nameDiscovered: false,
   equipPity: 0,
   companionsAcquired: [],
+  combatsCleared: 0,
+  lastCollapseMessage: null,
 }
 
 function calcBlockAbsorb(block: number, damage: number): { newBlock: number; healthDamage: number } {
@@ -453,6 +455,8 @@ export const useRunStore = create<RunState & RunActions>()(
         state.sector = newSector
         state.map = generateGridMaze(newSector) as any
         state.combat = null
+        state.combatsCleared = 0
+        state.lastCollapseMessage = null
       }),
 
     discoverName: () =>

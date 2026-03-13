@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useLocation } from 'react-router-dom'
 import type { GridRoom, FragmentBonus, BehavioralPartDefinition } from '../game/types'
 import { useRunStore } from '../store/runStore'
@@ -10,7 +10,7 @@ import ShopScreen from './ShopScreen'
 import EventScreen from './EventScreen'
 import CardPicker from './CardPicker'
 import RunInfoOverlay from './RunInfoOverlay'
-import { generateGridMaze } from '../game/mapGen'
+import { generateGridMaze, findPath } from '../game/mapGen'
 import { makeEnemyInstance, makeCardInstance } from '../game/combat'
 import {
   SECTOR1_BOSS, SECTOR2_BOSS,
@@ -47,6 +47,8 @@ export default function RunScreen() {
   const [infoTab, setInfoTab] = useState<'deck' | 'equips' | null>(null)
   const [brokenCarryNotice, setBrokenCarryNotice] = useState<string | null>(null)
   const [eventCardRemoval, setEventCardRemoval] = useState<number | null>(null)
+  const [autoPath, setAutoPath] = useState<[number, number][] | null>(null)
+  const walkingRef = useRef(false)
 
   // Initialize run if not active
   useEffect(() => {
@@ -107,6 +109,8 @@ export default function RunScreen() {
         nameDiscovered: true,
         equipPity: 0,
         companionsAcquired: [],
+        combatsCleared: 0,
+        lastCollapseMessage: null,
         isDebug: true,
       })
       return
@@ -165,8 +169,74 @@ export default function RunScreen() {
       nameDiscovered: permanent.nameEverDiscovered,
       equipPity: 0,
       companionsAcquired: [],
+      combatsCleared: 0,
+      lastCollapseMessage: null,
     })
   }, [])
+
+  const handleTileSelect = useCallback(async (x: number, y: number) => {
+    const map = useRunStore.getState().map
+    if (!map || walkingRef.current) return
+    setRoomDone(false)
+
+    // Compute path from player to destination
+    const path = findPath(map, map.playerX, map.playerY, x, y)
+    if (path.length === 0) return
+
+    setAutoPath(path)
+    walkingRef.current = true
+
+    const STEP_DELAY = 120 // ms per tile
+
+    // Walk along the path, one tile at a time
+    for (let i = 0; i < path.length; i++) {
+      const [px, py] = path[i]
+      useRunStore.getState().moveToTile(px, py)
+      setAutoPath(path.slice(i))
+
+      const currentMap = useRunStore.getState().map!
+      const tile = currentMap.grid[py][px]
+      if (!tile) continue
+
+      // Skip empty corridors, cleared rooms, and collapsed rooms
+      if (tile.type === 'Empty' || tile.cleared || tile.collapsed) {
+        if (i < path.length - 1) {
+          await new Promise(r => setTimeout(r, STEP_DELAY))
+        }
+        continue
+      }
+
+      // Hit an encounter — stop here
+      if (tile.type === 'Combat' || tile.type === 'Boss') {
+        const combatsCleared = currentMap.grid.flat().filter(
+          r => r && r.cleared && (r.type === 'Combat' || r.type === 'Boss')
+        ).length
+        const enemies = pickEnemiesForRoom(tile, useRunStore.getState().sector, combatsCleared)
+        const remaining = path.slice(i + 1)
+        setAutoPath(remaining.length > 0 ? remaining : null)
+        walkingRef.current = false
+        useRunStore.getState().startCombat(enemies)
+        return
+      }
+
+      // Non-combat encounter (Rest, Shop, Event) — stop here
+      const remaining = path.slice(i + 1)
+      setAutoPath(remaining.length > 0 ? remaining : null)
+      walkingRef.current = false
+      return
+    }
+
+    // Reached destination with no encounters along the way
+    setAutoPath(null)
+    walkingRef.current = false
+  }, [])
+
+  const finishRoom = () => {
+    run.clearCurrentRoom()
+    setAutoPath(null)
+    walkingRef.current = false
+    setRoomDone(true)
+  }
 
   if (!run.active || !run.map) {
     return (
@@ -183,30 +253,16 @@ export default function RunScreen() {
 
   const currentRoom = run.map.grid[run.map.playerY][run.map.playerX]
 
-  const handleTileSelect = (x: number, y: number) => {
-    setRoomDone(false)
-    run.moveToTile(x, y)
-    const tile = run.map!.grid[y][x]
-    if (!tile || tile.cleared) return
-
-    if (tile.type === 'Combat' || tile.type === 'Boss') {
-      // Count cleared combat rooms to gate elite encounters
-      const combatsCleared = run.map!.grid.flat().filter(
-        r => r && r.cleared && (r.type === 'Combat' || r.type === 'Boss')
-      ).length
-      const enemies = pickEnemiesForRoom(tile, run.sector, combatsCleared)
-      run.startCombat(enemies)
-    }
-  }
-
-  const finishRoom = () => {
-    run.clearCurrentRoom()
-    setRoomDone(true)
-  }
-
   const mapWithOverlay = (
     <>
-      <MapScreen map={run.map} onTileSelect={handleTileSelect} />
+      <MapScreen
+        map={run.map}
+        combatsCleared={run.combatsCleared}
+        collapseMessage={run.lastCollapseMessage}
+        autoPath={autoPath}
+        onTileSelect={handleTileSelect}
+        onDismissCollapse={() => useRunStore.setState((s) => { s.lastCollapseMessage = null })}
+      />
       {brokenCarryNotice && (
         <div style={{
           position: 'fixed',
@@ -312,7 +368,7 @@ export default function RunScreen() {
   )
 
   // Show map when room is done, no room, empty corridor, cleared, or combat/boss type
-  if (roomDone || !currentRoom || currentRoom.type === 'Empty' || currentRoom.cleared || currentRoom.type === 'Combat' || currentRoom.type === 'Boss') {
+  if (roomDone || !currentRoom || currentRoom.type === 'Empty' || currentRoom.cleared || currentRoom.collapsed || currentRoom.type === 'Combat' || currentRoom.type === 'Boss') {
     return mapWithOverlay
   }
 

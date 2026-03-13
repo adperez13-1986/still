@@ -215,6 +215,7 @@ export interface GridRoom {
   sector: 1 | 2 | 3
   visited: boolean
   cleared: boolean
+  collapsed: boolean
   x: number
   y: number
 }
@@ -284,6 +285,8 @@ export interface RunState {
   nameDiscovered: boolean
   equipPity: number
   companionsAcquired: string[]
+  combatsCleared: number
+  lastCollapseMessage: string | null
   isDebug?: boolean
 }
 

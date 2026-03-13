@@ -1,8 +1,13 @@
-import type { GridMaze, GridRoom } from '../game/types'
+import { useEffect } from 'react'
+import type { GridMaze } from '../game/types'
 
 interface Props {
   map: GridMaze
+  combatsCleared: number
+  collapseMessage: string | null
+  autoPath: [number, number][] | null
   onTileSelect: (x: number, y: number) => void
+  onDismissCollapse: () => void
 }
 
 const ROOM_ICONS: Record<string, string> = {
@@ -26,38 +31,26 @@ const ROOM_COLORS: Record<string, string> = {
 const TILE_SIZE = 48
 const GAP = 2
 
-type TileVisibility = 'unrevealed' | 'revealed' | 'visited'
-
-function getTileVisibility(
-  tile: GridRoom | null,
-  x: number,
-  y: number,
-  grid: (GridRoom | null)[][]
-): TileVisibility {
-  if (!tile) return 'unrevealed'
-  if (tile.visited) return 'visited'
-  // Revealed if adjacent (8-directional) to any visited tile
-  for (let dy = -1; dy <= 1; dy++) {
-    for (let dx = -1; dx <= 1; dx++) {
-      if (dx === 0 && dy === 0) continue
-      const ny = y + dy
-      const nx = x + dx
-      if (ny >= 0 && ny < grid.length && nx >= 0 && nx < grid[0].length) {
-        const neighbor = grid[ny][nx]
-        if (neighbor?.visited) return 'revealed'
-      }
-    }
-  }
-  return 'unrevealed'
-}
-
-function isAdjacent(x1: number, y1: number, x2: number, y2: number): boolean {
-  return Math.abs(x1 - x2) + Math.abs(y1 - y2) === 1
-}
-
-export default function MapScreen({ map, onTileSelect }: Props) {
+export default function MapScreen({ map, combatsCleared, collapseMessage, autoPath, onTileSelect, onDismissCollapse }: Props) {
   const { grid, playerX, playerY } = map
   const gridSize = grid.length
+  const stabilityCount = combatsCleared % 3
+
+  // Build a set of path coordinates for highlighting
+  const pathSet = new Set<string>()
+  if (autoPath) {
+    for (const [px, py] of autoPath) {
+      pathSet.add(`${px},${py}`)
+    }
+  }
+  const destination = autoPath && autoPath.length > 0 ? autoPath[autoPath.length - 1] : null
+
+  // Auto-dismiss collapse message after 3 seconds
+  useEffect(() => {
+    if (!collapseMessage) return
+    const timer = setTimeout(onDismissCollapse, 3000)
+    return () => clearTimeout(timer)
+  }, [collapseMessage, onDismissCollapse])
 
   return (
     <div style={{
@@ -73,12 +66,57 @@ export default function MapScreen({ map, onTileSelect }: Props) {
         textAlign: 'center',
         letterSpacing: '3px',
         color: '#a29bfe',
-        marginBottom: '24px',
+        marginBottom: '8px',
         fontSize: '16px',
         fontWeight: '300',
       }}>
         THE MAZE
       </h2>
+
+      {/* Stability counter */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '6px',
+        marginBottom: '16px',
+        fontSize: '11px',
+        color: '#636e72',
+        letterSpacing: '1px',
+      }}>
+        <span>STABILITY</span>
+        {[0, 1, 2].map(i => (
+          <div key={i} style={{
+            width: '8px',
+            height: '8px',
+            borderRadius: '50%',
+            backgroundColor: i < stabilityCount ? '#e74c3c' : '#2d3436',
+            border: '1px solid #636e72',
+            transition: 'background-color 0.3s',
+          }} />
+        ))}
+        <span style={{ color: stabilityCount >= 2 ? '#e74c3c' : '#636e72' }}>
+          {stabilityCount}/3
+        </span>
+      </div>
+
+      {/* Collapse notification */}
+      {collapseMessage && (
+        <div
+          onClick={onDismissCollapse}
+          style={{
+            marginBottom: '12px',
+            padding: '8px 16px',
+            backgroundColor: '#2d1010',
+            border: '1px solid #e74c3c',
+            borderRadius: '6px',
+            color: '#e74c3c',
+            fontSize: '12px',
+            cursor: 'pointer',
+          }}
+        >
+          {collapseMessage}
+        </div>
+      )}
 
       <div style={{
         display: 'grid',
@@ -88,12 +126,16 @@ export default function MapScreen({ map, onTileSelect }: Props) {
       }}>
         {grid.map((row, y) =>
           row.map((tile, x) => {
-            const vis = getTileVisibility(tile, x, y, grid)
             const isCurrent = x === playerX && y === playerY
             const isWalkable = tile !== null
-            const isAdj = isWalkable && isAdjacent(x, y, playerX, playerY)
-            const canMove = isAdj && vis !== 'unrevealed'
-            const color = tile ? (ROOM_COLORS[tile.type] ?? '#555') : '#555'
+            const isCollapsed = tile?.collapsed ?? false
+            const isOnPath = pathSet.has(`${x},${y}`)
+            const isDest = destination && destination[0] === x && destination[1] === y
+            const color = isCollapsed ? '#636e72' : (tile ? (ROOM_COLORS[tile.type] ?? '#555') : '#555')
+
+            // Tappable: any meaningful uncleared, non-collapsed room (not Empty, not current position)
+            const isMeaningful = tile && !tile.collapsed && !tile.cleared && tile.type !== 'Empty' && !isCurrent
+            const canTap = !!isMeaningful
 
             // Wall tile
             if (!isWalkable) {
@@ -110,53 +152,81 @@ export default function MapScreen({ map, onTileSelect }: Props) {
               )
             }
 
-            // Unrevealed walkable tile
-            if (vis === 'unrevealed') {
+            // Collapsed tile
+            if (isCollapsed) {
               return (
                 <div
                   key={`${x}-${y}`}
                   style={{
                     width: TILE_SIZE,
                     height: TILE_SIZE,
-                    backgroundColor: '#111122',
+                    backgroundColor: isOnPath ? '#1a1520' : '#0e0e18',
                     borderRadius: '4px',
-                    border: '1px solid #1a1a2e',
+                    border: isCurrent
+                      ? '2px solid #a29bfe'
+                      : isOnPath
+                        ? '1px solid #636e7244'
+                        : '1px solid #1a1a2e',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    opacity: 0.5,
+                    userSelect: 'none',
                   }}
-                />
+                >
+                  <span style={{ fontSize: 14, lineHeight: 1, color: '#636e72' }}>
+                    {'\u2592'}
+                  </span>
+                  <span style={{ fontSize: 7, letterSpacing: 0.5, color: '#4a4a5a', marginTop: 2 }}>
+                    RUINS
+                  </span>
+                </div>
               )
             }
 
-            // Revealed or visited tile
+            // Normal tile (all visible, no fog)
+            const isVisited = tile!.visited
             return (
               <div
                 key={`${x}-${y}`}
-                onClick={() => canMove ? onTileSelect(x, y) : undefined}
+                onClick={() => canTap ? onTileSelect(x, y) : undefined}
                 style={{
                   width: TILE_SIZE,
                   height: TILE_SIZE,
                   backgroundColor: isCurrent
                     ? '#1a1a3e'
-                    : vis === 'visited'
-                      ? '#16213e'
-                      : '#111128',
+                    : isDest
+                      ? '#2a1a3e'
+                      : isOnPath
+                        ? '#1a1a30'
+                        : isVisited
+                          ? '#16213e'
+                          : '#111128',
                   borderRadius: '4px',
                   border: isCurrent
                     ? '2px solid #a29bfe'
-                    : canMove
-                      ? `2px solid ${color}88`
-                      : '1px solid #1a1a2e',
+                    : isDest
+                      ? `2px solid ${color}`
+                      : canTap
+                        ? `2px solid ${color}66`
+                        : isOnPath
+                          ? '1px solid #a29bfe44'
+                          : '1px solid #1a1a2e',
                   boxShadow: isCurrent
                     ? '0 0 12px #a29bfe44'
-                    : canMove
-                      ? `0 0 6px ${color}33`
-                      : 'none',
+                    : isDest
+                      ? `0 0 8px ${color}66`
+                      : canTap
+                        ? `0 0 4px ${color}22`
+                        : 'none',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  cursor: canMove ? 'pointer' : 'default',
-                  opacity: vis === 'revealed' ? 0.5 : 1,
-                  transition: 'opacity 0.2s, border-color 0.2s',
+                  cursor: canTap ? 'pointer' : 'default',
+                  opacity: isVisited && !isCurrent ? 0.6 : 1,
+                  transition: 'opacity 0.2s, border-color 0.2s, background-color 0.2s',
                   userSelect: 'none',
                 }}
               >

@@ -196,6 +196,7 @@ export function generateGridMaze(sector: 1 | 2 | 3): GridMaze {
         sector,
         visited: x === startX && y === startY,
         cleared: roomType === 'Empty',
+        collapsed: false,
         x,
         y,
       }
@@ -212,4 +213,58 @@ export function generateGridMaze(sector: 1 | 2 | 3): GridMaze {
     bossY,
     sector,
   }
+}
+
+/** BFS shortest path between two walkable tiles. Returns array of [x, y] coordinates (excluding start, including end). */
+export function findPath(maze: GridMaze, fromX: number, fromY: number, toX: number, toY: number): [number, number][] {
+  const grid = maze.grid
+  const size = grid.length
+  const visited: boolean[][] = Array.from({ length: size }, () => Array(size).fill(false))
+  const parent: Map<string, [number, number]> = new Map()
+  const key = (x: number, y: number) => `${x},${y}`
+
+  visited[fromY][fromX] = true
+  const queue: [number, number][] = [[fromX, fromY]]
+  let head = 0
+
+  while (head < queue.length) {
+    const [cx, cy] = queue[head++]
+    if (cx === toX && cy === toY) {
+      // Reconstruct path
+      const path: [number, number][] = []
+      let cur: [number, number] = [toX, toY]
+      while (cur[0] !== fromX || cur[1] !== fromY) {
+        path.push(cur)
+        cur = parent.get(key(cur[0], cur[1]))!
+      }
+      return path.reverse()
+    }
+    for (const [dx, dy] of DIRS) {
+      const nx = cx + dx
+      const ny = cy + dy
+      if (nx >= 0 && nx < size && ny >= 0 && ny < size && grid[ny][nx] && !visited[ny][nx]) {
+        visited[ny][nx] = true
+        parent.set(key(nx, ny), [cx, cy])
+        queue.push([nx, ny])
+      }
+    }
+  }
+  return [] // no path found
+}
+
+/** Collapse a random unvisited meaningful room. Returns the collapsed room or null if none eligible. */
+export function collapseRandomRoom(maze: GridMaze): GridRoom | null {
+  const MEANINGFUL: Set<GridRoomType> = new Set(['Combat', 'Shop', 'Event', 'Rest'])
+  const candidates: GridRoom[] = []
+  for (const row of maze.grid) {
+    for (const tile of row) {
+      if (tile && !tile.visited && !tile.collapsed && MEANINGFUL.has(tile.type)) {
+        candidates.push(tile)
+      }
+    }
+  }
+  if (candidates.length === 0) return null
+  const target = candidates[Math.floor(Math.random() * candidates.length)]
+  target.collapsed = true
+  return target
 }

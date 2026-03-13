@@ -231,7 +231,7 @@ export default function RewardScreen({ drops, onChoose }: Props) {
 }
 
 function DropBadge({ label, color, onLongPress }: { label: string; color: string; onLongPress: () => void }) {
-  const lp = useLongPress(onLongPress)
+  const { didFire, ...lp } = useLongPress(onLongPress)
 
   return (
     <span

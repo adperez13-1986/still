@@ -423,14 +423,14 @@ function BonusOption({ title, description, hint, color, onClick, onLongPress }: 
   onClick: () => void
   onLongPress?: () => void
 }) {
-  const lp = useLongPress(onLongPress ?? (() => {}))
+  const { didFire, ...lpHandlers } = useLongPress(onLongPress ?? (() => {}))
   return (
     <button
       onClick={() => {
-        if (lp.didFire()) return // don't select after long press
+        if (didFire()) return // don't select after long press
         onClick()
       }}
-      {...(onLongPress ? lp : {})}
+      {...(onLongPress ? lpHandlers : {})}
       style={{
         backgroundColor: '#16213e',
         border: `2px solid ${color}`,

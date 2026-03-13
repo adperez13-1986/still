@@ -49,23 +49,8 @@ Room types SHALL be assigned to walkable tiles based on their position in the ma
 - **WHEN** room types are assigned
 - **THEN** 1-2 tiles at dead ends SHALL be designated as Event rooms (rewarding exploration)
 
-### Requirement: Player moves freely on the grid
-The player SHALL move to any adjacent walkable tile (up, down, left, right — not diagonal). Movement is not restricted to forward-only; backtracking is allowed.
-
-#### Scenario: Move to adjacent tile
-- **WHEN** the player taps a walkable tile adjacent to their current position
-- **THEN** the player moves to that tile
-
-#### Scenario: Cannot move to non-adjacent tile
-- **WHEN** the player taps a tile that is not directly adjacent
-- **THEN** nothing happens
-
-#### Scenario: Cannot move to wall
-- **WHEN** the player taps a wall tile or an unrevealed tile
-- **THEN** nothing happens
-
 ### Requirement: Entering a room triggers its encounter
-When the player moves to a tile, the room's encounter SHALL trigger based on its type and cleared status.
+When the player moves to a tile, the room's encounter SHALL trigger based on its type, cleared status, and collapsed status.
 
 #### Scenario: Entering uncleared Combat room
 - **WHEN** the player moves to a Combat room that has not been cleared
@@ -74,6 +59,10 @@ When the player moves to a tile, the room's encounter SHALL trigger based on its
 #### Scenario: Entering cleared room
 - **WHEN** the player moves to any room that has already been cleared
 - **THEN** no encounter triggers; the player passes through freely
+
+#### Scenario: Entering collapsed room
+- **WHEN** the player moves to a room that has collapsed
+- **THEN** no encounter triggers; the player passes through freely as if it were an empty corridor
 
 #### Scenario: Entering Rest room
 - **WHEN** the player moves to a Rest room for the first time
@@ -91,24 +80,39 @@ When the player moves to a tile, the room's encounter SHALL trigger based on its
 - **WHEN** the player moves to the Boss room
 - **THEN** the boss combat begins
 
-### Requirement: Fog of war on the grid
-Tiles SHALL be in one of three visibility states: unrevealed (dark), revealed (dimmed, type visible), or visited (fully lit).
+### Requirement: All rooms visible from start
+All rooms on the maze grid SHALL be visible from the start of each sector. There is no fog of war. Room types and positions are shown immediately.
 
-#### Scenario: Initial visibility
-- **WHEN** a run begins
-- **THEN** only the start tile is visited; tiles adjacent to the start (including diagonals) are revealed; all other tiles are unrevealed
+#### Scenario: Initial map visibility
+- **WHEN** a sector begins
+- **THEN** all walkable tiles are visible with their room type icons displayed
 
-#### Scenario: Moving reveals neighbors
-- **WHEN** the player moves to a new tile
-- **THEN** that tile becomes visited, and all tiles adjacent to it (including diagonals) become revealed if not already
+#### Scenario: Visited rooms are styled differently
+- **WHEN** the player has visited a room
+- **THEN** it is visually distinguished from unvisited rooms (e.g., dimmed or marked with a checkmark)
 
-#### Scenario: Unrevealed tiles are hidden
-- **WHEN** the player views the map
-- **THEN** unrevealed tiles SHALL appear as dark squares with no type information
+### Requirement: Auto-pathing to destinations
+The player SHALL tap any meaningful room on the map to set it as a destination. Still auto-walks the shortest path (BFS), stopping at the first uncleared encounter room along the way.
 
-#### Scenario: Revealed tiles show type
-- **WHEN** the player views the map
-- **THEN** revealed (but unvisited) tiles SHALL show their room type icon in a dimmed state
+#### Scenario: Tap a distant room
+- **WHEN** the player taps a room that is not adjacent
+- **THEN** the shortest path is computed via BFS and Still begins walking toward it
+
+#### Scenario: Stop at first encounter
+- **WHEN** Still is auto-walking and reaches an uncleared Combat, Rest, Shop, Event, or Boss room
+- **THEN** Still stops and the encounter triggers
+
+#### Scenario: Skip empty and cleared rooms
+- **WHEN** Still is auto-walking and passes through an empty corridor, cleared room, or collapsed room
+- **THEN** Still continues walking without stopping
+
+#### Scenario: Path shown on map
+- **WHEN** the player taps a destination
+- **THEN** the planned path is highlighted on the map so the player can see which rooms they will pass through
+
+#### Scenario: Re-evaluate after encounter
+- **WHEN** an encounter is resolved and the player returns to the map
+- **THEN** the auto-path is cleared and the player must tap a new destination
 
 ### Requirement: Grid map renders on mobile
 The maze grid SHALL render as a compact grid of square tiles suitable for mobile screens.
@@ -120,7 +124,3 @@ The maze grid SHALL render as a compact grid of square tiles suitable for mobile
 #### Scenario: Player position highlighted
 - **WHEN** the map is displayed
 - **THEN** the player's current tile SHALL be visually distinct (highlighted border or glow)
-
-#### Scenario: Tappable adjacent tiles
-- **WHEN** the player views the map during navigation
-- **THEN** walkable tiles adjacent to the player SHALL be visually indicated as tappable

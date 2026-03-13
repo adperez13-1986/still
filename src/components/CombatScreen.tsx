@@ -4,6 +4,7 @@ import { useRunStore } from '../store/runStore'
 import { usePermanentStore } from '../store/permanentStore'
 import { ALL_ENEMIES } from '../data/enemies'
 import { resolveDrops, resolveWarperDrop } from '../game/drops'
+import { collapseRandomRoom } from '../game/mapGen'
 import { makeCardInstance, projectSlotActions } from '../game/combat'
 import { ALL_PARTS, ALL_EQUIPMENT } from '../data/parts'
 import { ALL_CARDS, SECTOR1_CARD_POOL, SECTOR2_CARD_POOL } from '../data/cards'
@@ -414,11 +415,19 @@ export default function CombatScreen() {
               })
               return
             }
-            // Normal combat end — mark room cleared and return to map
+            // Normal combat end — mark room cleared, increment combatsCleared, maybe collapse
             useRunStore.setState((s) => {
               if (s.map) {
                 const tile = s.map.grid[s.map.playerY][s.map.playerX]
                 if (tile) tile.cleared = true
+              }
+              s.combatsCleared += 1
+              // Trigger collapse at every 3rd combat (3, 6, 9)
+              if (s.combatsCleared % 3 === 0 && s.map) {
+                const collapsed = collapseRandomRoom(s.map)
+                if (collapsed) {
+                  s.lastCollapseMessage = `A ${collapsed.type} room has collapsed!`
+                }
               }
               s.combat = null
             })
