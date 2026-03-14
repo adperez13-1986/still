@@ -24,7 +24,7 @@ import { ALL_PARTS, ALL_EQUIPMENT, STARTING_TORSO, STARTING_ARMS } from '../data
 function pickEnemiesForRoom(room: GridRoom, sector: number, combatsCleared: number) {
   if (room.type === 'Boss') {
     const boss = sector >= 2 ? SECTOR2_BOSS : SECTOR1_BOSS
-    return [makeEnemyInstance(boss)]
+    return [makeEnemyInstance(boss, combatsCleared)]
   }
   const encounters = sector >= 2 ? SECTOR2_ENCOUNTERS : SECTOR1_ENCOUNTERS
   const eliteEncounters = sector >= 2 ? SECTOR2_ELITE_ENCOUNTERS : SECTOR1_ELITE_ENCOUNTERS
@@ -35,7 +35,7 @@ function pickEnemiesForRoom(room: GridRoom, sector: number, combatsCleared: numb
   return encounter.enemies.map(id => {
     const def = ALL_ENEMIES[id]
     if (!def) throw new Error(`Unknown enemy: ${id}`)
-    return makeEnemyInstance(def)
+    return makeEnemyInstance(def, combatsCleared)
   })
 }
 
@@ -403,6 +403,8 @@ export default function RunScreen() {
         sector={run.sector}
         deck={run.deck}
         ownedPartIds={run.parts.map(p => p.id)}
+        parts={run.parts}
+        equipment={run.equipment}
         carriedPart={permanent.carriedPart}
         onBuyCard={(cardId, cost) => {
           if (run.shards < cost) return

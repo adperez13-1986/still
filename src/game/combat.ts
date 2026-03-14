@@ -26,12 +26,15 @@ import {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-export function makeEnemyInstance(def: EnemyDefinition): EnemyInstance {
+export function makeEnemyInstance(def: EnemyDefinition, combatsCleared = 0): EnemyInstance {
+  // HP scaling: bosses stay at base HP, regular enemies scale +10% per combat cleared
+  const hpMultiplier = def.isBoss ? 1.0 : 1 + combatsCleared * 0.10
+  const scaledHealth = Math.floor(def.maxHealth * hpMultiplier)
   return {
     instanceId: `${def.id}-${Math.random().toString(36).slice(2)}`,
     definitionId: def.id,
-    currentHealth: def.maxHealth,
-    maxHealth: def.maxHealth,
+    currentHealth: scaledHealth,
+    maxHealth: scaledHealth,
     block: 0,
     intentIndex: 0,
     statusEffects: [],
@@ -93,6 +96,7 @@ export interface CombatContext {
   cardDefs: Record<string, ModifierCardDefinition>
   enemyDefs: Record<string, EnemyDefinition>
   targetEnemyId?: string
+  combatsCleared: number
 }
 
 export interface ActionResult {
@@ -1050,45 +1054,60 @@ export function executeEnemyTurn(ctx: CombatContext): CombatResult {
     switch (intent.type) {
       case 'Attack':
       case 'AttackDebuff': {
-        let dealt = intent.value
+        // Calculate per-hit damage (same for all hits)
+        let perHit = intent.value
+        // Damage scaling: bosses get flat +15%, regular enemies scale with combatsCleared
+        const scalingMultiplier = def.isBoss
+          ? 1.15
+          : 1 + ctx.combatsCleared * 0.15
+        perHit = Math.floor(perHit * scalingMultiplier)
         // Enemy Strength
-        dealt += getStatus(enemy.statusEffects, 'Strength')
+        perHit += getStatus(enemy.statusEffects, 'Strength')
         // Weak reduces enemy damage
-        if (getStatus(enemy.statusEffects, 'Weak') > 0) dealt = Math.floor(dealt * 0.75)
+        if (getStatus(enemy.statusEffects, 'Weak') > 0) perHit = Math.floor(perHit * 0.75)
         // Vulnerable on Still
-        if (getStatus(result.combat.statusEffects, 'Vulnerable') > 0) dealt = Math.floor(dealt * 1.5)
-        dealt = Math.max(0, dealt)
-        // Ablative Shell: halve first big hit each combat
-        if (!result.combat.ablativeShellUsed) {
-          for (const part of ctx.parts) {
-            if (part.effect.type === 'halveLargeDamage' && dealt >= part.effect.threshold) {
-              result.combat.combatLog.push({ type: 'partTrigger', partId: part.id })
-              dealt = Math.floor(dealt / 2)
-              result.combat.ablativeShellUsed = true
-              result.log.push(`${part.name}: halved incoming damage to ${dealt}`)
-              break
+        if (getStatus(result.combat.statusEffects, 'Vulnerable') > 0) perHit = Math.floor(perHit * 1.5)
+        perHit = Math.max(0, perHit)
+
+        const hitCount = intent.hits ?? 1
+        let totalDamage = 0
+        let totalBlocked = 0
+        for (let h = 0; h < hitCount; h++) {
+          let dealt = perHit
+          // Ablative Shell: halve first big hit each combat
+          if (!result.combat.ablativeShellUsed) {
+            for (const part of ctx.parts) {
+              if (part.effect.type === 'halveLargeDamage' && dealt >= part.effect.threshold) {
+                result.combat.combatLog.push({ type: 'partTrigger', partId: part.id })
+                dealt = Math.floor(dealt / 2)
+                result.combat.ablativeShellUsed = true
+                result.log.push(`${part.name}: halved incoming damage to ${dealt}`)
+                break
+              }
             }
           }
-        }
-        const absorbed = Math.min(result.combat.block, dealt)
-        result.combat.block -= absorbed
-        let actual = dealt - absorbed
-        // Ablative heat: while Hot (7+), damage reduces Heat at 1:2 ratio, drain to Warm floor (4)
-        let heatAbsorbed = 0
-        if (actual > 0 && result.combat.heat >= 7) {
-          const maxDrain = result.combat.heat - 4 // can drain to Warm floor
-          heatAbsorbed = Math.min(maxDrain, Math.floor(actual / 2))
-          const damageAbsorbed = heatAbsorbed * 2
-          result.combat.heat -= heatAbsorbed
-          actual -= damageAbsorbed
-          if (heatAbsorbed > 0) {
-            result.log.push(`Ablative heat absorbed ${damageAbsorbed} damage (heat ${result.combat.heat + heatAbsorbed} → ${result.combat.heat})`)
+          const absorbed = Math.min(result.combat.block, dealt)
+          result.combat.block -= absorbed
+          let actual = dealt - absorbed
+          // Ablative heat: while Hot (7+), damage reduces Heat at 1:2 ratio, drain to Warm floor (4)
+          if (actual > 0 && result.combat.heat >= 7) {
+            const maxDrain = result.combat.heat - 4
+            const heatAbsorbed = Math.min(maxDrain, Math.floor(actual / 2))
+            const damageAbsorbed = heatAbsorbed * 2
+            result.combat.heat -= heatAbsorbed
+            actual -= damageAbsorbed
+            if (heatAbsorbed > 0) {
+              result.log.push(`Ablative heat absorbed ${damageAbsorbed} damage (heat ${result.combat.heat + heatAbsorbed} → ${result.combat.heat})`)
+            }
           }
+          result.stillHealth = Math.max(0, result.stillHealth - actual)
+          totalDamage += actual
+          totalBlocked += absorbed
         }
-        result.stillHealth = Math.max(0, result.stillHealth - actual)
-        eventDamage = actual
-        eventBlocked = absorbed
-        result.log.push(`${def.name} attacks for ${actual} (${absorbed} blocked${heatAbsorbed > 0 ? `, ${heatAbsorbed * 2} ablated` : ''})`)
+        eventDamage = totalDamage
+        eventBlocked = totalBlocked
+        const hitsLabel = hitCount > 1 ? ` (${hitCount} hits)` : ''
+        result.log.push(`${def.name} attacks for ${totalDamage} (${totalBlocked} blocked)${hitsLabel}`)
 
         if (intent.type === 'AttackDebuff' && intent.status) {
           result.combat.statusEffects = addStatus(

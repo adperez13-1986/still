@@ -90,6 +90,8 @@ export default function WorkshopScreen() {
             setShowCarrySelect(false)
           }}
           onDismiss={() => {
+            permanent.clearCarriedPart()
+            permanent.save()
             setShowCarrySelect(false)
           }}
         />

@@ -52,8 +52,8 @@ const fractureMite: EnemyDefinition = {
   name: 'Fracture Mite',
   maxHealth: 16,
   intentPattern: [
-    { type: 'Attack', value: 4 },
-    { type: 'Attack', value: 4 },
+    { type: 'Attack', value: 3, hits: 2 },
+    { type: 'Attack', value: 3, hits: 2 },
   ],
   dropPool: [
     { type: 'shards', amount: 5, weight: 4 },
@@ -83,8 +83,8 @@ const glitchNode: EnemyDefinition = {
   maxHealth: 24,
   intentPattern: [
     { type: 'Buff', value: 1, status: 'Strength' },
-    { type: 'Attack', value: 8 },
-    { type: 'Attack', value: 8 },
+    { type: 'Buff', value: 1, status: 'Strength' },
+    { type: 'Attack', value: 10 },
   ],
   dropPool: [
     { type: 'shards', amount: 9, weight: 3 },
@@ -112,9 +112,8 @@ const hollowRepeater: EnemyDefinition = {
   name: 'Hollow Repeater',
   maxHealth: 38,
   intentPattern: [
-    { type: 'Attack', value: 3 },
-    { type: 'Attack', value: 3 },
-    { type: 'Attack', value: 3 },
+    { type: 'Buff', value: 1, status: 'Strength' },
+    { type: 'Attack', value: 3, hits: 3 },
     { type: 'Block', value: 4 },
   ],
   dropPool: [

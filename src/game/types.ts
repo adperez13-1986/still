@@ -165,6 +165,7 @@ export type IntentType = 'Attack' | 'Block' | 'Buff' | 'Debuff' | 'AttackDebuff'
 export interface Intent {
   type: IntentType
   value: number
+  hits?: number // multi-hit attacks: each hit resolves independently against block
   status?: StatusEffectType
   statusStacks?: number
   targetSlot?: BodySlot // for DisableSlot: which slot to disable

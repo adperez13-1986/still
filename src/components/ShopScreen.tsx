@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react'
 import CardDisplay from './CardDisplay'
 import CardPicker from './CardPicker'
+import RunInfoOverlay from './RunInfoOverlay'
 import { SECTOR1_CARD_POOL, SECTOR2_CARD_POOL } from '../data/cards'
 import { PARTS, ALL_PARTS } from '../data/parts'
-import type { CardInstance, CarriedPart } from '../game/types'
+import type { CardInstance, CarriedPart, BehavioralPartDefinition, EquipmentDefinition, BodySlot } from '../game/types'
 
 const REPAIR_COST = 50
 const RECYCLE_COST = 60
@@ -13,6 +14,8 @@ interface Props {
   sector: number
   deck: CardInstance[]
   ownedPartIds: string[]
+  parts: BehavioralPartDefinition[]
+  equipment: Record<BodySlot, EquipmentDefinition | null>
   onBuyCard: (cardId: string, cost: number) => void
   onBuyPart: (partId: string, cost: number) => void
   onRecycle: (instanceId: string) => void
@@ -32,9 +35,10 @@ const PART_COSTS: Record<string, number> = {
   rare: 90, uncommon: 65, common: 45,
 }
 
-export default function ShopScreen({ shards, sector, deck, ownedPartIds, onBuyCard, onBuyPart, onRecycle, onRepair, carriedPart, onLeave }: Props) {
+export default function ShopScreen({ shards, sector, deck, ownedPartIds, parts, equipment, onBuyCard, onBuyPart, onRecycle, onRepair, carriedPart, onLeave }: Props) {
   const [showRecyclePicker, setShowRecyclePicker] = useState(false)
   const [purchasedPartIds, setPurchasedPartIds] = useState<string[]>([])
+  const [infoTab, setInfoTab] = useState<'deck' | 'equips' | null>(null)
   const SHOP_CARDS = useMemo(() => {
     const pool = sector >= 2 ? SECTOR2_CARD_POOL : SECTOR1_CARD_POOL
     return shuffle(pool).slice(0, 3)
@@ -58,11 +62,28 @@ export default function ShopScreen({ shards, sector, deck, ownedPartIds, onBuyCa
       gap: '32px',
       padding: '40px',
     }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', maxWidth: '900px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', maxWidth: '900px' }}>
         <h2 style={{ letterSpacing: '3px', color: '#f39c12', margin: 0 }}>SHOP</h2>
-        <span style={{ color: '#f1c40f', fontSize: '16px', fontWeight: 'bold' }}>
-          {shards} shards
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <button
+            onClick={() => setInfoTab('deck')}
+            style={{
+              background: 'none',
+              border: '1px solid #2c3e50',
+              color: '#888',
+              borderRadius: '6px',
+              padding: '4px 12px',
+              cursor: 'pointer',
+              fontSize: '12px',
+              letterSpacing: '1px',
+            }}
+          >
+            INFO
+          </button>
+          <span style={{ color: '#f1c40f', fontSize: '16px', fontWeight: 'bold' }}>
+            {shards} shards
+          </span>
+        </div>
       </div>
 
       <p style={{ color: '#888', fontSize: '13px' }}>
@@ -218,6 +239,17 @@ export default function ShopScreen({ shards, sector, deck, ownedPartIds, onBuyCa
       >
         Leave
       </button>
+
+      {infoTab && (
+        <RunInfoOverlay
+          tab={infoTab}
+          deck={deck}
+          parts={parts}
+          equipment={equipment}
+          onClose={() => setInfoTab(null)}
+          onTabChange={setInfoTab}
+        />
+      )}
     </div>
   )
 }

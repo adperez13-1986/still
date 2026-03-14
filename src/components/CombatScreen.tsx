@@ -34,6 +34,7 @@ export default function CombatScreen() {
   const [equipConflicts, setEquipConflicts] = useState<EquipmentDefinition[]>([])
   const [pendingPostReward, setPendingPostReward] = useState<(() => void) | null>(null)
   const [infoTab, setInfoTab] = useState<'deck' | 'equips' | null>(null)
+  const [pileView, setPileView] = useState<'draw' | 'discard' | 'exhaust' | null>(null)
 
   // ─── Animation Replay State ──────────────────────────────────────
   const [animating, setAnimating] = useState(false)
@@ -560,6 +561,7 @@ export default function CombatScreen() {
                       if (!dispDefeated) setTargetEnemyId(enemy.instanceId)
                     }}
                     compact
+                    combatsCleared={run.combatsCleared}
                   />
                   {damageNumbers.filter(dn => dn.target === enemy.instanceId).map(dn => (
                     <DamageNumber key={dn.id} value={dn.value} color={dn.color} x="70%" y="30%" />
@@ -605,6 +607,7 @@ export default function CombatScreen() {
                     onClick={() => {
                       if (!dispDefeated) setTargetEnemyId(enemy.instanceId)
                     }}
+                    combatsCleared={run.combatsCleared}
                   />
                   {damageNumbers.filter(dn => dn.target === enemy.instanceId).map(dn => (
                     <DamageNumber key={dn.id} value={dn.value} color={dn.color} x="50%" y="40%" />
@@ -666,11 +669,13 @@ export default function CombatScreen() {
               </span>
             )}
           </span>
-          {!isMobile && (
-            <span style={{ color: '#555' }}>
-              Draw: {combat.drawPile.length} | Discard: {combat.discardPile.length} | Exhaust: {combat.exhaustPile.length}
-            </span>
-          )}
+          <span style={{ color: '#666', fontSize: isMobile ? '10px' : '12px', display: 'flex', gap: '8px' }}>
+            <span onClick={() => setPileView('draw')} style={{ cursor: 'pointer', color: pileView === 'draw' ? '#a29bfe' : '#666' }}>Draw {combat.drawPile.length}</span>
+            <span>·</span>
+            <span onClick={() => setPileView('discard')} style={{ cursor: 'pointer', color: pileView === 'discard' ? '#a29bfe' : '#666' }}>Discard {combat.discardPile.length}</span>
+            <span>·</span>
+            <span onClick={() => setPileView('exhaust')} style={{ cursor: 'pointer', color: pileView === 'exhaust' ? '#a29bfe' : '#666' }}>Exhaust {combat.exhaustPile.length}</span>
+          </span>
         </div>
         <Hand
           combat={combat}
@@ -800,6 +805,91 @@ export default function CombatScreen() {
           onTabChange={setInfoTab}
         />
       )}
+
+      {/* Pile viewer overlay */}
+      {pileView && (() => {
+        const pile = pileView === 'draw' ? combat.drawPile
+          : pileView === 'discard' ? combat.discardPile
+          : combat.exhaustPile
+        const title = pileView === 'draw' ? 'Draw Pile' : pileView === 'discard' ? 'Discard Pile' : 'Exhaust Pile'
+        const cards = pile.map(c => ALL_CARDS[c.definitionId]).filter(Boolean)
+        const sorted = [...cards].sort((a, b) => a.name.localeCompare(b.name))
+        return (
+          <div
+            onClick={() => setPileView(null)}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              backgroundColor: 'rgba(0,0,0,0.85)',
+              zIndex: 250,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '24px',
+            }}
+          >
+            <div
+              onClick={e => e.stopPropagation()}
+              style={{
+                backgroundColor: '#0d0d1a',
+                border: '1px solid #2c3e50',
+                borderRadius: '12px',
+                padding: '20px',
+                maxWidth: '400px',
+                width: '100%',
+                maxHeight: '70vh',
+                overflowY: 'auto',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <span style={{ color: '#e8e8e8', fontWeight: 'bold', fontSize: '14px', letterSpacing: '2px' }}>
+                  {title} ({pile.length})
+                </span>
+                <button
+                  onClick={() => setPileView(null)}
+                  style={{ background: 'none', border: 'none', color: '#666', fontSize: '18px', cursor: 'pointer' }}
+                >
+                  ×
+                </button>
+              </div>
+              {sorted.length === 0 ? (
+                <div style={{ color: '#444', fontSize: '13px', fontStyle: 'italic', textAlign: 'center' }}>Empty</div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  {sorted.map((card, i) => {
+                    const cat = card.category.type === 'slot' ? card.category.modifier : 'System'
+                    const catColor = card.category.type === 'slot'
+                      ? { Amplify: '#a29bfe', Redirect: '#74b9ff', Repeat: '#fd79a8', Override: '#e17055' }[card.category.modifier] ?? '#888'
+                      : '#f1c40f'
+                    return (
+                      <div key={i} style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '6px 10px',
+                        backgroundColor: '#16213e',
+                        borderRadius: '4px',
+                        fontSize: '12px',
+                      }}>
+                        <span style={{ color: catColor, fontSize: '9px', fontWeight: 'bold', minWidth: '50px', textTransform: 'uppercase' }}>
+                          {cat}
+                        </span>
+                        <span style={{ color: '#e8e8e8', fontWeight: 'bold' }}>{card.name}</span>
+                        {card.heatCost !== 0 && (
+                          <span style={{ color: '#e67e22', fontSize: '10px', marginLeft: 'auto' }}>
+                            {card.heatCost > 0 ? '+' : ''}{card.heatCost}H
+                          </span>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Screen flash on damage */}
       {screenFlash && (

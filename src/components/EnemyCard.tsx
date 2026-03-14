@@ -1,4 +1,5 @@
 import type { EnemyInstance, EnemyDefinition, Intent } from '../game/types'
+import { getStatus } from '../game/combat'
 import Sprite from './Sprite'
 import { getEnemySprite } from '../data/sprites'
 
@@ -9,6 +10,7 @@ interface Props {
   recentDamage?: number
   onClick?: () => void
   compact?: boolean
+  combatsCleared?: number
 }
 
 const INTENT_ICONS: Record<string, string> = {
@@ -31,9 +33,20 @@ const INTENT_COLORS: Record<string, string> = {
   Absorb: '#00cec9',
 }
 
-function IntentDisplay({ intent }: { intent: Intent }) {
+function getEffectiveDamage(intent: Intent, enemy: EnemyInstance, isBoss: boolean, combatsCleared: number): number {
+  let dmg = intent.value
+  const scalingMultiplier = isBoss ? 1.15 : 1 + combatsCleared * 0.15
+  dmg = Math.floor(dmg * scalingMultiplier)
+  dmg += getStatus(enemy.statusEffects, 'Strength')
+  if (getStatus(enemy.statusEffects, 'Weak') > 0) dmg = Math.floor(dmg * 0.75)
+  return Math.max(0, dmg)
+}
+
+function IntentDisplay({ intent, effectiveDamage }: { intent: Intent; effectiveDamage?: number }) {
   const color = INTENT_COLORS[intent.type] ?? '#aaa'
   const icon = INTENT_ICONS[intent.type] ?? '?'
+  const isAttack = intent.type === 'Attack' || intent.type === 'AttackDebuff'
+  const displayValue = isAttack && effectiveDamage != null ? effectiveDamage : intent.value
 
   return (
     <div style={{
@@ -47,7 +60,7 @@ function IntentDisplay({ intent }: { intent: Intent }) {
         [{icon}]
       </span>
       <span style={{ fontWeight: 'bold' }}>
-        {intent.type === 'DisableSlot' ? intent.targetSlot ?? '?' : intent.value}
+        {intent.type === 'DisableSlot' ? intent.targetSlot ?? '?' : displayValue}{intent.hits && intent.hits > 1 ? `×${intent.hits}` : ''}
       </span>
       {intent.status && (
         <span style={{ fontSize: '10px', color: '#aaa' }}>
@@ -58,11 +71,15 @@ function IntentDisplay({ intent }: { intent: Intent }) {
   )
 }
 
-export default function EnemyCard({ instance, definition, selected, recentDamage, onClick, compact }: Props) {
+export default function EnemyCard({ instance, definition, selected, recentDamage, onClick, compact, combatsCleared = 0 }: Props) {
   const healthPct = Math.max(0, (instance.currentHealth / instance.maxHealth) * 100)
   const currentIntent = definition.intentPattern[
     instance.intentIndex % definition.intentPattern.length
   ]
+  const isAttackIntent = currentIntent && (currentIntent.type === 'Attack' || currentIntent.type === 'AttackDebuff')
+  const effectiveDmg = currentIntent && isAttackIntent
+    ? getEffectiveDamage(currentIntent, instance, !!definition.isBoss, combatsCleared)
+    : undefined
 
   if (compact) {
     const intentColor = currentIntent ? (INTENT_COLORS[currentIntent.type] ?? '#aaa') : '#aaa'
@@ -138,7 +155,7 @@ export default function EnemyCard({ instance, definition, selected, recentDamage
             )}
             {!instance.isDefeated && currentIntent && (
               <span style={{ color: intentColor, fontWeight: 'bold', fontSize: '10px' }}>
-                {intentIcon} {currentIntent.type === 'DisableSlot' ? currentIntent.targetSlot ?? '?' : currentIntent.value}
+                {intentIcon} {currentIntent.type === 'DisableSlot' ? currentIntent.targetSlot ?? '?' : (isAttackIntent && effectiveDmg != null ? effectiveDmg : currentIntent.value)}{currentIntent.hits && currentIntent.hits > 1 ? `×${currentIntent.hits}` : ''}
                 {currentIntent.status && <span style={{ color: '#aaa', fontWeight: 'normal' }}> +{currentIntent.status[0]}{currentIntent.statusStacks ?? 1}</span>}
               </span>
             )}
@@ -242,7 +259,7 @@ export default function EnemyCard({ instance, definition, selected, recentDamage
       {!instance.isDefeated && currentIntent && (
         <div>
           <div style={{ fontSize: '10px', color: '#888', marginBottom: '3px' }}>Next:</div>
-          <IntentDisplay intent={currentIntent} />
+          <IntentDisplay intent={currentIntent} effectiveDamage={effectiveDmg} />
         </div>
       )}
 

@@ -236,6 +236,7 @@ export const useRunStore = create<RunState & RunActions>()(
           cardDefs: ALL_CARDS,
           enemyDefs: {},
           targetEnemyId,
+          combatsCleared: state.combatsCleared,
         }
 
         const result = playModifierCard(ctx, cardDef, instanceId, targetSlot)
@@ -282,6 +283,7 @@ export const useRunStore = create<RunState & RunActions>()(
           parts: JSON.parse(JSON.stringify(state.parts)),
           cardDefs: ALL_CARDS,
           enemyDefs: {},
+          combatsCleared: state.combatsCleared,
         }
 
         const result = unassignModifier(ctx, slot, cardDef)
@@ -305,6 +307,7 @@ export const useRunStore = create<RunState & RunActions>()(
           cardDefs: ALL_CARDS,
           enemyDefs: ALL_ENEMIES,
           targetEnemyId,
+          combatsCleared: state.combatsCleared,
         }
 
         // Accumulate combat events across all phases
