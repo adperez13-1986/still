@@ -45,7 +45,6 @@ export default function RunScreen() {
   const location = useLocation()
   const [roomDone, setRoomDone] = useState(false)
   const [infoTab, setInfoTab] = useState<'deck' | 'equips' | null>(null)
-  const [brokenCarryNotice, setBrokenCarryNotice] = useState<string | null>(null)
   const [eventCardRemoval, setEventCardRemoval] = useState<number | null>(null)
   const [autoPath, setAutoPath] = useState<[number, number][] | null>(null)
   const walkingRef = useRef(false)
@@ -53,6 +52,18 @@ export default function RunScreen() {
   // Initialize run if not active
   useEffect(() => {
     if (run.active) return
+
+    // Reload recovery: try restoring saved run before creating a new one.
+    // location.state persists across reloads (window.history.state), so we can't
+    // use its presence to distinguish "fresh navigation" from "reload". Instead,
+    // we use a sessionStorage flag set when we actually consume bonuses below.
+    const consumedKey = 'still-run-bonuses-consumed'
+    const alreadyConsumed = sessionStorage.getItem(consumedKey) === 'true'
+    const hasBonuses = !!(location.state as any)?.bonuses
+    if (!hasBonuses || alreadyConsumed) {
+      const restored = run.restoreRun()
+      if (restored) return
+    }
 
     // Debug shortcut: /run?debug=<preset> starts directly in Sector 2 with a loaded build
     // Presets: s2 (generic), cool (Cool Runner), hot (Pyromaniac), warm (Warm Surfer)
@@ -113,6 +124,7 @@ export default function RunScreen() {
         lastCollapseMessage: null,
         isDebug: true,
       })
+      run.saveRun()
       return
     }
 
@@ -120,18 +132,11 @@ export default function RunScreen() {
     const sumBonus = (type: FragmentBonus['type']) =>
       bonuses.filter((b) => b.type === type).reduce((s, b) => s + b.value, 0)
 
-    // Carried part from previous run
-    const cp = permanent.carriedPart
-    const carriedPartDef: BehavioralPartDefinition | null = cp ? (ALL_PARTS[cp.partId] ?? null) : null
+    // Carried part from previous run — always active
+    const carriedPartDef = permanent.carriedPart ? (ALL_PARTS[permanent.carriedPart] ?? null) : null
     const initialParts: BehavioralPartDefinition[] = []
-    if (cp && carriedPartDef) {
-      if (cp.durability > 0) {
-        // Intact: include in parts (behavioral parts grant trigger/effect, not stat bonuses)
-        initialParts.push(carriedPartDef)
-      } else {
-        // Broken: don't include, show notice
-        setBrokenCarryNotice(`${carriedPartDef.name} is broken — find a Shop to repair it.`)
-      }
+    if (carriedPartDef) {
+      initialParts.push(carriedPartDef)
     }
 
     const starterDeck = STARTING_CARDS.map((c) => makeCardInstance(c.id))
@@ -172,6 +177,9 @@ export default function RunScreen() {
       combatsCleared: 0,
       lastCollapseMessage: null,
     })
+    // Mark bonuses as consumed so reloads don't re-create the run
+    sessionStorage.setItem(consumedKey, 'true')
+    run.saveRun()
   }, [])
 
   const handleTileSelect = useCallback(async (x: number, y: number) => {
@@ -233,6 +241,7 @@ export default function RunScreen() {
 
   const finishRoom = () => {
     run.clearCurrentRoom()
+    run.saveRun()
     setAutoPath(null)
     walkingRef.current = false
     setRoomDone(true)
@@ -263,32 +272,6 @@ export default function RunScreen() {
         onTileSelect={handleTileSelect}
         onDismissCollapse={() => useRunStore.setState((s) => { s.lastCollapseMessage = null })}
       />
-      {brokenCarryNotice && (
-        <div style={{
-          position: 'fixed',
-          top: '16px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          backgroundColor: '#2d1f0e',
-          border: '1px solid #e67e22',
-          borderRadius: '6px',
-          padding: '10px 20px',
-          color: '#e67e22',
-          fontSize: '13px',
-          zIndex: 200,
-          display: 'flex',
-          alignItems: 'center',
-          gap: '12px',
-        }}>
-          <span>{brokenCarryNotice}</span>
-          <button
-            onClick={() => setBrokenCarryNotice(null)}
-            style={{ background: 'none', border: 'none', color: '#e67e22', cursor: 'pointer', fontSize: '16px', lineHeight: 1 }}
-          >
-            ×
-          </button>
-        </div>
-      )}
       {/* Floating info buttons */}
       <div style={{
         position: 'fixed',
@@ -405,7 +388,6 @@ export default function RunScreen() {
         ownedPartIds={run.parts.map(p => p.id)}
         parts={run.parts}
         equipment={run.equipment}
-        carriedPart={permanent.carriedPart}
         onBuyCard={(cardId, cost) => {
           if (run.shards < cost) return
           run.addShards(-cost)
@@ -422,14 +404,6 @@ export default function RunScreen() {
           if (run.shards < 60) return
           run.removeCardFromDeck(instanceId)
           run.addShards(-60)
-        }}
-        onRepair={() => {
-          const cp = permanent.carriedPart
-          if (!cp || cp.durability > 0 || cp.repairsLeft <= 0 || run.shards < 50) return
-          const part = ALL_PARTS[cp.partId]
-          run.addShards(-50)
-          permanent.updateCarriedPart({ durability: cp.maxDurability, repairsLeft: cp.repairsLeft - 1 })
-          if (part) run.addPart(part)
         }}
         onLeave={finishRoom}
       />

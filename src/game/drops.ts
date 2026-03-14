@@ -67,12 +67,10 @@ export interface DropResult {
 }
 
 export function resolveDrops(dropPool: DropPool[], equipPity = 0, sector = 1, ownedPartIds: string[] = [], ownedEquipIds: string[] = []): DropResult {
-  const shardEntries = dropPool.filter((d) => d.type === 'shards')
-  const bonusEntries = dropPool.filter((d) => d.type !== 'shards')
-
   const results: ResolvedDrop[] = []
 
-  // Always drop shards — pick highest-weight shard entry
+  // 1. Always drop shards
+  const shardEntries = dropPool.filter((d) => d.type === 'shards')
   if (shardEntries.length > 0) {
     const best = shardEntries.reduce((a, b) => (b.weight > a.weight ? b : a))
     results.push(resolveShardDrop(best))
@@ -80,7 +78,14 @@ export function resolveDrops(dropPool: DropPool[], equipPity = 0, sector = 1, ow
     results.push({ type: 'shards', amount: 5 })
   }
 
-  // Build weighted bonus entries with pity boost for equipment
+  // 2. Always offer 3 card choices from sector pool
+  const cardPool = getCardPoolForSector(sector)
+  const shuffled = [...cardPool].sort(() => Math.random() - 0.5)
+  results.push(...shuffled.slice(0, 3).map((c) => ({ type: 'card' as const, cardId: c.id })))
+
+  // 3. Bonus roll for part/equipment (ignore card entries in pool)
+  const bonusEntries = dropPool.filter((d) => d.type === 'part' || d.type === 'equipment')
+
   let entries = [...bonusEntries]
 
   // If no equipment entry exists and pity >= 2, inject a generic one
@@ -95,7 +100,6 @@ export function resolveDrops(dropPool: DropPool[], equipPity = 0, sector = 1, ow
     weight: d.type === 'equipment' ? d.weight + equipPity : d.weight,
   }))
 
-  // Roll for a bonus drop
   if (weighted.length > 0) {
     const chosen = weightedRandom(weighted)
     results.push(...resolveBonusDrop(chosen, sector, ownedPartIds, ownedEquipIds))

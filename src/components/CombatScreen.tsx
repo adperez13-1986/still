@@ -330,25 +330,28 @@ export default function CombatScreen() {
     return (
       <RewardScreen
         drops={allDrops}
-        onChoose={(cardId) => {
+        onChoose={(cardId, skippedPartIds = [], skippedEquipIds = []) => {
+          const skippedPartSet = new Set(skippedPartIds)
+          const skippedEquipSet = new Set(skippedEquipIds)
           // Collect shards
           if (totalShards > 0) {
             run.addShards(totalShards)
             const shardBonus = permanent.workshopUpgrades['sharp-eye'] ? Math.floor(totalShards * 0.2) : 0
             if (shardBonus > 0) run.addShards(shardBonus)
           }
-          // Auto-add part drops
+          // Auto-add part drops (unless skipped)
           for (const drop of partDrops) {
-            if (drop.type === 'part') {
+            if (drop.type === 'part' && !skippedPartSet.has(drop.partId)) {
               const partDef = ALL_PARTS[drop.partId]
               if (partDef) run.addPart(partDef)
             }
           }
-          // Split equipment drops: auto-equip empty slots, collect conflicts
+          // Split equipment drops: auto-equip empty slots, collect conflicts (unless skipped)
           const equipDrops = allDrops.filter(d => d.type === 'equipment')
           const conflicts: EquipmentDefinition[] = []
           for (const drop of equipDrops) {
             if (drop.type === 'equipment') {
+              if (skippedEquipSet.has(drop.equipmentId)) continue
               const equipDef = ALL_EQUIPMENT[drop.equipmentId]
               if (!equipDef) continue
               if (run.equipment[equipDef.slot] === null) {
@@ -367,20 +370,11 @@ export default function CombatScreen() {
             ...s,
             equipPity: anyEquipDropped ? 0 : s.equipPity + 1,
           }))
-          // Decrement carried part durability
-          if (permanent.carriedPart && permanent.carriedPart.durability > 0) {
-            const newDurability = permanent.carriedPart.durability - 1
-            permanent.updateCarriedPart({ durability: newDurability })
-            if (newDurability === 0) {
-              run.removePart(permanent.carriedPart.partId)
-            }
-          }
-
           // Post-reward: boss staging/victory, or return to map
           const finishReward = () => {
             const bossDefeated = combat.enemies.filter(e => e.isDefeated).some(e => ALL_ENEMIES[e.definitionId]?.isBoss)
             if (bossDefeated) {
-              if (run.sector < 3) {
+              if (run.sector < 2) {
                 // Non-final sector boss — go to staging area
                 useRunStore.setState((s) => {
                   if (s.map) {
@@ -389,6 +383,7 @@ export default function CombatScreen() {
                   }
                   s.combat = null
                 })
+                useRunStore.getState().saveRun()
                 navigate('/staging')
                 return
               }
@@ -433,6 +428,7 @@ export default function CombatScreen() {
               }
               s.combat = null
             })
+            useRunStore.getState().saveRun()
           }
 
           // If there are equipment conflicts, show comparison overlay(s) before finishing

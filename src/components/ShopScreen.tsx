@@ -4,9 +4,8 @@ import CardPicker from './CardPicker'
 import RunInfoOverlay from './RunInfoOverlay'
 import { SECTOR1_CARD_POOL, SECTOR2_CARD_POOL } from '../data/cards'
 import { PARTS, ALL_PARTS } from '../data/parts'
-import type { CardInstance, CarriedPart, BehavioralPartDefinition, EquipmentDefinition, BodySlot } from '../game/types'
+import type { CardInstance, BehavioralPartDefinition, EquipmentDefinition, BodySlot } from '../game/types'
 
-const REPAIR_COST = 50
 const RECYCLE_COST = 60
 
 interface Props {
@@ -19,8 +18,6 @@ interface Props {
   onBuyCard: (cardId: string, cost: number) => void
   onBuyPart: (partId: string, cost: number) => void
   onRecycle: (instanceId: string) => void
-  onRepair: () => void
-  carriedPart: CarriedPart | null
   onLeave: () => void
 }
 
@@ -35,7 +32,7 @@ const PART_COSTS: Record<string, number> = {
   rare: 90, uncommon: 65, common: 45,
 }
 
-export default function ShopScreen({ shards, sector, deck, ownedPartIds, parts, equipment, onBuyCard, onBuyPart, onRecycle, onRepair, carriedPart, onLeave }: Props) {
+export default function ShopScreen({ shards, sector, deck, ownedPartIds, parts, equipment, onBuyCard, onBuyPart, onRecycle, onLeave }: Props) {
   const [showRecyclePicker, setShowRecyclePicker] = useState(false)
   const [purchasedPartIds, setPurchasedPartIds] = useState<string[]>([])
   const [infoTab, setInfoTab] = useState<'deck' | 'equips' | null>(null)
@@ -48,9 +45,6 @@ export default function ShopScreen({ shards, sector, deck, ownedPartIds, parts, 
     return shuffle(available).slice(0, 2)
   }, [ownedPartIds])
 
-  const showRepair = carriedPart !== null && carriedPart.durability === 0 && carriedPart.repairsLeft > 0
-  const canAffordRepair = shards >= REPAIR_COST
-  const brokenPartDef = carriedPart ? ALL_PARTS[carriedPart.partId] : null
   return (
     <div style={{
       minHeight: '100vh',
@@ -152,45 +146,6 @@ export default function ShopScreen({ shards, sector, deck, ownedPartIds, parts, 
         </div>
       </div>
 
-      {/* Repair */}
-      {showRepair && brokenPartDef && (
-        <div>
-          <h3 style={{ color: '#aaa', fontSize: '12px', letterSpacing: '2px', marginBottom: '12px' }}>REPAIR</h3>
-          <div style={{
-            backgroundColor: '#1a1a1a',
-            border: `1px solid ${canAffordRepair ? '#e67e22' : '#333'}`,
-            borderRadius: '8px',
-            padding: '14px 20px',
-            minWidth: '240px',
-            textAlign: 'center',
-          }}>
-            <div style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '4px', color: '#e67e22' }}>
-              {brokenPartDef.name}
-              <span style={{ marginLeft: '8px', fontSize: '10px', color: '#e74c3c', letterSpacing: '1px' }}>[BROKEN]</span>
-            </div>
-            <div style={{ fontSize: '12px', color: '#888', marginBottom: '8px' }}>{brokenPartDef.description}</div>
-            <div style={{ fontSize: '11px', color: '#666', marginBottom: '10px' }}>
-              Repairs left: {carriedPart!.repairsLeft}
-            </div>
-            <button
-              onClick={() => canAffordRepair && onRepair()}
-              disabled={!canAffordRepair}
-              style={{
-                padding: '8px 24px',
-                backgroundColor: canAffordRepair ? '#e67e22' : '#2c3e50',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: canAffordRepair ? 'pointer' : 'not-allowed',
-                fontSize: '13px',
-                fontWeight: 'bold',
-              }}
-            >
-              Repair — {REPAIR_COST} shards
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Recycler */}
       <div>

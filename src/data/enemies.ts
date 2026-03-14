@@ -12,8 +12,7 @@ const wanderingDrone: EnemyDefinition = {
     { type: 'Block', value: 5 },
   ],
   dropPool: [
-    { type: 'shards', amount: 8, weight: 3 },
-    { type: 'card', ids: ['overcharge', 'spread-shot'], weight: 1 },
+    { type: 'shards', amount: 8, weight: 1 },
   ],
 }
 
@@ -42,8 +41,7 @@ const corrodedSentry: EnemyDefinition = {
     { type: 'Attack', value: 8 },
   ],
   dropPool: [
-    { type: 'shards', amount: 7, weight: 3 },
-    { type: 'card', ids: ['heat-vent', 'shield-bash'], weight: 1 },
+    { type: 'shards', amount: 7, weight: 1 },
   ],
 }
 
@@ -56,8 +54,7 @@ const fractureMite: EnemyDefinition = {
     { type: 'Attack', value: 3, hits: 2 },
   ],
   dropPool: [
-    { type: 'shards', amount: 5, weight: 4 },
-    { type: 'card', ids: ['coolant-flush', 'diagnostics'], weight: 1 },
+    { type: 'shards', amount: 5, weight: 1 },
   ],
 }
 
@@ -71,8 +68,7 @@ const ironCrawler: EnemyDefinition = {
     { type: 'Block', value: 6 },
   ],
   dropPool: [
-    { type: 'shards', amount: 12, weight: 2 },
-    { type: 'card', ids: ['overcharge', 'emergency-shield'], weight: 1 },
+    { type: 'shards', amount: 12, weight: 1 },
     { type: 'equipment', ids: ['piston-arm'], weight: 1 },
   ],
 }
@@ -87,8 +83,7 @@ const glitchNode: EnemyDefinition = {
     { type: 'Attack', value: 10 },
   ],
   dropPool: [
-    { type: 'shards', amount: 9, weight: 3 },
-    { type: 'card', ids: ['thermal-surge', 'echo-protocol'], weight: 1 },
+    { type: 'shards', amount: 9, weight: 1 },
   ],
 }
 
@@ -117,8 +112,7 @@ const hollowRepeater: EnemyDefinition = {
     { type: 'Block', value: 4 },
   ],
   dropPool: [
-    { type: 'shards', amount: 8, weight: 3 },
-    { type: 'card', ids: ['spread-shot', 'heat-vent'], weight: 1 },
+    { type: 'shards', amount: 8, weight: 1 },
     { type: 'equipment', ids: ['welding-torch'], weight: 1 },
   ],
 }
@@ -150,8 +144,7 @@ const echoConstruct: EnemyDefinition = {
     { type: 'Attack', value: 12 },
   ],
   dropPool: [
-    { type: 'shards', amount: 15, weight: 2 },
-    { type: 'card', ids: ['quick-scan', 'meltdown'], weight: 1 },
+    { type: 'shards', amount: 15, weight: 1 },
     { type: 'part', ids: ['momentum-core'], weight: 1 },
   ],
 }
@@ -189,7 +182,6 @@ const corruptedOverseer: EnemyDefinition = {
   dropPool: [
     { type: 'shards', amount: 30, weight: 1 },
     { type: 'part', ids: ['flux-capacitor', 'scrap-recycler'], weight: 2 },
-    { type: 'card', ids: ['deep-freeze', 'thermal-surge'], weight: 1 },
   ],
   isElite: true,
 }
@@ -248,8 +240,7 @@ const thermalLeech: EnemyDefinition = {
     { type: 'Attack', value: 10 },
   ],
   dropPool: [
-    { type: 'shards', amount: 18, weight: 3 },
-    { type: 'card', ids: ['thermal-equilibrium', 'glacier-lance'], weight: 1 },
+    { type: 'shards', amount: 18, weight: 1 },
   ],
 }
 
@@ -263,8 +254,7 @@ const wireJammer: EnemyDefinition = {
     { type: 'Block', value: 8 },
   ],
   dropPool: [
-    { type: 'shards', amount: 16, weight: 3 },
-    { type: 'card', ids: ['reroute', 'failsafe-protocol'], weight: 1 },
+    { type: 'shards', amount: 16, weight: 1 },
   ],
 }
 
@@ -295,8 +285,7 @@ const feedbackLoop: EnemyDefinition = {
     { type: 'Attack', value: 16 },
   ],
   dropPool: [
-    { type: 'shards', amount: 15, weight: 3 },
-    { type: 'card', ids: ['flux-spike', 'controlled-burn'], weight: 1 },
+    { type: 'shards', amount: 15, weight: 1 },
   ],
 }
 
@@ -310,8 +299,7 @@ const phaseDrone: EnemyDefinition = {
     { type: 'Attack', value: 9 },
   ],
   dropPool: [
-    { type: 'shards', amount: 17, weight: 3 },
-    { type: 'card', ids: ['salvage-burst', 'failsafe-protocol'], weight: 1 },
+    { type: 'shards', amount: 17, weight: 1 },
     { type: 'equipment', ids: ['thermal-imager', 'predictive-array'], weight: 1 },
   ],
 }
@@ -326,8 +314,7 @@ const furnaceTick: EnemyDefinition = {
     { type: 'Attack', value: 6 },
   ],
   dropPool: [
-    { type: 'shards', amount: 8, weight: 4 },
-    { type: 'card', ids: ['thermal-equilibrium', 'armor-protocol'], weight: 1 },
+    { type: 'shards', amount: 8, weight: 1 },
   ],
 }
 
@@ -341,8 +328,7 @@ const staticFrame: EnemyDefinition = {
     { type: 'AttackDebuff', value: 9, status: 'Weak', statusStacks: 1 },
   ],
   dropPool: [
-    { type: 'shards', amount: 20, weight: 2 },
-    { type: 'card', ids: ['cascade', 'resonance'], weight: 1 },
+    { type: 'shards', amount: 20, weight: 1 },
     { type: 'part', ids: ['empty-chamber'], weight: 1 },
   ],
 }
@@ -357,8 +343,7 @@ const conduitSpider: EnemyDefinition = {
     { type: 'Debuff', value: 2, status: 'Vulnerable' },
   ],
   dropPool: [
-    { type: 'shards', amount: 17, weight: 3 },
-    { type: 'card', ids: ['reroute', 'glacier-lance'], weight: 1 },
+    { type: 'shards', amount: 17, weight: 1 },
     { type: 'equipment', ids: ['coolant-injector', 'stabilizer-treads'], weight: 1 },
   ],
 }
@@ -397,7 +382,6 @@ const lockdownWarden: EnemyDefinition = {
   dropPool: [
     { type: 'shards', amount: 50, weight: 1 },
     { type: 'part', ids: ['salvage-protocol', 'empty-chamber'], weight: 2 },
-    { type: 'card', ids: ['failsafe-protocol', 'reroute'], weight: 1 },
   ],
   isElite: true,
 }

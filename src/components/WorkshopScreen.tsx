@@ -2,13 +2,13 @@ import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { usePermanentStore } from '../store/permanentStore'
 import { GRACE_LINES } from '../data/narrative'
-import { encodeSaveCode, decodeSaveCode } from '../game/persistence'
+import { encodeSaveCode, decodeSaveCode, loadRunState } from '../game/persistence'
+import { useRunStore } from '../store/runStore'
 import { ALL_PARTS } from '../data/parts'
+import type { RunState } from '../game/types'
 import RunEndOverlay from './RunEndOverlay'
 import CarrySelectOverlay from './CarrySelectOverlay'
 import type { PermanentState, WorkshopUpgradeId, BehavioralPartDefinition } from '../game/types'
-
-const WORKSHOP_REPAIR_COST = 50
 
 const COMPANIONS = [
   {
@@ -48,6 +48,13 @@ export default function WorkshopScreen() {
   const runEndParts: BehavioralPartDefinition[] = runEndState?.parts ?? []
   const hasPartsToCarry = runEndParts.length > 0 || permanent.carriedPart !== null
   const [showCarrySelect, setShowCarrySelect] = useState(() => !!(runEndState?.runEnd && hasPartsToCarry))
+  const restoreRun = useRunStore((s) => s.restoreRun)
+  const [hasSavedRun] = useState(() => {
+    // Don't offer continue if we just ended a run
+    if (runEndState?.runEnd) return false
+    const saved = loadRunState<RunState>()
+    return !!(saved && saved.active && saved.map)
+  })
 
 
   return (
@@ -76,15 +83,7 @@ export default function WorkshopScreen() {
           currentCarry={permanent.carriedPart}
           onSelect={(partId) => {
             if (partId) {
-              const isExistingCarry = permanent.carriedPart?.partId === partId
-              if (!isExistingCarry) {
-                // New part — fresh durability
-                permanent.setCarriedPart({ partId, durability: 3, maxDurability: 3, repairsLeft: 2 })
-              }
-              // If re-selecting current carry: keep as-is
-            } else {
-              // "Carry nothing" — clear if they chose to abandon
-              // (no-op: we don't clear unless they explicitly had something and chose to drop it)
+              permanent.setCarriedPart(partId)
             }
             permanent.save()
             setShowCarrySelect(false)
@@ -147,23 +146,46 @@ export default function WorkshopScreen() {
         </div>
       </div>
 
-      {/* Start Run */}
-      <button
-        onClick={() => navigate('/fragment')}
-        style={{
-          padding: '16px 64px',
-          backgroundColor: '#a29bfe',
-          border: 'none',
-          color: '#0d0d1a',
-          borderRadius: '8px',
-          cursor: 'pointer',
-          fontSize: '16px',
-          fontWeight: 'bold',
-          letterSpacing: '2px',
-        }}
-      >
-        {permanent.nameEverDiscovered ? 'STILL GOING' : 'BEGIN'}
-      </button>
+      {/* Continue / Start Run */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
+        {hasSavedRun && (
+          <button
+            onClick={() => {
+              const ok = restoreRun()
+              if (ok) navigate('/run')
+            }}
+            style={{
+              padding: '16px 64px',
+              backgroundColor: '#27ae60',
+              border: 'none',
+              color: '#fff',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              letterSpacing: '2px',
+            }}
+          >
+            CONTINUE RUN
+          </button>
+        )}
+        <button
+          onClick={() => navigate('/fragment')}
+          style={{
+            padding: hasSavedRun ? '10px 48px' : '16px 64px',
+            backgroundColor: hasSavedRun ? 'transparent' : '#a29bfe',
+            border: hasSavedRun ? '1px solid #a29bfe' : 'none',
+            color: hasSavedRun ? '#a29bfe' : '#0d0d1a',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: hasSavedRun ? '13px' : '16px',
+            fontWeight: 'bold',
+            letterSpacing: '2px',
+          }}
+        >
+          {permanent.nameEverDiscovered ? (hasSavedRun ? 'NEW RUN' : 'STILL GOING') : 'BEGIN'}
+        </button>
+      </div>
 
       {/* Workshop Upgrades */}
       <div style={{ width: '100%', maxWidth: '700px' }}>
@@ -285,64 +307,23 @@ export default function WorkshopScreen() {
 
       {/* Carried Part */}
       {permanent.carriedPart && (() => {
-        const cp = permanent.carriedPart!
-        const partDef = ALL_PARTS[cp.partId]
+        const partDef = ALL_PARTS[permanent.carriedPart]
         if (!partDef) return null
-        const isBroken = cp.durability === 0
-        const canRepair = isBroken && cp.repairsLeft > 0
-        const canAffordRepair = permanent.totalShards >= WORKSHOP_REPAIR_COST
-        const borderColor = isBroken ? '#e67e22' : '#27ae60'
         return (
           <div style={{ width: '100%', maxWidth: '700px' }}>
             <h3 style={{ color: '#aaa', fontSize: '11px', letterSpacing: '3px', marginBottom: '16px', textAlign: 'center' }}>
               CARRIED MOD
             </h3>
             <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
               backgroundColor: '#16213e',
               borderRadius: '8px',
               padding: '12px 16px',
-              border: `1px solid ${borderColor}`,
+              border: '1px solid #27ae60',
             }}>
-              <div>
-                <div style={{ fontSize: '14px', fontWeight: 'bold', color: isBroken ? '#e67e22' : '#e8e8e8' }}>
-                  {partDef.name}
-                  {isBroken && (
-                    <span style={{ marginLeft: '8px', fontSize: '10px', color: '#e74c3c', letterSpacing: '1px' }}>[BROKEN]</span>
-                  )}
-                </div>
-                <div style={{ fontSize: '12px', color: '#888', marginTop: '2px' }}>{partDef.description}</div>
-                <div style={{ fontSize: '10px', color: '#666', marginTop: '4px' }}>
-                  Durability: {cp.durability}/{cp.maxDurability}
-                  {cp.repairsLeft > 0 && <span style={{ marginLeft: '8px' }}>Repairs left: {cp.repairsLeft}</span>}
-                </div>
+              <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#e8e8e8' }}>
+                {partDef.name}
               </div>
-              {canRepair && (
-                <button
-                  onClick={() => {
-                    if (!canAffordRepair) return
-                    permanent.spendShards(WORKSHOP_REPAIR_COST)
-                    permanent.updateCarriedPart({ durability: cp.maxDurability, repairsLeft: cp.repairsLeft - 1 })
-                    permanent.save()
-                  }}
-                  disabled={!canAffordRepair}
-                  style={{
-                    padding: '8px 16px',
-                    backgroundColor: canAffordRepair ? '#e67e22' : '#2c3e50',
-                    border: 'none',
-                    borderRadius: '6px',
-                    color: canAffordRepair ? '#fff' : '#555',
-                    fontWeight: 'bold',
-                    cursor: canAffordRepair ? 'pointer' : 'not-allowed',
-                    fontSize: '12px',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  Repair — {WORKSHOP_REPAIR_COST} shards
-                </button>
-              )}
+              <div style={{ fontSize: '12px', color: '#888', marginTop: '2px' }}>{partDef.description}</div>
             </div>
           </div>
         )

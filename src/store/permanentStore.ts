@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
-import type { PermanentState, WorkshopUpgradeId, RunHistoryEntry, CarriedPart } from '../game/types'
+import type { PermanentState, WorkshopUpgradeId, RunHistoryEntry } from '../game/types'
 import { savePermanent, loadPermanent } from '../game/persistence'
 
 const PERMANENT_KEY = 'permanent-state'
@@ -36,8 +36,7 @@ interface PermanentActions {
   collectFragments: () => void
   tickFragments: () => void
   spendFragments: (amount: number) => boolean
-  setCarriedPart: (part: CarriedPart) => void
-  updateCarriedPart: (updates: Partial<CarriedPart>) => void
+  setCarriedPart: (partId: string) => void
   clearCarriedPart: () => void
   importState: (state: PermanentState) => Promise<void>
 }
@@ -52,6 +51,10 @@ export const usePermanentStore = create<PermanentState & PermanentActions>()(
 
       set((state) => {
         Object.assign(state, saved)
+        // Migrate legacy carriedPart objects to plain string
+        if (state.carriedPart && typeof state.carriedPart === 'object') {
+          state.carriedPart = (state.carriedPart as any).partId ?? null
+        }
         // Calculate offline fragment generation.
         // Use the localStorage timestamp if it's newer than what IndexedDB has —
         // the async IndexedDB write on beforeunload may not have completed, but
@@ -81,7 +84,7 @@ export const usePermanentStore = create<PermanentState & PermanentActions>()(
         runHistory: state.runHistory.slice(-20),
         companionsUnlocked: [...state.companionsUnlocked],
         nameEverDiscovered: state.nameEverDiscovered,
-        carriedPart: state.carriedPart ? { ...state.carriedPart } : null,
+        carriedPart: state.carriedPart,
       }
       await savePermanent(PERMANENT_KEY, toSave)
     },
@@ -162,14 +165,9 @@ export const usePermanentStore = create<PermanentState & PermanentActions>()(
       return true
     },
 
-    setCarriedPart: (part) =>
+    setCarriedPart: (partId) =>
       set((state) => {
-        state.carriedPart = { ...part }
-      }),
-
-    updateCarriedPart: (updates) =>
-      set((state) => {
-        if (state.carriedPart) Object.assign(state.carriedPart, updates)
+        state.carriedPart = partId
       }),
 
     clearCarriedPart: () =>
@@ -191,7 +189,7 @@ export const usePermanentStore = create<PermanentState & PermanentActions>()(
         runHistory: s.runHistory.slice(-20),
         companionsUnlocked: [...s.companionsUnlocked],
         nameEverDiscovered: s.nameEverDiscovered,
-        carriedPart: s.carriedPart ? { ...s.carriedPart } : null,
+        carriedPart: s.carriedPart,
       }
       await savePermanent(PERMANENT_KEY, toSave)
     },

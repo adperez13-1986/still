@@ -29,6 +29,7 @@ import {
 import { ALL_CARDS } from '../data/cards'
 import { ALL_ENEMIES } from '../data/enemies'
 import { generateGridMaze } from '../game/mapGen'
+import { saveRunState, loadRunState, clearRunState } from '../game/persistence'
 
 interface RunActions {
   // Run lifecycle
@@ -79,6 +80,10 @@ interface RunActions {
 
   // Companions
   acquireCompanion: (id: string) => void
+
+  // Persistence
+  saveRun: () => void
+  restoreRun: () => boolean
 }
 
 const emptyRunState: RunState = {
@@ -117,6 +122,8 @@ export const useRunStore = create<RunState & RunActions>()(
     endRun: () =>
       set((state) => {
         Object.assign(state, emptyRunState)
+        clearRunState()
+        try { sessionStorage.removeItem('still-run-bonuses-consumed') } catch { /* noop */ }
       }),
 
     takeDamage: (amount) =>
@@ -473,5 +480,44 @@ export const useRunStore = create<RunState & RunActions>()(
           state.companionsAcquired.push(id)
         }
       }),
+
+    saveRun: () => {
+      const state = get()
+      if (!state.active) return
+      // Save with combat nulled out — we always restore to the map
+      const toSave: RunState = {
+        active: state.active,
+        sector: state.sector,
+        map: state.map,
+        health: state.health,
+        maxHealth: state.maxHealth,
+        drawCount: state.drawCount,
+        deck: state.deck,
+        parts: state.parts,
+        equipment: state.equipment,
+        shards: state.shards,
+        combat: null,
+        nameDiscovered: state.nameDiscovered,
+        equipPity: state.equipPity,
+        companionsAcquired: state.companionsAcquired,
+        combatsCleared: state.combatsCleared,
+        lastCollapseMessage: state.lastCollapseMessage,
+      }
+      saveRunState(toSave)
+    },
+
+    restoreRun: () => {
+      try {
+        const saved = loadRunState<RunState>()
+        if (!saved || !saved.active || !saved.map) return false
+        set((state) => {
+          Object.assign(state, { ...saved, combat: null })
+        })
+        return true
+      } catch {
+        clearRunState()
+        return false
+      }
+    },
   }))
 )

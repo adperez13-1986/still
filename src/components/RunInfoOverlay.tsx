@@ -16,9 +16,7 @@ interface Props {
 
 export default function RunInfoOverlay({ tab, deck, parts, equipment, onClose, onTabChange }: Props) {
   const permanent = usePermanentStore()
-  const cp = permanent.carriedPart
-  const carriedPartDef = cp ? (ALL_PARTS[cp.partId] ?? null) : null
-  const isBroken = cp ? cp.durability === 0 : false
+  const carriedPartDef = permanent.carriedPart ? (ALL_PARTS[permanent.carriedPart] ?? null) : null
 
   const resolveDef = (instance: CardInstance) => {
     const base = ALL_CARDS[instance.definitionId]
@@ -176,30 +174,25 @@ export default function RunInfoOverlay({ tab, deck, parts, equipment, onClose, o
               </div>
 
               {/* Carried part */}
-              {cp && carriedPartDef && (
+              {carriedPartDef && (
                 <div>
                   <div style={{ color: '#888', fontSize: '11px', letterSpacing: '2px', marginBottom: '12px' }}>
                     CARRIED MOD
                   </div>
                   <div style={{
-                    backgroundColor: isBroken ? '#1a1a1a' : '#16213e',
-                    border: `1px solid ${isBroken ? '#555' : '#e67e22'}`,
+                    backgroundColor: '#16213e',
+                    border: '1px solid #e67e22',
                     borderRadius: '6px',
                     padding: '10px 14px',
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    opacity: isBroken ? 0.6 : 1,
                   }}>
                     <div>
-                      <div style={{ fontWeight: 'bold', fontSize: '13px', color: isBroken ? '#888' : '#e67e22' }}>
+                      <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#e67e22' }}>
                         {carriedPartDef.name}
-                        {isBroken && <span style={{ marginLeft: '8px', fontSize: '10px', color: '#e74c3c', letterSpacing: '1px' }}>[BROKEN]</span>}
                       </div>
                       <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>{carriedPartDef.description}</div>
-                      <div style={{ fontSize: '10px', color: '#666', marginTop: '4px' }}>
-                        {isBroken ? `Repairs left: ${cp.repairsLeft}` : `Durability: ${cp.durability}/${cp.maxDurability}`}
-                      </div>
                     </div>
                     <div style={{ fontSize: '10px', color: '#e67e22', letterSpacing: '1px', marginLeft: '12px', whiteSpace: 'nowrap' }}>
                       CARRY

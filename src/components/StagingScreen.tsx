@@ -402,6 +402,7 @@ export default function StagingScreen() {
       <button
         onClick={() => {
           run.advanceSector()
+          run.saveRun()
           navigate('/run')
         }}
         style={{

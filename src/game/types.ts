@@ -295,12 +295,9 @@ export interface RunState {
 
 // ─── Carried Part ─────────────────────────────────────────────────────────────
 
-export interface CarriedPart {
-  partId: string
-  durability: number
-  maxDurability: number
-  repairsLeft: number
-}
+// Just a part ID string — always active, never breaks.
+// Legacy saves may have { partId, durability, ... } objects; the store migrates on load.
+export type CarriedPart = string
 
 // ─── Fragment Bonuses ─────────────────────────────────────────────────────────
 

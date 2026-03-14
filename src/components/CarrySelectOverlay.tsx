@@ -9,10 +9,10 @@ interface Props {
 }
 
 export default function CarrySelectOverlay({ runParts, currentCarry, onSelect, onDismiss }: Props) {
-  const currentDef = currentCarry ? ALL_PARTS[currentCarry.partId] : null
+  const currentDef = currentCarry ? ALL_PARTS[currentCarry] : null
 
-  // Parts available to select: run parts (excluding the current carried part if intact)
-  const selectableParts = runParts.filter((p) => p.id !== currentCarry?.partId)
+  // Parts available to select: run parts (excluding the current carried part)
+  const selectableParts = runParts.filter((p) => p.id !== currentCarry)
 
   const hasAnything = selectableParts.length > 0 || currentCarry !== null
 
@@ -42,7 +42,7 @@ export default function CarrySelectOverlay({ runParts, currentCarry, onSelect, o
           CARRY FORWARD
         </h2>
         <p style={{ color: '#666', fontSize: '13px', marginBottom: '28px', lineHeight: '1.6' }}>
-          Choose one mod to carry into the next run. It will wear with use, but it is yours to keep.
+          Choose one mod to carry into the next run. It is yours to keep until you find something better.
         </p>
 
         {!hasAnything && (
@@ -52,10 +52,10 @@ export default function CarrySelectOverlay({ runParts, currentCarry, onSelect, o
         )}
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
-          {/* Current carry (if exists and broken — not in runParts) */}
-          {currentCarry && currentDef && !selectableParts.some((p) => p.id === currentCarry.partId) && (
+          {/* Current carry (if exists and not in runParts) */}
+          {currentCarry && currentDef && !selectableParts.some((p) => p.id === currentCarry) && (
             <button
-              onClick={() => onSelect(currentCarry.partId)}
+              onClick={() => onSelect(currentCarry)}
               style={{
                 backgroundColor: '#1a1a1a',
                 border: '1px solid #e67e22',
@@ -70,16 +70,8 @@ export default function CarrySelectOverlay({ runParts, currentCarry, onSelect, o
                 <div>
                   <div style={{ fontWeight: 'bold', fontSize: '14px', color: '#e67e22', marginBottom: '4px' }}>
                     {currentDef.name}
-                    {currentCarry.durability === 0 && (
-                      <span style={{ marginLeft: '8px', fontSize: '10px', color: '#e74c3c', letterSpacing: '1px' }}>[BROKEN]</span>
-                    )}
                   </div>
                   <div style={{ fontSize: '12px', color: '#888' }}>{currentDef.description}</div>
-                  <div style={{ fontSize: '10px', color: '#666', marginTop: '4px' }}>
-                    {currentCarry.durability > 0
-                      ? `Durability: ${currentCarry.durability}/${currentCarry.maxDurability} · Repairs left: ${currentCarry.repairsLeft}`
-                      : `Repairs left: ${currentCarry.repairsLeft}`}
-                  </div>
                 </div>
                 <div style={{ fontSize: '10px', color: '#e67e22', letterSpacing: '1px', marginLeft: '16px', whiteSpace: 'nowrap' }}>
                   CURRENT CARRY

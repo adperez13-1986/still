@@ -6,7 +6,7 @@ import type { ResolvedDrop } from '../game/drops'
 
 interface Props {
   drops: ResolvedDrop[]
-  onChoose: (cardId?: string) => void
+  onChoose: (cardId?: string, skippedPartIds?: string[], skippedEquipIds?: string[]) => void
 }
 
 function useLongPress(onLongPress: () => void, ms = 500) {
@@ -47,8 +47,13 @@ interface DetailPopover {
 export default function RewardScreen({ drops, onChoose }: Props) {
   const cardDrops = drops.filter((d) => d.type === 'card')
   const shardDrop = drops.find((d) => d.type === 'shards')
-  const partDrops = drops.filter((d) => d.type === 'part')
-  const equipDrops = drops.filter((d) => d.type === 'equipment')
+  const allPartDrops = drops.filter((d) => d.type === 'part')
+  const allEquipDrops = drops.filter((d) => d.type === 'equipment')
+  // Parts/equipment are opt-in: start unclaimed, player must accept
+  const [acceptedParts, setAcceptedParts] = useState<Set<string>>(new Set())
+  const [acceptedEquips, setAcceptedEquips] = useState<Set<string>>(new Set())
+  const skippedParts = new Set(allPartDrops.filter(d => d.type === 'part' && !acceptedParts.has(d.partId)).map(d => d.type === 'part' ? d.partId : ''))
+  const skippedEquips = new Set(allEquipDrops.filter(d => d.type === 'equipment' && !acceptedEquips.has(d.equipmentId)).map(d => d.type === 'equipment' ? d.equipmentId : ''))
   const [detail, setDetail] = useState<DetailPopover | null>(null)
 
   return (
@@ -80,38 +85,58 @@ export default function RewardScreen({ drops, onChoose }: Props) {
             +{shardDrop.amount} shards
           </span>
         )}
-        {partDrops.map((d) => {
+        {allPartDrops.map((d) => {
           if (d.type !== 'part') return null
           const part = ALL_PARTS[d.partId]
           if (!part) return null
+          const isAccepted = acceptedParts.has(d.partId)
           return (
             <DropBadge
               key={d.partId}
-              label={`Found: ${part.name}`}
-              color="#2ecc71"
+              label={isAccepted ? `Taking: ${part.name}` : `Found: ${part.name}`}
+              color={isAccepted ? '#2ecc71' : '#888'}
               onLongPress={() => setDetail({
                 name: part.name,
                 description: part.description,
                 color: '#2ecc71',
               })}
+              onToggle={() => {
+                setAcceptedParts(prev => {
+                  const next = new Set(prev)
+                  if (next.has(d.partId)) next.delete(d.partId)
+                  else next.add(d.partId)
+                  return next
+                })
+              }}
+              accepted={isAccepted}
             />
           )
         })}
-        {equipDrops.map((d) => {
+        {allEquipDrops.map((d) => {
           if (d.type !== 'equipment') return null
           const equip = ALL_EQUIPMENT[d.equipmentId]
           if (!equip) return null
+          const isAccepted = acceptedEquips.has(d.equipmentId)
           return (
             <DropBadge
               key={d.equipmentId}
-              label={`Found: ${equip.name}`}
-              color="#3498db"
+              label={isAccepted ? `Taking: ${equip.name}` : `Found: ${equip.name}`}
+              color={isAccepted ? '#3498db' : '#888'}
               onLongPress={() => setDetail({
                 name: equip.name,
                 description: equip.description,
                 slot: equip.slot,
                 color: '#3498db',
               })}
+              onToggle={() => {
+                setAcceptedEquips(prev => {
+                  const next = new Set(prev)
+                  if (next.has(d.equipmentId)) next.delete(d.equipmentId)
+                  else next.add(d.equipmentId)
+                  return next
+                })
+              }}
+              accepted={isAccepted}
             />
           )
         })}
@@ -187,14 +212,14 @@ export default function RewardScreen({ drops, onChoose }: Props) {
                 <CardDisplay
                   key={drop.cardId}
                   card={def}
-                  onClick={() => onChoose(drop.cardId)}
+                  onClick={() => onChoose(drop.cardId, [...skippedParts], [...skippedEquips])}
                 />
               )
             })}
           </div>
 
           <button
-            onClick={() => onChoose(undefined)}
+            onClick={() => onChoose(undefined, [...skippedParts], [...skippedEquips])}
             style={{
               padding: '10px 32px',
               backgroundColor: 'transparent',
@@ -210,7 +235,7 @@ export default function RewardScreen({ drops, onChoose }: Props) {
         </>
       ) : (
         <button
-          onClick={() => onChoose(undefined)}
+          onClick={() => onChoose(undefined, [...skippedParts], [...skippedEquips])}
           style={{
             padding: '12px 48px',
             backgroundColor: '#16213e',
@@ -230,13 +255,24 @@ export default function RewardScreen({ drops, onChoose }: Props) {
   )
 }
 
-function DropBadge({ label, color, onLongPress }: { label: string; color: string; onLongPress: () => void }) {
+function DropBadge({ label, color, onLongPress, onToggle, accepted }: {
+  label: string
+  color: string
+  onLongPress: () => void
+  onToggle?: () => void
+  accepted?: boolean
+}) {
   const { didFire, ...lp } = useLongPress(onLongPress)
 
   return (
     <span
-      {...lp}
+      onClick={() => {
+        if (!didFire() && onToggle) onToggle()
+      }}
       style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '6px',
         padding: '4px 12px',
         backgroundColor: `${color}15`,
         border: `1px solid ${color}`,
@@ -244,13 +280,18 @@ function DropBadge({ label, color, onLongPress }: { label: string; color: string
         color,
         fontSize: '13px',
         fontWeight: 'bold',
-        cursor: 'pointer',
         userSelect: 'none',
         WebkitUserSelect: 'none',
+        cursor: onToggle ? 'pointer' : 'default',
       }}
+      {...lp}
     >
-      {label}
-      <span style={{ fontSize: '10px', color: '#888', marginLeft: '6px' }}>hold for details</span>
+      <span>
+        {label}
+        <span style={{ fontSize: '10px', color: '#888', marginLeft: '6px' }}>
+          {accepted ? 'tap to skip' : 'tap to take · hold for details'}
+        </span>
+      </span>
     </span>
   )
 }
