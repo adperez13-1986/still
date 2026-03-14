@@ -326,7 +326,7 @@ const thermalSurge: ModifierCardDefinition = {
   id: 'thermal-surge',
   name: 'Thermal Surge',
   description: 'Requires Warm+. Gain 2 Strength.',
-  heatCost: 0,
+  heatCost: 2,
   category: {
     type: 'system',
     modifier: 'Conditional',
@@ -338,7 +338,7 @@ const thermalSurge: ModifierCardDefinition = {
     id: 'thermal-surge',
     name: 'Thermal Surge+',
     description: 'Requires Warm+. Gain 3 Strength.',
-    heatCost: 0,
+    heatCost: 2,
     category: {
       type: 'system',
       modifier: 'Conditional',
@@ -625,7 +625,7 @@ const overclock: ModifierCardDefinition = {
   id: 'overclock',
   name: 'Overclock',
   description: 'Gain 1 Strength. If a threshold was crossed this turn: gain 2 instead.',
-  heatCost: 2,
+  heatCost: 1,
   category: {
     type: 'system',
     modifier: 'Conditional',
@@ -636,7 +636,7 @@ const overclock: ModifierCardDefinition = {
     id: 'overclock',
     name: 'Overclock+',
     description: 'Gain 2 Strength. If a threshold was crossed this turn: gain 3 instead.',
-    heatCost: 2,
+    heatCost: 1,
     category: {
       type: 'system',
       modifier: 'Conditional',

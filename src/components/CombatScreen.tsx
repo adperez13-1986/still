@@ -328,6 +328,7 @@ export default function CombatScreen() {
     const partDrops = allDrops.filter(d => d.type === 'part')
 
     return (
+      <>
       <RewardScreen
         drops={allDrops}
         onChoose={(cardId, skippedPartIds = [], skippedEquipIds = []) => {
@@ -371,7 +372,7 @@ export default function CombatScreen() {
             equipPity: anyEquipDropped ? 0 : s.equipPity + 1,
           }))
           // Post-reward: boss staging/victory, or return to map
-          const finishReward = () => {
+          const finishReward = async () => {
             const bossDefeated = combat.enemies.filter(e => e.isDefeated).some(e => ALL_ENEMIES[e.definitionId]?.isBoss)
             if (bossDefeated) {
               if (run.sector < 2) {
@@ -398,16 +399,26 @@ export default function CombatScreen() {
                   message: 'Cleared the sector.',
                   notable: run.parts.map(p => p.name),
                 })
-                permanent.save()
+                // Archive new parts from this run
+                for (const part of run.parts) {
+                  const partSector = (run.carriedPartSector && part.id === permanent.selectedArchivePart) ? run.carriedPartSector : run.sector as 1 | 2
+                  permanent.addToArchive(part.id, partSector)
+                }
+                // Trigger cooldown on carried part (if it was active — sector was reached)
+                if (permanent.selectedArchivePart && run.carriedPartSector && run.carriedPartSector <= run.sector) {
+                  permanent.triggerCooldown(permanent.selectedArchivePart)
+                }
+                permanent.decrementAllCooldowns()
+                await permanent.save()
               }
+              const endParts = [...run.parts]
               run.endRun()
               navigate('/', {
                 state: {
                   runEnd: true,
                   outcome: 'victory',
                   message: 'Cleared the sector.',
-                  parts: run.parts,
-                  shards: run.shards,
+                  parts: endParts,
                 },
               })
               return
@@ -440,6 +451,57 @@ export default function CombatScreen() {
           }
         }}
       />
+      {/* Info buttons on reward screen */}
+      <div style={{
+        position: 'fixed',
+        bottom: '20px',
+        right: '20px',
+        display: 'flex',
+        gap: '8px',
+        zIndex: 50,
+      }}>
+        <button
+          onClick={() => setInfoTab('deck')}
+          style={{
+            padding: '8px 16px',
+            backgroundColor: '#16213e',
+            border: '1px solid #a29bfe',
+            borderRadius: '6px',
+            color: '#a29bfe',
+            fontSize: '12px',
+            cursor: 'pointer',
+            letterSpacing: '1px',
+          }}
+        >
+          Deck ({run.deck.length})
+        </button>
+        <button
+          onClick={() => setInfoTab('equips')}
+          style={{
+            padding: '8px 16px',
+            backgroundColor: '#16213e',
+            border: '1px solid #74b9ff',
+            borderRadius: '6px',
+            color: '#74b9ff',
+            fontSize: '12px',
+            cursor: 'pointer',
+            letterSpacing: '1px',
+          }}
+        >
+          Equips
+        </button>
+      </div>
+      {infoTab && (
+        <RunInfoOverlay
+          tab={infoTab}
+          deck={run.deck}
+          parts={run.parts}
+          equipment={run.equipment}
+          onClose={() => setInfoTab(null)}
+          onTabChange={setInfoTab}
+        />
+      )}
+      </>
     )
   }
 
@@ -461,7 +523,7 @@ export default function CombatScreen() {
           The maze continues without you.
         </p>
         <button
-          onClick={() => {
+          onClick={async () => {
             if (!run.isDebug) {
               // Transfer shards to permanent store
               permanent.addShards(run.shards)
@@ -474,16 +536,22 @@ export default function CombatScreen() {
                 message: 'Fell in combat.',
                 notable: run.parts.map(p => p.name),
               })
-              permanent.save()
+              // Archive new parts from this run (no cooldown on defeat)
+              for (const part of run.parts) {
+                const partSector = (run.carriedPartSector && part.id === permanent.selectedArchivePart) ? run.carriedPartSector : run.sector as 1 | 2
+                permanent.addToArchive(part.id, partSector)
+              }
+              permanent.decrementAllCooldowns()
+              await permanent.save()
             }
+            const endParts = [...run.parts]
             run.endRun()
             navigate('/', {
               state: {
                 runEnd: true,
                 outcome: 'defeat',
                 message: 'Fell in combat.',
-                parts: run.parts,
-                shards: run.shards,
+                parts: endParts,
               },
             })
           }}

@@ -1,27 +1,22 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
-import type { PermanentState, WorkshopUpgradeId, RunHistoryEntry } from '../game/types'
+import type { PermanentState, WorkshopUpgradeId, RunHistoryEntry, PartArchiveEntry } from '../game/types'
 import { savePermanent, loadPermanent } from '../game/persistence'
 
 const PERMANENT_KEY = 'permanent-state'
 
-const FRAGMENT_RATE_PER_HOUR = 10
-const MAX_FRAGMENT_HOURS = 8
-
 export const defaultPermanent: PermanentState = {
   totalShards: 0,
-  fragmentsAccumulated: 0,
-  lastSeenTimestamp: Date.now(),
   workshopUpgrades: {
     'practiced-routine': false,
     'sharp-eye': false,
-    'fragment-cap': false,
     'starting-slot': false,
   },
   runHistory: [],
   companionsUnlocked: [],
   nameEverDiscovered: false,
-  carriedPart: null,
+  partArchive: {},
+  selectedArchivePart: null,
 }
 
 interface PermanentActions {
@@ -33,11 +28,10 @@ interface PermanentActions {
   addRunHistory: (entry: RunHistoryEntry) => void
   unlockCompanion: (id: string) => void
   setNameDiscovered: () => void
-  collectFragments: () => void
-  tickFragments: () => void
-  spendFragments: (amount: number) => boolean
-  setCarriedPart: (partId: string) => void
-  clearCarriedPart: () => void
+  addToArchive: (partId: string, sector: 1 | 2) => void
+  selectArchivePart: (partId: string | null) => void
+  triggerCooldown: (partId: string) => void
+  decrementAllCooldowns: () => void
   importState: (state: PermanentState) => Promise<void>
 }
 
@@ -46,31 +40,35 @@ export const usePermanentStore = create<PermanentState & PermanentActions>()(
     ...defaultPermanent,
 
     load: async () => {
-      const saved = await loadPermanent<PermanentState>(PERMANENT_KEY)
+      const saved = await loadPermanent<any>(PERMANENT_KEY)
       if (!saved) return
 
       set((state) => {
-        Object.assign(state, saved)
-        // Migrate legacy carriedPart objects to plain string
-        if (state.carriedPart && typeof state.carriedPart === 'object') {
-          state.carriedPart = (state.carriedPart as any).partId ?? null
+        // Migrate: remove fragment fields, add archive fields
+        const { fragmentsAccumulated, lastSeenTimestamp, carriedPart, ...rest } = saved
+        Object.assign(state, rest)
+
+        // Ensure archive exists
+        if (!state.partArchive) state.partArchive = {}
+        if (state.selectedArchivePart === undefined) state.selectedArchivePart = null
+
+        // Migrate legacy carriedPart → first archive entry
+        if (carriedPart) {
+          const partId = typeof carriedPart === 'object' ? (carriedPart as any).partId : carriedPart
+          if (partId && !state.partArchive[partId]) {
+            state.partArchive[partId] = { partId, sector: 2, cooldownLeft: 0 }
+            state.selectedArchivePart = partId
+          }
         }
-        // Calculate offline fragment generation.
-        // Use the localStorage timestamp if it's newer than what IndexedDB has —
-        // the async IndexedDB write on beforeunload may not have completed, but
-        // the synchronous localStorage write always does.
-        const now = Date.now()
-        const lsTimestamp = Number(localStorage.getItem('still-last-seen') ?? 0)
-        const lastSeen = Math.max(saved.lastSeenTimestamp, lsTimestamp)
-        const elapsedMs = now - lastSeen
-        const elapsedHours = elapsedMs / (1000 * 60 * 60)
-        const capHours = saved.workshopUpgrades['fragment-cap'] ? MAX_FRAGMENT_HOURS * 1.5 : MAX_FRAGMENT_HOURS
-        const earned = Math.floor(Math.min(elapsedHours, capHours) * FRAGMENT_RATE_PER_HOUR)
-        state.fragmentsAccumulated = Math.min(
-          saved.fragmentsAccumulated + earned,
-          Math.floor(capHours * FRAGMENT_RATE_PER_HOUR)
-        )
-        state.lastSeenTimestamp = now
+
+        // Migrate: remove fragment-cap, add quick-recovery
+        if ('fragment-cap' in state.workshopUpgrades) {
+          delete (state.workshopUpgrades as any)['fragment-cap']
+        }
+        // Remove legacy quick-recovery if present
+        if ('quick-recovery' in state.workshopUpgrades) {
+          delete (state.workshopUpgrades as any)['quick-recovery']
+        }
       })
     },
 
@@ -78,13 +76,12 @@ export const usePermanentStore = create<PermanentState & PermanentActions>()(
       const state = get()
       const toSave: PermanentState = {
         totalShards: state.totalShards,
-        fragmentsAccumulated: state.fragmentsAccumulated,
-        lastSeenTimestamp: Date.now(),
         workshopUpgrades: { ...state.workshopUpgrades },
         runHistory: state.runHistory.slice(-20),
         companionsUnlocked: [...state.companionsUnlocked],
         nameEverDiscovered: state.nameEverDiscovered,
-        carriedPart: state.carriedPart,
+        partArchive: { ...state.partArchive },
+        selectedArchivePart: state.selectedArchivePart,
       }
       await savePermanent(PERMANENT_KEY, toSave)
     },
@@ -107,7 +104,6 @@ export const usePermanentStore = create<PermanentState & PermanentActions>()(
       const upgradeCosts: Record<WorkshopUpgradeId, number> = {
         'practiced-routine': 75,
         'sharp-eye': 40,
-        'fragment-cap': 60,
         'starting-slot': 100,
       }
       const cost = upgradeCosts[id]
@@ -137,59 +133,45 @@ export const usePermanentStore = create<PermanentState & PermanentActions>()(
         state.nameEverDiscovered = true
       }),
 
-    collectFragments: () => {
-      // No-op: fragments are calculated on load from elapsed time
-    },
-
-    tickFragments: () =>
+    addToArchive: (partId, sector) =>
       set((state) => {
-        const now = Date.now()
-        const elapsedMs = now - state.lastSeenTimestamp
-        const elapsedHours = elapsedMs / (1000 * 60 * 60)
-        const capHours = state.workshopUpgrades['fragment-cap'] ? MAX_FRAGMENT_HOURS * 1.5 : MAX_FRAGMENT_HOURS
-        const earned = Math.floor(elapsedHours * FRAGMENT_RATE_PER_HOUR)
-        if (earned > 0) {
-          state.fragmentsAccumulated = Math.min(
-            state.fragmentsAccumulated + earned,
-            Math.floor(capHours * FRAGMENT_RATE_PER_HOUR)
-          )
-          state.lastSeenTimestamp = now
+        if (!state.partArchive[partId]) {
+          state.partArchive[partId] = { partId, sector, cooldownLeft: 0 }
         }
       }),
 
-    spendFragments: (amount) => {
-      if (get().fragmentsAccumulated < amount) return false
+    selectArchivePart: (partId) =>
       set((state) => {
-        state.fragmentsAccumulated -= amount
-      })
-      return true
-    },
-
-    setCarriedPart: (partId) =>
-      set((state) => {
-        state.carriedPart = partId
+        state.selectedArchivePart = partId
       }),
 
-    clearCarriedPart: () =>
+    triggerCooldown: (partId) =>
       set((state) => {
-        state.carriedPart = null
+        const entry = state.partArchive[partId]
+        if (!entry) return
+        entry.cooldownLeft = 3
+      }),
+
+    decrementAllCooldowns: () =>
+      set((state) => {
+        for (const entry of Object.values(state.partArchive)) {
+          if (entry.cooldownLeft > 0) entry.cooldownLeft--
+        }
       }),
 
     importState: async (imported) => {
       set((state) => {
         Object.assign(state, imported)
-        state.lastSeenTimestamp = Date.now()
       })
       const s = get()
       const toSave: PermanentState = {
         totalShards: s.totalShards,
-        fragmentsAccumulated: s.fragmentsAccumulated,
-        lastSeenTimestamp: s.lastSeenTimestamp,
         workshopUpgrades: { ...s.workshopUpgrades },
         runHistory: s.runHistory.slice(-20),
         companionsUnlocked: [...s.companionsUnlocked],
         nameEverDiscovered: s.nameEverDiscovered,
-        carriedPart: s.carriedPart,
+        partArchive: { ...s.partArchive },
+        selectedArchivePart: s.selectedArchivePart,
       }
       await savePermanent(PERMANENT_KEY, toSave)
     },

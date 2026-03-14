@@ -290,26 +290,16 @@ export interface RunState {
   companionsAcquired: string[]
   combatsCleared: number
   lastCollapseMessage: string | null
+  carriedPartSector: 1 | 2 | null
   isDebug?: boolean
 }
 
-// ─── Carried Part ─────────────────────────────────────────────────────────────
+// ─── Part Archive ────────────────────────────────────────────────────────────
 
-// Just a part ID string — always active, never breaks.
-// Legacy saves may have { partId, durability, ... } objects; the store migrates on load.
-export type CarriedPart = string
-
-// ─── Fragment Bonuses ─────────────────────────────────────────────────────────
-
-export type FragmentBonusType = 'health' | 'shards' | 'drawCount'
-
-export interface FragmentBonus {
-  id: string
-  name: string
-  description: string
-  cost: number
-  type: FragmentBonusType
-  value: number
+export interface PartArchiveEntry {
+  partId: string
+  sector: 1 | 2
+  cooldownLeft: number
 }
 
 // ─── Permanent State ─────────────────────────────────────────────────────────
@@ -317,7 +307,6 @@ export interface FragmentBonus {
 export type WorkshopUpgradeId =
   | 'practiced-routine'
   | 'sharp-eye'
-  | 'fragment-cap'
   | 'starting-slot'
 
 export interface WorkshopUpgrade {
@@ -339,11 +328,10 @@ export interface RunHistoryEntry {
 
 export interface PermanentState {
   totalShards: number
-  fragmentsAccumulated: number
-  lastSeenTimestamp: number
   workshopUpgrades: Record<WorkshopUpgradeId, boolean>
   runHistory: RunHistoryEntry[]
   companionsUnlocked: string[]
   nameEverDiscovered: boolean
-  carriedPart: CarriedPart | null
+  partArchive: Record<string, PartArchiveEntry>
+  selectedArchivePart: string | null
 }

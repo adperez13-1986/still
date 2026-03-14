@@ -49,9 +49,9 @@ export default function RewardScreen({ drops, onChoose }: Props) {
   const shardDrop = drops.find((d) => d.type === 'shards')
   const allPartDrops = drops.filter((d) => d.type === 'part')
   const allEquipDrops = drops.filter((d) => d.type === 'equipment')
-  // Parts/equipment are opt-in: start unclaimed, player must accept
-  const [acceptedParts, setAcceptedParts] = useState<Set<string>>(new Set())
-  const [acceptedEquips, setAcceptedEquips] = useState<Set<string>>(new Set())
+  // Parts/equipment are opt-out: start accepted, player can skip
+  const [acceptedParts, setAcceptedParts] = useState<Set<string>>(() => new Set(allPartDrops.filter(d => d.type === 'part').map(d => d.type === 'part' ? d.partId : '')))
+  const [acceptedEquips, setAcceptedEquips] = useState<Set<string>>(() => new Set(allEquipDrops.filter(d => d.type === 'equipment').map(d => d.type === 'equipment' ? d.equipmentId : '')))
   const skippedParts = new Set(allPartDrops.filter(d => d.type === 'part' && !acceptedParts.has(d.partId)).map(d => d.type === 'part' ? d.partId : ''))
   const skippedEquips = new Set(allEquipDrops.filter(d => d.type === 'equipment' && !acceptedEquips.has(d.equipmentId)).map(d => d.type === 'equipment' ? d.equipmentId : ''))
   const [detail, setDetail] = useState<DetailPopover | null>(null)
@@ -230,7 +230,7 @@ export default function RewardScreen({ drops, onChoose }: Props) {
               fontSize: '13px',
             }}
           >
-            Skip
+            No Card
           </button>
         </>
       ) : (
@@ -289,7 +289,7 @@ function DropBadge({ label, color, onLongPress, onToggle, accepted }: {
       <span>
         {label}
         <span style={{ fontSize: '10px', color: '#888', marginLeft: '6px' }}>
-          {accepted ? 'tap to skip' : 'tap to take · hold for details'}
+          {accepted ? 'tap to skip · hold for details' : 'tap to take'}
         </span>
       </span>
     </span>

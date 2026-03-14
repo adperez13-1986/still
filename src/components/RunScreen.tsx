@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useLocation } from 'react-router-dom'
-import type { GridRoom, FragmentBonus, BehavioralPartDefinition } from '../game/types'
+import type { GridRoom, BehavioralPartDefinition } from '../game/types'
 import { useRunStore } from '../store/runStore'
 import { usePermanentStore } from '../store/permanentStore'
 import MapScreen from './MapScreen'
@@ -54,16 +54,8 @@ export default function RunScreen() {
     if (run.active) return
 
     // Reload recovery: try restoring saved run before creating a new one.
-    // location.state persists across reloads (window.history.state), so we can't
-    // use its presence to distinguish "fresh navigation" from "reload". Instead,
-    // we use a sessionStorage flag set when we actually consume bonuses below.
-    const consumedKey = 'still-run-bonuses-consumed'
-    const alreadyConsumed = sessionStorage.getItem(consumedKey) === 'true'
-    const hasBonuses = !!(location.state as any)?.bonuses
-    if (!hasBonuses || alreadyConsumed) {
-      const restored = run.restoreRun()
-      if (restored) return
-    }
+    const restored = run.restoreRun()
+    if (restored) return
 
     // Debug shortcut: /run?debug=<preset> starts directly in Sector 2 with a loaded build
     // Presets: s2 (generic), cool (Cool Runner), hot (Pyromaniac), warm (Warm Surfer)
@@ -128,15 +120,14 @@ export default function RunScreen() {
       return
     }
 
-    const bonuses = (location.state as { bonuses?: FragmentBonus[] })?.bonuses ?? []
-    const sumBonus = (type: FragmentBonus['type']) =>
-      bonuses.filter((b) => b.type === type).reduce((s, b) => s + b.value, 0)
-
-    // Carried part from previous run — always active
-    const carriedPartDef = permanent.carriedPart ? (ALL_PARTS[permanent.carriedPart] ?? null) : null
+    // Load selected archive part with sector gating
+    const archivePartId = permanent.selectedArchivePart
+    const archiveEntry = archivePartId ? permanent.partArchive[archivePartId] : null
+    const archivePartDef = archivePartId ? (ALL_PARTS[archivePartId] ?? null) : null
     const initialParts: BehavioralPartDefinition[] = []
-    if (carriedPartDef) {
-      initialParts.push(carriedPartDef)
+    // S1 parts are active immediately; S2 parts are added but tracked as inert
+    if (archivePartDef && archiveEntry) {
+      initialParts.push(archivePartDef)
     }
 
     const starterDeck = STARTING_CARDS.map((c) => makeCardInstance(c.id))
@@ -158,27 +149,25 @@ export default function RunScreen() {
     }
 
     const map = generateGridMaze(1)
-    const startMaxHealth = 70 + sumBonus('health')
 
     run.startRun({
       sector: 1,
       map,
-      health: startMaxHealth,
-      maxHealth: startMaxHealth,
-      drawCount: 5 + sumBonus('drawCount'),
+      health: 70,
+      maxHealth: 70,
+      drawCount: 5,
       deck: starterDeck,
       parts: initialParts,
       equipment: startingEquipment,
-      shards: sumBonus('shards'),
+      shards: 0,
       combat: null,
       nameDiscovered: permanent.nameEverDiscovered,
       equipPity: 0,
       companionsAcquired: [],
       combatsCleared: 0,
       lastCollapseMessage: null,
+      carriedPartSector: archiveEntry?.sector ?? null,
     })
-    // Mark bonuses as consumed so reloads don't re-create the run
-    sessionStorage.setItem(consumedKey, 'true')
     run.saveRun()
   }, [])
 

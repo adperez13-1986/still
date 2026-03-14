@@ -7,7 +7,6 @@ import { useRunStore } from '../store/runStore'
 import { ALL_PARTS } from '../data/parts'
 import type { RunState } from '../game/types'
 import RunEndOverlay from './RunEndOverlay'
-import CarrySelectOverlay from './CarrySelectOverlay'
 import type { PermanentState, WorkshopUpgradeId, BehavioralPartDefinition } from '../game/types'
 
 const COMPANIONS = [
@@ -28,7 +27,6 @@ const COMPANIONS = [
 const UPGRADES: Array<{ id: WorkshopUpgradeId; name: string; description: string; cost: number }> = [
   { id: 'practiced-routine', name: 'Practiced Routine', description: 'Start each run with an extra non-basic card.', cost: 75 },
   { id: 'sharp-eye', name: 'Sharp Eye', description: 'Earn 20% more shards from enemies.', cost: 40 },
-  { id: 'fragment-cap', name: 'Fragment Reservoir', description: 'Increase max offline fragment accumulation by 50%.', cost: 60 },
   { id: 'starting-slot', name: 'Extra Slot', description: 'Start each run with Torso (Scrap Plating) pre-equipped.', cost: 100 },
 ]
 
@@ -46,16 +44,17 @@ export default function WorkshopScreen() {
   const runEndState = location.state as { runEnd?: boolean; outcome?: string; message?: string; parts?: BehavioralPartDefinition[] } | null
   const runEnd = runEndState
   const runEndParts: BehavioralPartDefinition[] = runEndState?.parts ?? []
-  const hasPartsToCarry = runEndParts.length > 0 || permanent.carriedPart !== null
-  const [showCarrySelect, setShowCarrySelect] = useState(() => !!(runEndState?.runEnd && hasPartsToCarry))
+  // Show archive additions notification when returning from a run with new parts
+  const [showArchiveNotice, setShowArchiveNotice] = useState(() => !!(runEndState?.runEnd && runEndParts.length > 0))
   const restoreRun = useRunStore((s) => s.restoreRun)
   const [hasSavedRun] = useState(() => {
-    // Don't offer continue if we just ended a run
     if (runEndState?.runEnd) return false
     const saved = loadRunState<RunState>()
     return !!(saved && saved.active && saved.map)
   })
 
+  const archiveEntries = Object.values(permanent.partArchive)
+  const selectedPart = permanent.selectedArchivePart
 
   return (
     <div style={{
@@ -76,24 +75,65 @@ export default function WorkshopScreen() {
         />
       )}
 
-      {/* Carry select overlay */}
-      {showCarrySelect && (
-        <CarrySelectOverlay
-          runParts={runEndParts}
-          currentCarry={permanent.carriedPart}
-          onSelect={(partId) => {
-            if (partId) {
-              permanent.setCarriedPart(partId)
-            }
-            permanent.save()
-            setShowCarrySelect(false)
+      {/* Archive additions notification */}
+      {showArchiveNotice && (
+        <div
+          onClick={() => setShowArchiveNotice(false)}
+          style={{
+            position: 'fixed',
+            top: 0, left: 0, right: 0, bottom: 0,
+            zIndex: 200,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: 'rgba(0,0,0,0.7)',
           }}
-          onDismiss={() => {
-            permanent.clearCarriedPart()
-            permanent.save()
-            setShowCarrySelect(false)
-          }}
-        />
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              backgroundColor: '#1e1e2e',
+              border: '2px solid #27ae60',
+              borderRadius: '10px',
+              padding: '24px',
+              maxWidth: '320px',
+              width: '85%',
+              textAlign: 'center',
+            }}
+          >
+            <div style={{ fontSize: '11px', letterSpacing: '3px', color: '#27ae60', marginBottom: '12px' }}>
+              PARTS ARCHIVED
+            </div>
+            {runEndParts.map(p => (
+              <div key={p.id} style={{
+                backgroundColor: '#16213e',
+                borderRadius: '6px',
+                padding: '8px 12px',
+                marginBottom: '6px',
+                border: '1px solid #2c3e50',
+              }}>
+                <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#e8e8e8' }}>{p.name}</div>
+                <div style={{ fontSize: '11px', color: '#888' }}>{p.description}</div>
+              </div>
+            ))}
+            <button
+              onClick={() => setShowArchiveNotice(false)}
+              style={{
+                marginTop: '12px',
+                padding: '8px 32px',
+                backgroundColor: '#27ae60',
+                border: 'none',
+                color: '#fff',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '13px',
+                fontWeight: 'bold',
+              }}
+            >
+              OK
+            </button>
+          </div>
+        </div>
       )}
 
       {/* Header */}
@@ -133,12 +173,6 @@ export default function WorkshopScreen() {
           <div style={{ color: '#888', fontSize: '11px', letterSpacing: '1px' }}>SHARDS</div>
         </div>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ color: '#74b9ff', fontSize: '22px', fontWeight: 'bold' }}>
-            {permanent.fragmentsAccumulated}
-          </div>
-          <div style={{ color: '#888', fontSize: '11px', letterSpacing: '1px' }}>FRAGMENTS</div>
-        </div>
-        <div style={{ textAlign: 'center' }}>
           <div style={{ color: '#55efc4', fontSize: '22px', fontWeight: 'bold' }}>
             {permanent.runHistory.length}
           </div>
@@ -170,7 +204,7 @@ export default function WorkshopScreen() {
           </button>
         )}
         <button
-          onClick={() => navigate('/fragment')}
+          onClick={() => navigate('/run')}
           style={{
             padding: hasSavedRun ? '10px 48px' : '16px 64px',
             backgroundColor: hasSavedRun ? 'transparent' : '#a29bfe',
@@ -186,6 +220,66 @@ export default function WorkshopScreen() {
           {permanent.nameEverDiscovered ? (hasSavedRun ? 'NEW RUN' : 'STILL GOING') : 'BEGIN'}
         </button>
       </div>
+
+      {/* Part Archive */}
+      {archiveEntries.length > 0 && (
+        <div style={{ width: '100%', maxWidth: '700px' }}>
+          <h3 style={{ color: '#aaa', fontSize: '11px', letterSpacing: '3px', marginBottom: '16px', textAlign: 'center' }}>
+            PART ARCHIVE
+          </h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {archiveEntries.map((entry) => {
+              const partDef = ALL_PARTS[entry.partId]
+              if (!partDef) return null
+              const isReady = entry.cooldownLeft === 0
+              const isSelected = selectedPart === entry.partId
+              return (
+                <div
+                  key={entry.partId}
+                  onClick={() => {
+                    if (!isReady) return
+                    permanent.selectArchivePart(isSelected ? null : entry.partId)
+                    permanent.save()
+                  }}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    backgroundColor: isSelected ? '#1a2a1a' : '#16213e',
+                    borderRadius: '8px',
+                    padding: '12px 16px',
+                    border: `1px solid ${isSelected ? '#27ae60' : isReady ? '#2c3e50' : '#1a1a1a'}`,
+                    opacity: isReady ? 1 : 0.5,
+                    cursor: isReady ? 'pointer' : 'not-allowed',
+                    transition: 'border-color 0.15s',
+                  }}
+                >
+                  <div>
+                    <div style={{ fontSize: '14px', fontWeight: 'bold', color: isSelected ? '#27ae60' : '#e8e8e8' }}>
+                      {partDef.name} {isSelected && '✓'}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#888', marginTop: '2px' }}>{partDef.description}</div>
+                    <div style={{ fontSize: '10px', color: '#555', marginTop: '4px' }}>
+                      S{entry.sector} part · {partDef.rarity}
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right', minWidth: '70px' }}>
+                    {isReady ? (
+                      <div style={{ fontSize: '11px', color: isSelected ? '#27ae60' : '#888' }}>
+                        {isSelected ? 'CARRYING' : 'READY'}
+                      </div>
+                    ) : (
+                      <div style={{ fontSize: '11px', color: '#e67e22' }}>
+                        {entry.cooldownLeft} run{entry.cooldownLeft > 1 ? 's' : ''} left
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Workshop Upgrades */}
       <div style={{ width: '100%', maxWidth: '700px' }}>
@@ -305,30 +399,6 @@ export default function WorkshopScreen() {
         </div>
       </div>
 
-      {/* Carried Part */}
-      {permanent.carriedPart && (() => {
-        const partDef = ALL_PARTS[permanent.carriedPart]
-        if (!partDef) return null
-        return (
-          <div style={{ width: '100%', maxWidth: '700px' }}>
-            <h3 style={{ color: '#aaa', fontSize: '11px', letterSpacing: '3px', marginBottom: '16px', textAlign: 'center' }}>
-              CARRIED MOD
-            </h3>
-            <div style={{
-              backgroundColor: '#16213e',
-              borderRadius: '8px',
-              padding: '12px 16px',
-              border: '1px solid #27ae60',
-            }}>
-              <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#e8e8e8' }}>
-                {partDef.name}
-              </div>
-              <div style={{ fontSize: '12px', color: '#888', marginTop: '2px' }}>{partDef.description}</div>
-            </div>
-          </div>
-        )
-      })()}
-
       {/* Compendium */}
       <button
         onClick={() => navigate('/compendium')}
@@ -408,13 +478,12 @@ export default function WorkshopScreen() {
                 const { defaultPermanent } = await import('../store/permanentStore')
                 const state: PermanentState = {
                   totalShards: permanent.totalShards,
-                  fragmentsAccumulated: permanent.fragmentsAccumulated,
-                  lastSeenTimestamp: permanent.lastSeenTimestamp,
                   workshopUpgrades: { ...defaultPermanent.workshopUpgrades, ...permanent.workshopUpgrades },
                   runHistory: [...permanent.runHistory],
                   companionsUnlocked: [...permanent.companionsUnlocked],
                   nameEverDiscovered: permanent.nameEverDiscovered,
-                  carriedPart: permanent.carriedPart,
+                  partArchive: { ...permanent.partArchive },
+                  selectedArchivePart: permanent.selectedArchivePart,
                 }
                 const code = await encodeSaveCode(state)
                 await navigator.clipboard.writeText(code)

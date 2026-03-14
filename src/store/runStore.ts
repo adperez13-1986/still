@@ -103,6 +103,14 @@ const emptyRunState: RunState = {
   companionsAcquired: [],
   combatsCleared: 0,
   lastCollapseMessage: null,
+  carriedPartSector: null,
+}
+
+/** Filter out inert carried parts (S2 part in S1) */
+function getActiveParts(state: RunState): BehavioralPartDefinition[] {
+  if (!state.carriedPartSector || state.carriedPartSector <= state.sector) return state.parts
+  // The carried part is the first entry — skip it if its sector hasn't been reached
+  return state.parts.length > 0 ? state.parts.slice(1) : state.parts
 }
 
 function calcBlockAbsorb(block: number, damage: number): { newBlock: number; healthDamage: number } {
@@ -123,7 +131,6 @@ export const useRunStore = create<RunState & RunActions>()(
       set((state) => {
         Object.assign(state, emptyRunState)
         clearRunState()
-        try { sessionStorage.removeItem('still-run-bonuses-consumed') } catch { /* noop */ }
       }),
 
     takeDamage: (amount) =>
@@ -193,20 +200,20 @@ export const useRunStore = create<RunState & RunActions>()(
         state.shards += amount
       }),
 
-    // Task 4.3: Combat start
     startCombat: (enemies) =>
       set((state) => {
+        const activeParts = getActiveParts(state)
         const combat = initCombat(
           [...state.deck],
           state.drawCount,
           enemies,
           [],
-          state.parts
+          activeParts
         )
         state.combat = combat
 
         // Fire onCombatStart parts
-        for (const part of state.parts) {
+        for (const part of activeParts) {
           if (part.trigger.type === 'onCombatStart') {
             if (part.effect.type === 'drawCards') {
               // Draw extra cards
@@ -220,7 +227,6 @@ export const useRunStore = create<RunState & RunActions>()(
         }
       }),
 
-    // Task 4.4: Play modifier card
     playCard: (instanceId, targetSlot, targetEnemyId) =>
       set((state) => {
         if (!state.combat) return
@@ -239,7 +245,7 @@ export const useRunStore = create<RunState & RunActions>()(
           drawCount: state.drawCount,
 
           equipment: JSON.parse(JSON.stringify(state.equipment)),
-          parts: JSON.parse(JSON.stringify(state.parts)),
+          parts: JSON.parse(JSON.stringify(getActiveParts(state))),
           cardDefs: ALL_CARDS,
           enemyDefs: {},
           targetEnemyId,
@@ -287,7 +293,7 @@ export const useRunStore = create<RunState & RunActions>()(
           drawCount: state.drawCount,
 
           equipment: JSON.parse(JSON.stringify(state.equipment)),
-          parts: JSON.parse(JSON.stringify(state.parts)),
+          parts: JSON.parse(JSON.stringify(getActiveParts(state))),
           cardDefs: ALL_CARDS,
           enemyDefs: {},
           combatsCleared: state.combatsCleared,
@@ -310,7 +316,7 @@ export const useRunStore = create<RunState & RunActions>()(
           drawCount: state.drawCount,
 
           equipment: JSON.parse(JSON.stringify(state.equipment)),
-          parts: JSON.parse(JSON.stringify(state.parts)),
+          parts: JSON.parse(JSON.stringify(getActiveParts(state))),
           cardDefs: ALL_CARDS,
           enemyDefs: ALL_ENEMIES,
           targetEnemyId,
@@ -502,6 +508,7 @@ export const useRunStore = create<RunState & RunActions>()(
         companionsAcquired: state.companionsAcquired,
         combatsCleared: state.combatsCleared,
         lastCollapseMessage: state.lastCollapseMessage,
+        carriedPartSector: state.carriedPartSector,
       }
       saveRunState(toSave)
     },
@@ -510,6 +517,11 @@ export const useRunStore = create<RunState & RunActions>()(
       try {
         const saved = loadRunState<RunState>()
         if (!saved || !saved.active || !saved.map) return false
+        // Legacy saves without carriedPartSector — discard so a fresh run starts with gating
+        if (saved.carriedPartSector === undefined) {
+          clearRunState()
+          return false
+        }
         set((state) => {
           Object.assign(state, { ...saved, combat: null })
         })

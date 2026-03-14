@@ -2,6 +2,7 @@ import CardDisplay from './CardDisplay'
 import { ALL_CARDS } from '../data/cards'
 import { ALL_PARTS } from '../data/parts'
 import { usePermanentStore } from '../store/permanentStore'
+import { useRunStore } from '../store/runStore'
 import type { CardInstance, BehavioralPartDefinition, EquipmentDefinition, BodySlot } from '../game/types'
 import { BODY_SLOTS } from '../game/types'
 
@@ -16,7 +17,11 @@ interface Props {
 
 export default function RunInfoOverlay({ tab, deck, parts, equipment, onClose, onTabChange }: Props) {
   const permanent = usePermanentStore()
-  const carriedPartDef = permanent.carriedPart ? (ALL_PARTS[permanent.carriedPart] ?? null) : null
+  const run = useRunStore()
+  const archivePartId = permanent.selectedArchivePart
+  const archiveEntry = archivePartId ? permanent.partArchive[archivePartId] : null
+  const carriedPartDef = archivePartId ? (ALL_PARTS[archivePartId] ?? null) : null
+  const isCarriedPartActive = archiveEntry ? archiveEntry.sector <= run.sector : false
 
   const resolveDef = (instance: CardInstance) => {
     const base = ALL_CARDS[instance.definitionId]
@@ -177,25 +182,26 @@ export default function RunInfoOverlay({ tab, deck, parts, equipment, onClose, o
               {carriedPartDef && (
                 <div>
                   <div style={{ color: '#888', fontSize: '11px', letterSpacing: '2px', marginBottom: '12px' }}>
-                    CARRIED MOD
+                    ARCHIVED PART
                   </div>
                   <div style={{
                     backgroundColor: '#16213e',
-                    border: '1px solid #e67e22',
+                    border: `1px solid ${isCarriedPartActive ? '#e67e22' : '#555'}`,
                     borderRadius: '6px',
                     padding: '10px 14px',
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
+                    opacity: isCarriedPartActive ? 1 : 0.5,
                   }}>
                     <div>
-                      <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#e67e22' }}>
+                      <div style={{ fontWeight: 'bold', fontSize: '13px', color: isCarriedPartActive ? '#e67e22' : '#888' }}>
                         {carriedPartDef.name}
                       </div>
                       <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>{carriedPartDef.description}</div>
                     </div>
-                    <div style={{ fontSize: '10px', color: '#e67e22', letterSpacing: '1px', marginLeft: '12px', whiteSpace: 'nowrap' }}>
-                      CARRY
+                    <div style={{ fontSize: '10px', color: isCarriedPartActive ? '#e67e22' : '#888', letterSpacing: '1px', marginLeft: '12px', whiteSpace: 'nowrap' }}>
+                      {isCarriedPartActive ? 'ACTIVE' : `S${archiveEntry?.sector}`}
                     </div>
                   </div>
                 </div>
