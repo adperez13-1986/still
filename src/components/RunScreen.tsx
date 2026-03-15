@@ -114,6 +114,7 @@ export default function RunScreen() {
         companionsAcquired: [],
         combatsCleared: 0,
         lastCollapseMessage: null,
+        carriedPartSector: null,
         isDebug: true,
       })
       run.saveRun()

@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
-import type { PermanentState, WorkshopUpgradeId, RunHistoryEntry, PartArchiveEntry } from '../game/types'
+import type { PermanentState, WorkshopUpgradeId, RunHistoryEntry } from '../game/types'
 import { savePermanent, loadPermanent } from '../game/persistence'
 
 const PERMANENT_KEY = 'permanent-state'

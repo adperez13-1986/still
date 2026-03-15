@@ -129,6 +129,7 @@ function buildContext(state: HarnessState): CombatContext {
     parts: state.scenario.parts,
     cardDefs: buildCardDefs(),
     enemyDefs: buildEnemyDefs(),
+    combatsCleared: 0,
   }
 }
 

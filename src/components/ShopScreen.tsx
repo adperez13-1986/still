@@ -3,7 +3,7 @@ import CardDisplay from './CardDisplay'
 import CardPicker from './CardPicker'
 import RunInfoOverlay from './RunInfoOverlay'
 import { SECTOR1_CARD_POOL, SECTOR2_CARD_POOL } from '../data/cards'
-import { PARTS, ALL_PARTS } from '../data/parts'
+import { PARTS } from '../data/parts'
 import type { CardInstance, BehavioralPartDefinition, EquipmentDefinition, BodySlot } from '../game/types'
 
 const RECYCLE_COST = 60
