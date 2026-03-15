@@ -19,7 +19,7 @@ import {
   ALL_ENEMIES,
 } from '../data/enemies'
 import { STARTING_CARDS, SECTOR1_CARD_POOL, SECTOR2_CARD_POOL } from '../data/cards'
-import { ALL_PARTS, ALL_EQUIPMENT, STARTING_TORSO, STARTING_ARMS } from '../data/parts'
+import { ALL_PARTS, ALL_EQUIPMENT, STARTING_HEAD, STARTING_TORSO, STARTING_ARMS, STARTING_LEGS } from '../data/parts'
 
 function pickEnemiesForRoom(room: GridRoom, sector: number, combatsCleared: number) {
   if (room.type === 'Boss') {
@@ -136,16 +136,12 @@ export default function RunScreen() {
       const picked = nonBasics[Math.floor(Math.random() * nonBasics.length)]
       if (picked) starterDeck.push(makeCardInstance(picked.id))
     }
-    // Starting equipment
+    // Starting equipment — all four slots filled with scrap-tier gear
     const startingEquipment: import('../game/types').RunState['equipment'] = {
-      Head: null,
-      Torso: null,
+      Head: STARTING_HEAD,
+      Torso: STARTING_TORSO,
       Arms: STARTING_ARMS,
-      Legs: null,
-    }
-    // "Extra Slot" workshop upgrade: equip Scrap Plating in Torso slot
-    if (permanent.workshopUpgrades['starting-slot']) {
-      startingEquipment.Torso = STARTING_TORSO
+      Legs: STARTING_LEGS,
     }
 
     const map = generateGridMaze(1)

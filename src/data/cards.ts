@@ -30,28 +30,28 @@ const boost: ModifierCardDefinition = {
 const emergencyStrike: ModifierCardDefinition = {
   id: 'emergency-strike',
   name: 'Emergency Strike',
-  description: 'Override: deal 8 damage to one enemy.',
+  description: 'Override: deal 5 damage to ALL enemies.',
   heatCost: 2,
   category: {
     type: 'slot',
     modifier: 'Override',
     effect: {
       type: 'override',
-      action: { type: 'damage', baseValue: 8, targetMode: 'single_enemy' },
+      action: { type: 'damage', baseValue: 5, targetMode: 'all_enemies' },
     },
   },
   keywords: [],
   upgraded: {
     id: 'emergency-strike',
     name: 'Emergency Strike+',
-    description: 'Override: deal 11 damage to one enemy.',
+    description: 'Override: deal 7 damage to ALL enemies.',
     heatCost: 2,
     category: {
       type: 'slot',
       modifier: 'Override',
       effect: {
         type: 'override',
-        action: { type: 'damage', baseValue: 11, targetMode: 'single_enemy' },
+        action: { type: 'damage', baseValue: 7, targetMode: 'all_enemies' },
       },
     },
     keywords: [],
@@ -257,7 +257,7 @@ const deepFreeze: ModifierCardDefinition = {
     modifier: 'Cooling',
     effects: [],
   },
-  keywords: ['Exhaust'],
+  keywords: [],
   upgraded: {
     id: 'deep-freeze',
     name: 'Deep Freeze+',
@@ -268,7 +268,7 @@ const deepFreeze: ModifierCardDefinition = {
       modifier: 'Cooling',
       effects: [{ type: 'gainBlock', value: 4 }],
     },
-    keywords: ['Exhaust'],
+    keywords: [],
   },
 }
 
@@ -300,25 +300,25 @@ const heatVent: ModifierCardDefinition = {
 const quickScan: ModifierCardDefinition = {
   id: 'quick-scan',
   name: 'Quick Scan',
-  description: 'Draw 3 cards. Exhaust.',
+  description: 'Draw 3 cards.',
   heatCost: 1,
   category: {
     type: 'system',
     modifier: 'Draw',
     effects: [{ type: 'draw', count: 3 }],
   },
-  keywords: ['Exhaust'],
+  keywords: [],
   upgraded: {
     id: 'quick-scan',
     name: 'Quick Scan+',
-    description: 'Draw 4 cards. Exhaust.',
+    description: 'Draw 4 cards.',
     heatCost: 1,
     category: {
       type: 'system',
       modifier: 'Draw',
       effects: [{ type: 'draw', count: 4 }],
     },
-    keywords: ['Exhaust'],
+    keywords: [],
   },
 }
 
@@ -352,26 +352,26 @@ const thermalSurge: ModifierCardDefinition = {
 const meltdown: ModifierCardDefinition = {
   id: 'meltdown',
   name: 'Meltdown',
-  description: 'Requires Hot. Deal 15 damage to one enemy. Exhaust.',
+  description: 'Requires Hot. Deal 15 damage to one enemy.',
   heatCost: 0,
   category: {
     type: 'system',
     modifier: 'Conditional',
     effects: [{ type: 'damage', value: 15, targetMode: 'single_enemy' }],
   },
-  keywords: ['Exhaust'],
+  keywords: [],
   heatCondition: 'Hot',
   upgraded: {
     id: 'meltdown',
     name: 'Meltdown+',
-    description: 'Requires Hot. Deal 20 damage to one enemy. Exhaust.',
+    description: 'Requires Hot. Deal 20 damage to one enemy.',
     heatCost: 0,
     category: {
       type: 'system',
       modifier: 'Conditional',
       effects: [{ type: 'damage', value: 20, targetMode: 'single_enemy' }],
     },
-    keywords: ['Exhaust'],
+    keywords: [],
     heatCondition: 'Hot',
   },
 }
@@ -573,25 +573,25 @@ const heatSurge: ModifierCardDefinition = {
 const recklessCharge: ModifierCardDefinition = {
   id: 'reckless-charge',
   name: 'Reckless Charge',
-  description: 'Deal 18 damage. Exhaust.',
+  description: 'Deal 18 damage.',
   heatCost: 3,
   category: {
     type: 'system',
     modifier: 'Conditional',
     effects: [{ type: 'damage', value: 18, targetMode: 'single_enemy' }],
   },
-  keywords: ['Exhaust'],
+  keywords: [],
   upgraded: {
     id: 'reckless-charge',
     name: 'Reckless Charge+',
-    description: 'Deal 24 damage. Exhaust.',
+    description: 'Deal 24 damage.',
     heatCost: 3,
     category: {
       type: 'system',
       modifier: 'Conditional',
       effects: [{ type: 'damage', value: 24, targetMode: 'single_enemy' }],
     },
-    keywords: ['Exhaust'],
+    keywords: [],
   },
 }
 
@@ -789,26 +789,26 @@ const controlledBurn: ModifierCardDefinition = {
 const fluxSpike: ModifierCardDefinition = {
   id: 'flux-spike',
   name: 'Flux Spike',
-  description: 'Requires Warm+. Deal 14 damage to all enemies. Exhaust.',
+  description: 'Requires Warm+. Deal 14 damage to all enemies.',
   heatCost: 0,
   category: {
     type: 'system',
     modifier: 'Conditional',
     effects: [{ type: 'damage', value: 14, targetMode: 'all_enemies' }],
   },
-  keywords: ['Exhaust'],
+  keywords: [],
   heatCondition: 'Warm',
   upgraded: {
     id: 'flux-spike',
     name: 'Flux Spike+',
-    description: 'Requires Warm+. Deal 20 damage to all enemies. Exhaust.',
+    description: 'Requires Warm+. Deal 20 damage to all enemies.',
     heatCost: 0,
     category: {
       type: 'system',
       modifier: 'Conditional',
       effects: [{ type: 'damage', value: 20, targetMode: 'all_enemies' }],
     },
-    keywords: ['Exhaust'],
+    keywords: [],
     heatCondition: 'Warm',
   },
 }
@@ -868,25 +868,25 @@ const armorProtocol: ModifierCardDefinition = {
 const salvageBurst: ModifierCardDefinition = {
   id: 'salvage-burst',
   name: 'Salvage Burst',
-  description: 'Draw 3 cards. Reduce Heat by 1. Exhaust.',
+  description: 'Draw 3 cards. Reduce Heat by 1.',
   heatCost: -1,
   category: {
     type: 'system',
     modifier: 'Draw',
     effects: [{ type: 'draw', count: 3 }],
   },
-  keywords: ['Exhaust'],
+  keywords: [],
   upgraded: {
     id: 'salvage-burst',
     name: 'Salvage Burst+',
-    description: 'Draw 4 cards. Reduce Heat by 2. Exhaust.',
+    description: 'Draw 4 cards. Reduce Heat by 2.',
     heatCost: -2,
     category: {
       type: 'system',
       modifier: 'Draw',
       effects: [{ type: 'draw', count: 4 }],
     },
-    keywords: ['Exhaust'],
+    keywords: [],
   },
 }
 

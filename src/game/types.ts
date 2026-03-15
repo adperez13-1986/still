@@ -307,7 +307,6 @@ export interface PartArchiveEntry {
 export type WorkshopUpgradeId =
   | 'practiced-routine'
   | 'sharp-eye'
-  | 'starting-slot'
 
 export interface WorkshopUpgrade {
   id: WorkshopUpgradeId

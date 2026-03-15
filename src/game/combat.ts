@@ -84,6 +84,23 @@ export function decrementStatuses(effects: StatusEffect[]): StatusEffect[] {
     .filter((s) => s.stacks > 0)
 }
 
+// ─── Slot Restrictions ───────────────────────────────────────────────────────
+
+/** Return the allowed body slots for a slot modifier card, or null if universal. */
+export function getAllowedSlots(card: ModifierCardDefinition): BodySlot[] | null {
+  if (card.category.type !== 'slot') return null
+  const effect = card.category.effect
+  switch (effect.type) {
+    case 'amplify':  return ['Arms', 'Torso']
+    case 'redirect': return ['Arms']
+    case 'repeat':   return null // universal
+    case 'override':
+      if (effect.action.type === 'damage') return ['Arms']
+      if (effect.action.type === 'block')  return ['Torso']
+      return null
+  }
+}
+
 // ─── Combat Context & Result ─────────────────────────────────────────────────
 
 export interface CombatContext {
@@ -760,6 +777,13 @@ export function playModifierCard(
       return result
     }
 
+    // Check slot restriction
+    const allowed = getAllowedSlots(card)
+    if (allowed && !allowed.includes(targetSlot)) {
+      result.log.push(`${card.name} cannot be assigned to ${targetSlot}`)
+      return result
+    }
+
     // Check slot not already modified (Dual Loader allows a second)
     if (result.combat.slotModifiers[targetSlot] !== null) {
       const hasDualLoader = ctx.parts.some(p => p.effect.type === 'dualLoader')
@@ -921,8 +945,10 @@ export function playModifierCard(
     }
 
     // Move to exhaust or discard
+    // All system cards exhaust automatically; slot modifiers use keyword-based exhaust
     if (cardInst) {
-      if (card.keywords.includes('Exhaust')) {
+      const shouldExhaust = card.category.type === 'system' || card.keywords.includes('Exhaust')
+      if (shouldExhaust) {
         result.combat.exhaustPile.push(cardInst)
         // Fire onCardExhaust part triggers (Scrap Recycler)
         for (const part of ctx.parts) {

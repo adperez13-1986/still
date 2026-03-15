@@ -108,9 +108,13 @@ export default function CardDisplay({ card, disabled, selected, onClick }: Props
 
       {/* Keywords + Heat condition */}
       <div style={{ fontSize: '9px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-        {card.keywords.length > 0 && (
+        {(card.keywords.length > 0 || card.category.type === 'system') && (
           <div style={{ color: '#f39c12', fontStyle: 'italic' }}>
-            {card.keywords.join(', ')}
+            {card.category.type === 'system'
+              ? card.keywords.length > 0
+                ? [...new Set([...card.keywords, 'Exhaust'])].join(', ')
+                : 'Exhaust'
+              : card.keywords.join(', ')}
           </div>
         )}
         {card.heatCondition && (

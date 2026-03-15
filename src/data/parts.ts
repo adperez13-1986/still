@@ -5,7 +5,7 @@ import type { EquipmentDefinition, BehavioralPartDefinition } from '../game/type
 // HEAD slot: information domain
 const basicScanner: EquipmentDefinition = {
   id: 'basic-scanner',
-  name: 'Basic Scanner',
+  name: 'Scrap Scanner',
   description: 'Draw 1 modifier card.',
   slot: 'Head',
   action: { type: 'draw', baseValue: 1, targetMode: 'self' },
@@ -63,7 +63,7 @@ const weldingTorch: EquipmentDefinition = {
 // LEGS slot: flow domain
 const wornActuators: EquipmentDefinition = {
   id: 'worn-actuators',
-  name: 'Worn Actuators',
+  name: 'Scrap Actuators',
   description: 'Lose 1 Heat.',
   slot: 'Legs',
   action: { type: 'coolHeat', baseValue: 1, targetMode: 'self' },
@@ -557,8 +557,10 @@ export const ALL_PARTS: Record<string, BehavioralPartDefinition> = Object.fromEn
 )
 
 // Starting equipment
+export const STARTING_HEAD = basicScanner
 export const STARTING_TORSO = scrapPlating
-export const STARTING_ARMS = pistonArm // for "Extra Slot" Workshop upgrade
+export const STARTING_ARMS = pistonArm
+export const STARTING_LEGS = wornActuators
 
 // Legacy aliases for old components that haven't been updated yet
 export const PARTS = BEHAVIORAL_PARTS

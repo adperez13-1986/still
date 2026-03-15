@@ -1,6 +1,7 @@
 import type { CombatState, BodySlot, EquipmentDefinition } from '../../game/types'
 import { BODY_SLOTS } from '../../game/types'
 import { ALL_CARDS } from '../../data/cards'
+import { getAllowedSlots } from '../../game/combat'
 
 interface BodySlotPanelProps {
   combat: CombatState | null
@@ -21,9 +22,11 @@ export default function BodySlotPanel({ combat, equipment, selectedCardId, onAss
       const def = ALL_CARDS[cardInst.definitionId]
       if (def?.category.type === 'slot') {
         const isOverride = def.category.effect.type === 'override'
+        const allowed = getAllowedSlots(def)
         validSlots = new Set<BodySlot>()
         for (const slot of BODY_SLOTS) {
           if (combat.disabledSlots.includes(slot)) continue
+          if (allowed && !allowed.includes(slot)) continue
           if (combat.slotModifiers[slot] !== null) continue
           if (!isOverride && !equipment[slot]) continue
           validSlots.add(slot)

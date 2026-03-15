@@ -10,7 +10,6 @@ export const defaultPermanent: PermanentState = {
   workshopUpgrades: {
     'practiced-routine': false,
     'sharp-eye': false,
-    'starting-slot': false,
   },
   runHistory: [],
   companionsUnlocked: [],
@@ -65,9 +64,12 @@ export const usePermanentStore = create<PermanentState & PermanentActions>()(
         if ('fragment-cap' in state.workshopUpgrades) {
           delete (state.workshopUpgrades as any)['fragment-cap']
         }
-        // Remove legacy quick-recovery if present
+        // Remove legacy upgrades
         if ('quick-recovery' in state.workshopUpgrades) {
           delete (state.workshopUpgrades as any)['quick-recovery']
+        }
+        if ('starting-slot' in state.workshopUpgrades) {
+          delete (state.workshopUpgrades as any)['starting-slot']
         }
       })
     },
@@ -104,7 +106,6 @@ export const usePermanentStore = create<PermanentState & PermanentActions>()(
       const upgradeCosts: Record<WorkshopUpgradeId, number> = {
         'practiced-routine': 75,
         'sharp-eye': 40,
-        'starting-slot': 100,
       }
       const cost = upgradeCosts[id]
       if (state.workshopUpgrades[id] || state.totalShards < cost) return false

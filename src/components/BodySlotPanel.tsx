@@ -3,6 +3,7 @@ import type { CombatState, BodySlot, EquipmentDefinition, HeatThreshold, Behavio
 import { BODY_SLOTS, getHeatThreshold } from '../game/types'
 import { ALL_CARDS } from '../data/cards'
 import type { SlotProjection } from '../game/combat'
+import { getAllowedSlots } from '../game/combat'
 
 const HEAT_COLORS: Record<HeatThreshold, string> = {
   Cool: '#27ae60',
@@ -167,9 +168,12 @@ export default function BodySlotPanel({ combat, equipment, parts, selectedCardId
       const def = ALL_CARDS[cardInst.definitionId]
       if (def?.category.type === 'slot') {
         const isOverride = def.category.effect.type === 'override'
+        const allowed = getAllowedSlots(def)
         validSlots = new Set<BodySlot>()
         for (const slot of BODY_SLOTS) {
           if (combat.disabledSlots.includes(slot)) continue
+          // Slot restriction: skip slots not in allowed set
+          if (allowed && !allowed.includes(slot)) continue
           // Dual Loader: allow if primary filled but secondary empty
           if (combat.slotModifiers[slot] !== null) {
             if (!hasDualLoader || combat.slotModifiers2[slot] !== null) continue

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { usePermanentStore } from '../store/permanentStore'
 import { GRACE_LINES } from '../data/narrative'
-import { encodeSaveCode, decodeSaveCode, loadRunState } from '../game/persistence'
+import { encodeSaveCode, decodeSaveCode, loadRunState, clearRunState } from '../game/persistence'
 import { useRunStore } from '../store/runStore'
 import { ALL_PARTS } from '../data/parts'
 import type { RunState } from '../game/types'
@@ -27,7 +27,6 @@ const COMPANIONS = [
 const UPGRADES: Array<{ id: WorkshopUpgradeId; name: string; description: string; cost: number }> = [
   { id: 'practiced-routine', name: 'Practiced Routine', description: 'Start each run with an extra non-basic card.', cost: 75 },
   { id: 'sharp-eye', name: 'Sharp Eye', description: 'Earn 20% more shards from enemies.', cost: 40 },
-  { id: 'starting-slot', name: 'Extra Slot', description: 'Start each run with Torso (Scrap Plating) pre-equipped.', cost: 100 },
 ]
 
 export default function WorkshopScreen() {
@@ -204,7 +203,10 @@ export default function WorkshopScreen() {
           </button>
         )}
         <button
-          onClick={() => navigate('/run')}
+          onClick={() => {
+            clearRunState()
+            navigate('/run')
+          }}
           style={{
             padding: hasSavedRun ? '10px 48px' : '16px 64px',
             backgroundColor: hasSavedRun ? 'transparent' : '#a29bfe',
