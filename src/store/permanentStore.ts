@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import type { PermanentState, WorkshopUpgradeId, RunHistoryEntry } from '../game/types'
 import { savePermanent, loadPermanent } from '../game/persistence'
+import { getPartSector } from '../data/parts'
 
 const PERMANENT_KEY = 'permanent-state'
 
@@ -58,6 +59,11 @@ export const usePermanentStore = create<PermanentState & PermanentActions>()(
             state.partArchive[partId] = { partId, sector: 2, cooldownLeft: 0 }
             state.selectedArchivePart = partId
           }
+        }
+
+        // Fix archive sectors based on pool membership
+        for (const entry of Object.values(state.partArchive)) {
+          entry.sector = getPartSector(entry.partId)
         }
 
         // Migrate: remove fragment-cap, add quick-recovery
