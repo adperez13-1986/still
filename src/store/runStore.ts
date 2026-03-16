@@ -30,6 +30,7 @@ import { ALL_CARDS } from '../data/cards'
 import { ALL_ENEMIES } from '../data/enemies'
 import { generateGridMaze } from '../game/mapGen'
 import { saveRunState, loadRunState, clearRunState } from '../game/persistence'
+import { getPartSector } from '../data/parts'
 
 interface RunActions {
   // Run lifecycle
@@ -108,7 +109,10 @@ const emptyRunState: RunState = {
 
 /** Filter out inert carried parts (S2 part in S1) */
 function getActiveParts(state: RunState): BehavioralPartDefinition[] {
-  if (!state.carriedPartSector || state.carriedPartSector <= state.sector) return state.parts
+  if (!state.carriedPartSector) return state.parts
+  // Derive actual sector from pool membership, not saved value
+  const actualSector = state.parts.length > 0 ? getPartSector(state.parts[0].id) : state.carriedPartSector
+  if (actualSector <= state.sector) return state.parts
   // The carried part is the first entry — skip it if its sector hasn't been reached
   return state.parts.length > 0 ? state.parts.slice(1) : state.parts
 }
