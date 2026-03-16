@@ -542,6 +542,13 @@ export const BEHAVIORAL_PARTS: BehavioralPartDefinition[] = [
   ...RUN_WARPING_PARTS,
 ]
 
+const S1_PART_IDS = new Set(SECTOR1_PART_POOL.map(p => p.id))
+
+/** Get the sector a part belongs to based on pool membership (not where it dropped). */
+export function getPartSector(partId: string): 1 | 2 {
+  return S1_PART_IDS.has(partId) ? 1 : 2
+}
+
 export const ALL_EQUIPMENT: Record<string, EquipmentDefinition> = Object.fromEntries(
   EQUIPMENT.map((e) => [e.id, e])
 )

@@ -6,7 +6,7 @@ import { ALL_ENEMIES } from '../data/enemies'
 import { resolveDrops, resolveWarperDrop } from '../game/drops'
 import { collapseRandomRoom } from '../game/mapGen'
 import { makeCardInstance, projectSlotActions } from '../game/combat'
-import { ALL_PARTS, ALL_EQUIPMENT } from '../data/parts'
+import { ALL_PARTS, ALL_EQUIPMENT, getPartSector } from '../data/parts'
 import { ALL_CARDS, SECTOR1_CARD_POOL, SECTOR2_CARD_POOL } from '../data/cards'
 import type { BodySlot, EquipmentDefinition, CombatEvent } from '../game/types'
 
@@ -401,8 +401,7 @@ export default function CombatScreen() {
                 })
                 // Archive new parts from this run
                 for (const part of run.parts) {
-                  const partSector = (run.carriedPartSector && part.id === permanent.selectedArchivePart) ? run.carriedPartSector : run.sector as 1 | 2
-                  permanent.addToArchive(part.id, partSector)
+                  permanent.addToArchive(part.id, getPartSector(part.id))
                 }
                 // Trigger cooldown on carried part (if it was active — sector was reached)
                 if (permanent.selectedArchivePart && run.carriedPartSector && run.carriedPartSector <= run.sector) {
