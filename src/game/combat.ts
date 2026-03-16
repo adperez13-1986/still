@@ -551,7 +551,11 @@ export function executeBodyActions(ctx: CombatContext): CombatResult {
 
   // Cool bonus: gain Block equal to unplayed cards (restraint reward)
   if (isCool(result.combat.heat)) {
-    const unplayedCards = result.combat.hand.length
+    const assignedIds = new Set([
+      ...Object.values(result.combat.slotModifiers).filter((id): id is string => id !== null),
+      ...Object.values(result.combat.slotModifiers2).filter((id): id is string => id !== null),
+    ])
+    const unplayedCards = result.combat.hand.filter(c => !assignedIds.has(c.instanceId)).length
     if (unplayedCards > 0) {
       result.combat.block += unplayedCards
       result.log.push(`Cool focus: +${unplayedCards} Block (${unplayedCards} cards held)`)

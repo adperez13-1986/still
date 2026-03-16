@@ -203,11 +203,16 @@ export default function CombatScreen() {
   const nextRoundHeat = projectedHeat
 
   // Cool passive block preview: if currently Cool, show block from unplayed cards
+  // Slot modifiers stay in hand array (assigned via slotModifiers ID), so exclude them
   const coolPassiveBlock = useRunStore((s) => {
     const c = s.combat
     if (!c || c.phase !== 'planning') return 0
     if (c.heat > 3) return 0
-    return c.hand.length
+    const assignedIds = new Set([
+      ...Object.values(c.slotModifiers).filter(Boolean),
+      ...Object.values(c.slotModifiers2).filter(Boolean),
+    ])
+    return c.hand.filter(card => !assignedIds.has(card.instanceId)).length
   })
 
   // ─── Card Interaction ─────────────────────────────────────────────
