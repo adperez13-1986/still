@@ -495,14 +495,7 @@ const overheatReactor: BehavioralPartDefinition = {
   rarity: 'rare',
 }
 
-const perpetualCore: BehavioralPartDefinition = {
-  id: 'perpetual-core',
-  name: 'Perpetual Core',
-  description: 'When your draw pile is empty, shuffle your discard pile back in.',
-  trigger: { type: 'onDrawPileEmpty' },
-  effect: { type: 'reshuffleDiscard' },
-  rarity: 'rare',
-}
+// Perpetual Core removed — mid-turn reshuffle is now default behavior
 
 // ─── Exports ────────────────────────────────────────────────────────────────
 
@@ -539,7 +532,7 @@ export const SECTOR2_PART_POOL: BehavioralPartDefinition[] = [
 ]
 
 export const RUN_WARPING_PARTS: BehavioralPartDefinition[] = [
-  dualLoader, thermalDamper, overheatReactor, perpetualCore,
+  dualLoader, thermalDamper, overheatReactor,
 ]
 
 export const BEHAVIORAL_PARTS: BehavioralPartDefinition[] = [

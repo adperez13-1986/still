@@ -648,7 +648,7 @@ export function executeBodyActions(ctx: CombatContext): CombatResult {
 
     // Apply card draw from body actions
     if (actionResult.cardsDrawn > 0) {
-      drawCards(result.combat, actionResult.cardsDrawn, ctx.parts)
+      drawCards(result.combat, actionResult.cardsDrawn)
     }
 
     // Apply blockCost: reduce Block after action resolves (e.g., Shrapnel Launcher)
@@ -708,7 +708,7 @@ export function executeBodyActions(ctx: CombatContext): CombatResult {
     for (const part of ctx.parts) {
       if (part.id === 'momentum-core') {
         applyPartEffect(part, result, ctx)
-        const drawn = drawCards(result.combat, 1, ctx.parts)
+        const drawn = drawCards(result.combat, 1)
         result.log.push(`${part.name}: all 4 slots fired! Drew ${drawn} card(s)`)
       }
     }
@@ -839,7 +839,7 @@ export function playModifierCard(
     for (const effect of effectsToApply) {
       switch (effect.type) {
         case 'draw': {
-          const actualDrawn = drawCards(result.combat, effect.count, ctx.parts)
+          const actualDrawn = drawCards(result.combat, effect.count)
           result.log.push(`Drew ${actualDrawn}/${effect.count} card(s)`)
           break
         }
@@ -1085,7 +1085,7 @@ export function executeEnemyTurn(ctx: CombatContext): CombatResult {
         // Damage scaling: bosses get flat +15%, regular enemies scale with combatsCleared
         const scalingMultiplier = def.isBoss
           ? 1.15
-          : 1 + ctx.combatsCleared * 0.15
+          : 1 + ctx.combatsCleared * 0.08
         perHit = Math.floor(perHit * scalingMultiplier)
         // Enemy Strength
         perHit += getStatus(enemy.statusEffects, 'Strength')
@@ -1306,7 +1306,7 @@ export function startTurn(ctx: CombatContext, inspiredBonus = 0): CombatResult {
     result.combat.discardPile = []
   }
   const drawCount = ctx.drawCount + inspiredBonus
-  const actualDrawn = drawCards(result.combat, drawCount, ctx.parts)
+  const actualDrawn = drawCards(result.combat, drawCount)
   result.log.push(`Drew ${actualDrawn}/${drawCount} cards`)
 
   // Set phase
@@ -1452,13 +1452,11 @@ export function projectSlotActions(
 
 // ─── Draw Cards Helper ──────────────────────────────────────────────────────
 
-function drawCards(combat: CombatState, count: number, parts: BehavioralPartDefinition[] = []): number {
+function drawCards(combat: CombatState, count: number): number {
   let drawn = 0
   for (let i = 0; i < count; i++) {
     if (combat.drawPile.length === 0) {
-      // Only reshuffle mid-turn if player has Perpetual Core
-      const hasPerpetualCore = parts.some(p => p.id === 'perpetual-core')
-      if (!hasPerpetualCore || combat.discardPile.length === 0) break
+      if (combat.discardPile.length === 0) break
       combat.drawPile = shuffle(combat.discardPile)
       combat.discardPile = []
     }
@@ -1499,7 +1497,7 @@ function applyPartEffect(
       break
     }
     case 'drawCards': {
-      const actualDrawn = drawCards(result.combat, part.effect.count, ctx.parts)
+      const actualDrawn = drawCards(result.combat, part.effect.count)
       result.log.push(`${part.name}: drew ${actualDrawn}/${part.effect.count} card(s)`)
       break
     }
