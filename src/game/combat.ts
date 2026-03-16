@@ -170,7 +170,7 @@ export function initCombat(
     drawPile,
     discardPile: [],
     exhaustPile: [],
-    heat: 5,
+    heat: 0,
     block: 0,
     statusEffects: [...startingStatuses],
     roundNumber: 1,
