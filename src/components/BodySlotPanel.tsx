@@ -143,7 +143,7 @@ interface Props {
   activeSlot?: BodySlot | null
 }
 
-export default function BodySlotPanel({ combat, equipment, parts, selectedCardId, projections, onAssign, onUnassign, compact, activeSlot }: Props) {
+export default function BodySlotPanel({ combat, equipment, parts, selectedCardId, projections, onAssign, onUnassign: _onUnassign, compact, activeSlot }: Props) {
   const [popupEquip, setPopupEquip] = useState<EquipmentDefinition | null>(null)
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -312,21 +312,6 @@ export default function BodySlotPanel({ combat, equipment, parts, selectedCardId
                     }}>
                       {modName}{modName2 ? ` + ${modName2}` : ''}
                     </span>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); onUnassign(slot) }}
-                      style={{
-                        fontSize: '9px',
-                        padding: '0 4px',
-                        background: 'transparent',
-                        color: '#e74c3c',
-                        border: '1px solid #e74c3c',
-                        borderRadius: '3px',
-                        cursor: 'pointer',
-                        lineHeight: '1',
-                      }}
-                    >
-                      ×
-                    </button>
                   </>
                 )}
                 {isValid && (
@@ -400,20 +385,6 @@ export default function BodySlotPanel({ combat, equipment, parts, selectedCardId
                   }}>
                     {modName}{modName2 ? ` + ${modName2}` : ''}
                   </span>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); onUnassign(slot) }}
-                    style={{
-                      fontSize: '9px',
-                      padding: '1px 6px',
-                      background: 'transparent',
-                      color: '#e74c3c',
-                      border: '1px solid #e74c3c',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    ×
-                  </button>
                 </div>
               )}
 
