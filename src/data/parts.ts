@@ -517,10 +517,11 @@ export const EQUIPMENT: EquipmentDefinition[] = [
 
 export const SECTOR1_PART_POOL: BehavioralPartDefinition[] = [
   scrapRecycler, ablativeShell,
-  momentumCore, pressureValve, reactiveFrame, fluxCapacitor,
+  momentumCore, pressureValve, fluxCapacitor,
 ]
 
 export const SECTOR2_PART_POOL: BehavioralPartDefinition[] = [
+  reactiveFrame,
   zeroPointField, salvageProtocol, thermalOscillator, emptyChamber,
   failsafeArmor, cryoEngine, gyroStabilizer, meltdownCore, volatileReactor,
 ]
