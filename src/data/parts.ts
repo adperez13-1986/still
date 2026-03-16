@@ -468,14 +468,8 @@ const volatileReactor: BehavioralPartDefinition = {
 
 // ─── Run-Warping Rare Parts ─────────────────────────────────────────────────
 
-const dualLoader: BehavioralPartDefinition = {
-  id: 'dual-loader',
-  name: 'Dual Loader',
-  description: 'You can assign 2 modifiers to the same slot.',
-  trigger: { type: 'onSlotFire', slot: 'Head' }, // passive, checked inline
-  effect: { type: 'dualLoader' },
-  rarity: 'rare',
-}
+// Dual Loader deferred to Sector 3
+// { id: 'dual-loader', name: 'Dual Loader', description: 'You can assign 2 modifiers to the same slot.', rarity: 'rare' }
 
 const thermalDamper: BehavioralPartDefinition = {
   id: 'thermal-damper',
@@ -531,8 +525,9 @@ export const SECTOR2_PART_POOL: BehavioralPartDefinition[] = [
   failsafeArmor, cryoEngine, gyroStabilizer, meltdownCore, volatileReactor,
 ]
 
+// Dual Loader deferred to Sector 3 — too powerful with current slot modifier system
 export const RUN_WARPING_PARTS: BehavioralPartDefinition[] = [
-  dualLoader, thermalDamper, overheatReactor,
+  thermalDamper, overheatReactor,
 ]
 
 export const BEHAVIORAL_PARTS: BehavioralPartDefinition[] = [
