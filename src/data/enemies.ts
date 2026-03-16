@@ -145,7 +145,7 @@ const echoConstruct: EnemyDefinition = {
   ],
   dropPool: [
     { type: 'shards', amount: 15, weight: 1 },
-    { type: 'part', ids: ['momentum-core'], weight: 1 },
+    { type: 'part', ids: ['frost-core'], weight: 1 },
   ],
 }
 

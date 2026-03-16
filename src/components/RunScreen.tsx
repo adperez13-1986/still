@@ -69,7 +69,7 @@ export default function RunScreen() {
       }> = {
         s2: {
           deck: ['overcharge', 'spread-shot', 'thermal-flux', 'glacier-lance', 'controlled-burn', 'failsafe-protocol', 'salvage-burst'],
-          parts: ['thermal-oscillator', 'momentum-core'],
+          parts: ['thermal-oscillator', 'scrap-recycler'],
           equipment: { Head: 'calibrated-optics', Torso: 'reactive-plating', Arms: 'overclocked-pistons', Legs: 'coolant-injector' },
         },
         cool: {
@@ -84,7 +84,7 @@ export default function RunScreen() {
         },
         warm: {
           deck: ['overcharge', 'spread-shot', 'thermal-flux', 'precision-strike', 'controlled-burn', 'failsafe-protocol', 'salvage-burst'],
-          parts: ['momentum-core', 'ablative-shell'],
+          parts: ['frost-core', 'ablative-shell'],
           equipment: { Head: 'tactical-visor', Torso: 'ablative-plates', Arms: 'arc-welder', Legs: 'stabilizer-treads' },
         },
       }

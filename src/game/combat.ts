@@ -713,17 +713,6 @@ export function executeBodyActions(ctx: CombatContext): CombatResult {
     slotsFired.push(slot)
   }
 
-  // Momentum Core: if all 4 body slots fired, gain Block and draw
-  if (slotsFired.length === 4) {
-    for (const part of ctx.parts) {
-      if (part.id === 'momentum-core') {
-        applyPartEffect(part, result, ctx)
-        const drawn = drawCards(result.combat, 1)
-        result.log.push(`${part.name}: all 4 slots fired! Drew ${drawn} card(s)`)
-      }
-    }
-  }
-
   return result
 }
 

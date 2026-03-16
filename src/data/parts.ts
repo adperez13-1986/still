@@ -353,14 +353,9 @@ const ablativeShell: BehavioralPartDefinition = {
   rarity: 'uncommon',
 }
 
-const momentumCore: BehavioralPartDefinition = {
-  id: 'momentum-core',
-  name: 'Momentum Core',
-  description: 'If all 4 body slots fire this turn, gain 3 Block and draw 1 card.',
-  trigger: { type: 'onSlotFire', slot: 'Head' }, // checked post-execution
-  effect: { type: 'bonusBlock', value: 3 },
-  rarity: 'uncommon',
-}
+// Momentum Core removed — "all 4 slots fire" is unconditional now that all slots start equipped.
+// Revisit with a new condition (e.g., "played 2 or fewer cards") when Cool Runner identity is clearer.
+// { id: 'momentum-core', name: 'Momentum Core', description: 'If all 4 body slots fire, +3 Block + draw 1', rarity: 'uncommon' }
 
 const pressureValve: BehavioralPartDefinition = {
   id: 'pressure-valve',
@@ -527,7 +522,7 @@ export const EQUIPMENT: EquipmentDefinition[] = [
 
 export const SECTOR1_PART_POOL: BehavioralPartDefinition[] = [
   frostCore, scrapRecycler, ablativeShell,
-  momentumCore, pressureValve, fluxCapacitor,
+  pressureValve, fluxCapacitor,
 ]
 
 export const SECTOR2_PART_POOL: BehavioralPartDefinition[] = [
