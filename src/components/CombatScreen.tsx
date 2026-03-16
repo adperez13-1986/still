@@ -203,11 +203,11 @@ export default function CombatScreen() {
   const nextRoundHeat = projectedHeat
 
   // Cool passive block preview: if currently Cool, show block from unplayed cards
-  const coolPassiveBlock = useMemo(() => {
+  const coolPassiveBlock = (() => {
     if (!combat || combat.phase !== 'planning') return 0
     if (combat.heat > 3) return 0 // not Cool
     return combat.hand.length
-  }, [combat])
+  })()
 
   // ─── Card Interaction ─────────────────────────────────────────────
   const handleSelectSlotCard = useCallback((instanceId: string | null) => {
