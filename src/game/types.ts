@@ -160,7 +160,7 @@ export interface BehavioralPartDefinition {
 
 // ─── Enemies ─────────────────────────────────────────────────────────────────
 
-export type IntentType = 'Attack' | 'Block' | 'Buff' | 'Debuff' | 'AttackDebuff' | 'DisableSlot' | 'Absorb'
+export type IntentType = 'Attack' | 'Block' | 'Buff' | 'Debuff' | 'AttackDebuff' | 'DisableSlot' | 'Absorb' | 'Scan' | 'HeatReactive'
 
 export interface Intent {
   type: IntentType
@@ -169,6 +169,10 @@ export interface Intent {
   status?: StatusEffectType
   statusStacks?: number
   targetSlot?: BodySlot // for DisableSlot: which slot to disable
+  // HeatReactive sub-intents: resolved at enemy execution based on Still's heat zone
+  coolIntent?: Intent
+  warmIntent?: Intent
+  hotIntent?: Intent
 }
 
 export interface IntentPattern {

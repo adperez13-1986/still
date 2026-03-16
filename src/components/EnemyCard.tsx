@@ -1,5 +1,7 @@
 import type { EnemyInstance, EnemyDefinition, Intent } from '../game/types'
+import { getHeatThreshold } from '../game/types'
 import { getStatus } from '../game/combat'
+import { useRunStore } from '../store/runStore'
 import Sprite from './Sprite'
 import { getEnemySprite } from '../data/sprites'
 
@@ -21,6 +23,8 @@ const INTENT_ICONS: Record<string, string> = {
   AttackDebuff: 'sword+',
   DisableSlot: 'lock',
   Absorb: 'drain',
+  Scan: 'eye',
+  HeatReactive: '?',
 }
 
 const INTENT_COLORS: Record<string, string> = {
@@ -31,11 +35,13 @@ const INTENT_COLORS: Record<string, string> = {
   AttackDebuff: '#c0392b',
   DisableSlot: '#636e72',
   Absorb: '#00cec9',
+  Scan: '#a29bfe',
+  HeatReactive: '#f39c12',
 }
 
 function getEffectiveDamage(intent: Intent, enemy: EnemyInstance, isBoss: boolean, combatsCleared: number): number {
   let dmg = intent.value
-  const scalingMultiplier = isBoss ? 1.15 : 1 + combatsCleared * 0.15
+  const scalingMultiplier = isBoss ? 1.15 : 1 + combatsCleared * 0.08
   dmg = Math.floor(dmg * scalingMultiplier)
   dmg += getStatus(enemy.statusEffects, 'Strength')
   if (getStatus(enemy.statusEffects, 'Weak') > 0) dmg = Math.floor(dmg * 0.75)
@@ -73,9 +79,23 @@ function IntentDisplay({ intent, effectiveDamage }: { intent: Intent; effectiveD
 
 export default function EnemyCard({ instance, definition, selected, recentDamage, onClick, compact, combatsCleared = 0 }: Props) {
   const healthPct = Math.max(0, (instance.currentHealth / instance.maxHealth) * 100)
-  const currentIntent = definition.intentPattern[
+  const heat = useRunStore((s) => s.combat?.heat ?? 0)
+  const rawIntent = definition.intentPattern[
     instance.intentIndex % definition.intentPattern.length
   ]
+
+  // Resolve HeatReactive to the matching sub-intent for display
+  let currentIntent = rawIntent
+  let isScan = false
+  if (rawIntent?.type === 'Scan') {
+    isScan = true
+  } else if (rawIntent?.type === 'HeatReactive') {
+    const zone = getHeatThreshold(heat)
+    const resolved = zone === 'Cool' ? rawIntent.coolIntent
+      : (zone === 'Warm' ? rawIntent.warmIntent : rawIntent.hotIntent)
+    if (resolved) currentIntent = resolved
+  }
+
   const isAttackIntent = currentIntent && (currentIntent.type === 'Attack' || currentIntent.type === 'AttackDebuff')
   const effectiveDmg = currentIntent && isAttackIntent
     ? getEffectiveDamage(currentIntent, instance, !!definition.isBoss, combatsCleared)
@@ -154,10 +174,17 @@ export default function EnemyCard({ instance, definition, selected, recentDamage
               <span style={{ color: '#74b9ff', fontWeight: 'bold', fontSize: '10px' }}>[shield {instance.block}]</span>
             )}
             {!instance.isDefeated && currentIntent && (
-              <span style={{ color: intentColor, fontWeight: 'bold', fontSize: '10px' }}>
-                {intentIcon} {currentIntent.type === 'DisableSlot' ? currentIntent.targetSlot ?? '?' : (isAttackIntent && effectiveDmg != null ? effectiveDmg : currentIntent.value)}{currentIntent.hits && currentIntent.hits > 1 ? `×${currentIntent.hits}` : ''}
-                {currentIntent.status && <span style={{ color: '#aaa', fontWeight: 'normal' }}> +{currentIntent.status[0]}{currentIntent.statusStacks ?? 1}</span>}
-              </span>
+              isScan ? (
+                <span style={{ color: '#a29bfe', fontWeight: 'bold', fontSize: '10px', fontStyle: 'italic' }}>
+                  Scanning...
+                </span>
+              ) : (
+                <span style={{ color: intentColor, fontWeight: 'bold', fontSize: '10px' }}>
+                  {intentIcon} {currentIntent.type === 'DisableSlot' ? currentIntent.targetSlot ?? '?' : (isAttackIntent && effectiveDmg != null ? effectiveDmg : currentIntent.value)}{currentIntent.hits && currentIntent.hits > 1 ? `×${currentIntent.hits}` : ''}
+                  {currentIntent.status && <span style={{ color: '#aaa', fontWeight: 'normal' }}> +{currentIntent.status[0]}{currentIntent.statusStacks ?? 1}</span>}
+                  {rawIntent?.type === 'HeatReactive' && <span style={{ color: '#f39c12', fontWeight: 'normal', fontStyle: 'italic' }}> ⚡</span>}
+                </span>
+              )
             )}
             {instance.statusEffects.map((s) => (
               <span key={s.type} style={{
@@ -259,7 +286,20 @@ export default function EnemyCard({ instance, definition, selected, recentDamage
       {!instance.isDefeated && currentIntent && (
         <div>
           <div style={{ fontSize: '10px', color: '#888', marginBottom: '3px' }}>Next:</div>
-          <IntentDisplay intent={currentIntent} effectiveDamage={effectiveDmg} />
+          {isScan ? (
+            <div style={{ fontSize: '12px', color: '#a29bfe', fontStyle: 'italic', fontWeight: 'bold' }}>
+              Scanning...
+            </div>
+          ) : (
+            <>
+              <IntentDisplay intent={currentIntent} effectiveDamage={effectiveDmg} />
+              {rawIntent?.type === 'HeatReactive' && (
+                <div style={{ fontSize: '9px', color: '#f39c12', marginTop: '2px', fontStyle: 'italic' }}>
+                  Reacts to heat zone ⚡
+                </div>
+              )}
+            </>
+          )}
         </div>
       )}
 

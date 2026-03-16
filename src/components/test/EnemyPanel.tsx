@@ -14,6 +14,8 @@ function intentLabel(intent: Intent): string {
     case 'AttackDebuff': return `Atk ${intent.value} + ${intent.status ?? ''}`
     case 'DisableSlot': return `Disable ${intent.targetSlot ?? '?'}`
     case 'Absorb': return `Absorb ${intent.value}%`
+    case 'Scan': return 'Scanning...'
+    case 'HeatReactive': return 'Heat Reactive'
   }
 }
 
@@ -30,6 +32,10 @@ function intentColor(intent: Intent): string {
     case 'Debuff':
     case 'DisableSlot':
       return '#9b59b6'
+    case 'Scan':
+      return '#a29bfe'
+    case 'HeatReactive':
+      return '#f39c12'
   }
 }
 

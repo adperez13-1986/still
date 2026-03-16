@@ -1069,7 +1069,30 @@ export function executeEnemyTurn(ctx: CombatContext): CombatResult {
     if (enemy.isDefeated) continue
     const def = ctx.enemyDefs[enemy.definitionId]
     if (!def) continue
-    const intent = def.intentPattern[enemy.intentIndex % def.intentPattern.length]
+    let intent = def.intentPattern[enemy.intentIndex % def.intentPattern.length]
+
+    // Resolve HeatReactive: pick sub-intent based on Still's current heat zone
+    if (intent.type === 'HeatReactive') {
+      const zone = getHeatThreshold(result.combat.heat)
+      const resolved = zone === 'Cool' ? intent.coolIntent
+        : (zone === 'Warm' ? intent.warmIntent : intent.hotIntent)
+      if (resolved) intent = resolved
+      else { enemy.intentIndex++; continue }
+    }
+
+    // Scan: telegraph turn — no action
+    if (intent.type === 'Scan') {
+      result.log.push(`${def.name} is scanning...`)
+      result.combat.combatLog.push({
+        type: 'enemyAction',
+        enemyId: enemy.instanceId,
+        enemyName: def.name,
+        intentType: 'Scan',
+      })
+      enemy.intentIndex++
+      enemy.statusEffects = decrementStatuses(enemy.statusEffects)
+      continue
+    }
 
     let eventDamage: number | undefined
     let eventBlocked: number | undefined

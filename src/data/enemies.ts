@@ -149,6 +149,27 @@ const echoConstruct: EnemyDefinition = {
   ],
 }
 
+const thermalScanner: EnemyDefinition = {
+  id: 'thermal-scanner',
+  name: 'Thermal Scanner',
+  maxHealth: 35,
+  intentPattern: [
+    { type: 'Scan', value: 0 },
+    {
+      type: 'HeatReactive', value: 0,
+      coolIntent: { type: 'Attack', value: 12 },
+      warmIntent: { type: 'Attack', value: 7 },
+      hotIntent: { type: 'Buff', value: 2, status: 'Strength' },
+    },
+    { type: 'Attack', value: 8 },
+    { type: 'Block', value: 6 },
+  ],
+  dropPool: [
+    { type: 'shards', amount: 10, weight: 2 },
+    { type: 'equipment', ids: ['worn-actuators', 'basic-scanner'], weight: 1 },
+  ],
+}
+
 // ─── Sector 1 Elite Enemies ─────────────────────────────────────────────────────
 
 const vaultKeeper: EnemyDefinition = {
@@ -450,6 +471,8 @@ export const SECTOR1_ENCOUNTERS: Encounter[] = [
   { enemies: ['wandering-drone', 'fracture-mite'] },
   { enemies: ['corroded-sentry', 'fracture-mite'] },
   { enemies: ['rust-guard', 'glitch-node'] },
+  { enemies: ['thermal-scanner'] },
+  { enemies: ['thermal-scanner', 'fracture-mite'] },
 ]
 
 export const SECTOR1_ELITE_ENCOUNTERS: Encounter[] = [
@@ -482,6 +505,7 @@ export const SECTOR2_ELITE_ENCOUNTERS: Encounter[] = [
 export const SECTOR1_ENEMIES: EnemyDefinition[] = [
   wanderingDrone, rustGuard, corrodedSentry, fractureMite, ironCrawler,
   glitchNode, sentinelShard, hollowRepeater, driftingFrame, echoConstruct,
+  thermalScanner,
 ]
 
 export const SECTOR1_ELITES: EnemyDefinition[] = [
