@@ -1027,7 +1027,7 @@ export const yuri: ModifierCardDefinition = {
 // ─── Exports ────────────────────────────────────────────────────────────────
 
 export const STARTING_CARDS: ModifierCardDefinition[] = [
-  boost, boost, boost,
+  boost, boost, echoProtocol,
   emergencyStrike, emergencyShield,
   coolantFlush, coolantFlush,
   diagnostics,
