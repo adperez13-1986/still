@@ -21,6 +21,7 @@ import {
   OVERHEAT_THRESHOLD,
   OVERHEAT_DAMAGE_PER_POINT,
   getHeatThreshold,
+  isCool,
   isHot,
 } from '../game/types'
 
@@ -546,6 +547,15 @@ export function executeBodyActions(ctx: CombatContext): CombatResult {
     combat: JSON.parse(JSON.stringify(ctx.combat)) as CombatState,
     stillHealth: ctx.stillHealth,
     log: [],
+  }
+
+  // Cool bonus: gain Block equal to unplayed cards (restraint reward)
+  if (isCool(result.combat.heat)) {
+    const unplayedCards = result.combat.hand.length
+    if (unplayedCards > 0) {
+      result.combat.block += unplayedCards
+      result.log.push(`Cool focus: +${unplayedCards} Block (${unplayedCards} cards held)`)
+    }
   }
 
   // Fire onPlanningEnd part triggers (Empty Chamber: block per unplayed card)
