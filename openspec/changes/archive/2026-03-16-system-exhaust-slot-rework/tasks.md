@@ -19,7 +19,7 @@
 
 ## 4. Playtest
 
-- [ ] 4.1 Playtest sector 1 with system exhaust: verify Coolant Flush and Diagnostics exhaust after play, late turns are slot-modifier focused
-- [ ] 4.2 Playtest slot restrictions: verify Spread Shot only highlights ARMS, Boost only highlights ARMS/TORSO, Echo Protocol highlights all filled slots
-- [ ] 4.3 Playtest Failsafe Armor interaction: verify exhaust pile grows as system cards are played, block bonus scales correctly
-- [ ] 4.4 Playtest full run: verify combat pacing feels right across Sector 1 and 2, no softlocks or unwinnable states
+- [x] 4.1 Playtest sector 1 with system exhaust: verified, difficulty rebalanced (damage scaling 15%→8%, mid-turn reshuffle enabled, all slots start equipped)
+- [x] 4.2 Playtest slot restrictions: verified working
+- [x] 4.3 Playtest Failsafe Armor interaction: Scrap Recycler synergy confirmed strong
+- [x] 4.4 Playtest full run: completed with generic stat-stack build — survivable, pacing works
