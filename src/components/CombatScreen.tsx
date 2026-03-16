@@ -202,6 +202,13 @@ export default function CombatScreen() {
   // No free passive cooling — heat persists between turns (only LEGS equipment cools)
   const nextRoundHeat = projectedHeat
 
+  // Cool passive block preview: if currently Cool, show block from unplayed cards
+  const coolPassiveBlock = useMemo(() => {
+    if (!combat || combat.phase !== 'planning') return 0
+    if (combat.heat > 3) return 0 // not Cool
+    return combat.hand.length
+  }, [combat])
+
   // ─── Card Interaction ─────────────────────────────────────────────
   const handleSelectSlotCard = useCallback((instanceId: string | null) => {
     if (animating) return
@@ -598,6 +605,7 @@ export default function CombatScreen() {
               maxHealth={run.maxHealth}
               heat={combat.heat}
               block={displayBlock ?? combat.block}
+              coolPassiveBlock={animating ? 0 : coolPassiveBlock}
               statusEffects={combat.statusEffects}
               compact
               projectedHeat={animating ? combat.heat : projectedHeat}
@@ -643,6 +651,7 @@ export default function CombatScreen() {
               maxHealth={run.maxHealth}
               heat={combat.heat}
               block={displayBlock ?? combat.block}
+              coolPassiveBlock={animating ? 0 : coolPassiveBlock}
               statusEffects={combat.statusEffects}
             />
             {damageNumbers.filter(dn => dn.target === 'still').map(dn => (
