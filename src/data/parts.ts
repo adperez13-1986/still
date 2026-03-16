@@ -338,9 +338,9 @@ const frostCore: BehavioralPartDefinition = {
 const scrapRecycler: BehavioralPartDefinition = {
   id: 'scrap-recycler',
   name: 'Scrap Recycler',
-  description: 'When a card is Exhausted, gain 4 Block.',
+  description: 'When a card is Exhausted, gain 2 Block.',
   trigger: { type: 'onCardExhaust' },
-  effect: { type: 'bonusBlock', value: 4 },
+  effect: { type: 'bonusBlock', value: 2 },
   rarity: 'uncommon',
 }
 
