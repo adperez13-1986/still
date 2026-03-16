@@ -325,6 +325,16 @@ const stabilizerTreads: EquipmentDefinition = {
 
 // Feedback Loop and Residual Charge removed — passive cooling undermines planning-authority heat model
 
+const frostCore: BehavioralPartDefinition = {
+  id: 'frost-core',
+  name: 'Frost Core',
+  description: 'While Cool: gain 2 Block at turn start.',
+  trigger: { type: 'onTurnStart' },
+  effect: { type: 'bonusBlock', value: 2 },
+  rarity: 'uncommon',
+  heatCondition: 'Cool',
+}
+
 const scrapRecycler: BehavioralPartDefinition = {
   id: 'scrap-recycler',
   name: 'Scrap Recycler',
@@ -516,7 +526,7 @@ export const EQUIPMENT: EquipmentDefinition[] = [
 ]
 
 export const SECTOR1_PART_POOL: BehavioralPartDefinition[] = [
-  scrapRecycler, ablativeShell,
+  frostCore, scrapRecycler, ablativeShell,
   momentumCore, pressureValve, fluxCapacitor,
 ]
 
