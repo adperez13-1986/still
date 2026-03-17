@@ -68,22 +68,26 @@ export default function RunScreen() {
         equipment: Record<string, string>
       }> = {
         s2: {
-          deck: ['overcharge', 'spread-shot', 'thermal-flux', 'glacier-lance', 'controlled-burn', 'failsafe-protocol', 'salvage-burst'],
+          // Generic S2: mixed system cards across all slots
+          deck: ['overcharge', 'spread-shot', 'quick-scan', 'thermal-flux', 'glacier-lance', 'failsafe-protocol', 'salvage-burst'],
           parts: ['thermal-oscillator', 'scrap-recycler'],
           equipment: { Head: 'calibrated-optics', Torso: 'reactive-plating', Arms: 'overclocked-pistons', Legs: 'coolant-injector' },
         },
         cool: {
-          deck: ['precision-strike', 'cold-efficiency', 'coolant-flush', 'glacier-lance', 'thermal-equilibrium', 'salvage-burst'],
+          // Cool Runner: HEAD draw (cold-efficiency), LEGS cooling (thermal-equilibrium, deep-freeze), ARMS damage (glacier-lance)
+          deck: ['cold-efficiency', 'deep-freeze', 'thermal-equilibrium', 'glacier-lance', 'precision-strike', 'armor-protocol'],
           parts: ['zero-point-field', 'cryo-engine'],
           equipment: { Head: 'predictive-array', Torso: 'cryo-shell', Arms: 'cryo-cannon', Legs: 'cryo-lock' },
         },
         hot: {
-          deck: ['overcharge', 'controlled-burn', 'spread-shot', 'heat-vent', 'thermal-flux', 'meltdown', 'salvage-burst'],
+          // Pyromaniac: HEAD buff (thermal-surge), LEGS venting (heat-vent, salvage-burst), ARMS burst (meltdown, controlled-burn)
+          deck: ['thermal-surge', 'heat-vent', 'salvage-burst', 'meltdown', 'controlled-burn', 'spread-shot'],
           parts: ['reactive-frame', 'pressure-valve'],
           equipment: { Head: 'pyroclast-scanner', Torso: 'heat-shield', Arms: 'meltdown-cannon', Legs: 'thermal-exhaust' },
         },
         warm: {
-          deck: ['overcharge', 'spread-shot', 'thermal-flux', 'precision-strike', 'controlled-burn', 'failsafe-protocol', 'salvage-burst'],
+          // Warm Surfer: balanced across all slots
+          deck: ['overcharge', 'spread-shot', 'quick-scan', 'thermal-flux', 'failsafe-protocol', 'target-lock', 'salvage-burst'],
           parts: ['frost-core', 'ablative-shell'],
           equipment: { Head: 'tactical-visor', Torso: 'ablative-plates', Arms: 'arc-welder', Legs: 'stabilizer-treads' },
         },
