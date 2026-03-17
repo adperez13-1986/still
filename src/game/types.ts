@@ -75,7 +75,7 @@ export type SystemEffect =
 
 export type ModifierCardType =
   | { type: 'slot'; modifier: ModifierCategory; effect: SlotModifierEffect }
-  | { type: 'system'; modifier: SystemCategory; effects: SystemEffect[] }
+  | { type: 'system'; modifier: SystemCategory; effects: SystemEffect[]; homeSlot: BodySlot }
 
 export interface HeatBonus {
   threshold: HeatThreshold

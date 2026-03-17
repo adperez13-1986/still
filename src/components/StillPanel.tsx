@@ -9,7 +9,6 @@ interface Props {
   maxHealth: number
   heat: number
   block: number
-  coolPassiveBlock?: number
   statusEffects: StatusEffect[]
   compact?: boolean
   projectedHeat?: number
@@ -24,7 +23,7 @@ const HEAT_COLORS: Record<string, string> = {
 }
 
 export default function StillPanel({
-  health, maxHealth, heat, block, coolPassiveBlock, statusEffects, compact, projectedHeat, nextRoundHeat,
+  health, maxHealth, heat, block, statusEffects, compact, projectedHeat, nextRoundHeat,
 }: Props) {
   const healthPct = Math.max(0, (health / maxHealth) * 100)
   const healthColor = healthPct > 50 ? '#27ae60' : healthPct > 25 ? '#f39c12' : '#c0392b'
@@ -99,10 +98,8 @@ export default function StillPanel({
           )}
         </span>
         {/* Block */}
-        {(block > 0 || (coolPassiveBlock ?? 0) > 0) && (
-          <span style={{ color: '#74b9ff', fontWeight: 'bold' }}>
-            Blk {block}{coolPassiveBlock ? <span style={{ color: '#27ae60' }}> +{coolPassiveBlock}</span> : null}
-          </span>
+        {block > 0 && (
+          <span style={{ color: '#74b9ff', fontWeight: 'bold' }}>Blk {block}</span>
         )}
         {/* Status pills */}
         {statusEffects.map((s) => (
@@ -175,7 +172,7 @@ export default function StillPanel({
       </div>
 
       {/* Block */}
-      {(block > 0 || (coolPassiveBlock ?? 0) > 0) && (
+      {block > 0 && (
         <div style={{
           display: 'flex',
           alignItems: 'center',
@@ -185,7 +182,7 @@ export default function StillPanel({
           fontSize: '13px',
         }}>
           <span>Shield</span>
-          <span style={{ fontWeight: 'bold', fontSize: '16px' }}>{block}{coolPassiveBlock ? <span style={{ color: '#27ae60' }}> +{coolPassiveBlock}</span> : null}</span>
+          <span style={{ fontWeight: 'bold', fontSize: '16px' }}>{block}</span>
         </div>
       )}
 

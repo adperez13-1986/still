@@ -19,7 +19,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 }
 
 export default function CardDisplay({ card, disabled, selected, onClick }: Props) {
-  const category = card.category.type === 'slot' ? card.category.modifier : 'System'
+  const category = card.category.type === 'slot' ? card.category.modifier : card.category.homeSlot
   const categoryColor = card.category.type === 'slot'
     ? CATEGORY_COLORS[card.category.modifier] ?? '#888'
     : '#f1c40f'

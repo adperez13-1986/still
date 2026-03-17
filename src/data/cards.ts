@@ -67,6 +67,7 @@ const coolantFlush: ModifierCardDefinition = {
     type: 'system',
     modifier: 'Cooling',
     effects: [],
+    homeSlot: 'Legs',
   },
   keywords: [],
   upgraded: {
@@ -78,6 +79,7 @@ const coolantFlush: ModifierCardDefinition = {
       type: 'system',
       modifier: 'Cooling',
       effects: [],
+    homeSlot: 'Legs',
     },
     keywords: [],
   },
@@ -92,6 +94,7 @@ const diagnostics: ModifierCardDefinition = {
     type: 'system',
     modifier: 'Draw',
     effects: [{ type: 'draw', count: 2 }],
+    homeSlot: 'Head',
   },
   keywords: [],
   upgraded: {
@@ -103,6 +106,7 @@ const diagnostics: ModifierCardDefinition = {
       type: 'system',
       modifier: 'Draw',
       effects: [{ type: 'draw', count: 3 }],
+    homeSlot: 'Head',
     },
     keywords: [],
   },
@@ -256,6 +260,7 @@ const deepFreeze: ModifierCardDefinition = {
     type: 'system',
     modifier: 'Cooling',
     effects: [],
+    homeSlot: 'Legs',
   },
   keywords: [],
   upgraded: {
@@ -267,6 +272,7 @@ const deepFreeze: ModifierCardDefinition = {
       type: 'system',
       modifier: 'Cooling',
       effects: [{ type: 'gainBlock', value: 4 }],
+    homeSlot: 'Legs',
     },
     keywords: [],
   },
@@ -281,6 +287,7 @@ const heatVent: ModifierCardDefinition = {
     type: 'system',
     modifier: 'Cooling',
     effects: [{ type: 'damage', value: 4, targetMode: 'all_enemies' }],
+    homeSlot: 'Legs',
   },
   keywords: [],
   upgraded: {
@@ -292,6 +299,7 @@ const heatVent: ModifierCardDefinition = {
       type: 'system',
       modifier: 'Cooling',
       effects: [{ type: 'damage', value: 6, targetMode: 'all_enemies' }],
+    homeSlot: 'Legs',
     },
     keywords: [],
   },
@@ -306,6 +314,7 @@ const quickScan: ModifierCardDefinition = {
     type: 'system',
     modifier: 'Draw',
     effects: [{ type: 'draw', count: 3 }],
+    homeSlot: 'Head',
   },
   keywords: [],
   upgraded: {
@@ -317,6 +326,7 @@ const quickScan: ModifierCardDefinition = {
       type: 'system',
       modifier: 'Draw',
       effects: [{ type: 'draw', count: 4 }],
+    homeSlot: 'Head',
     },
     keywords: [],
   },
@@ -331,6 +341,7 @@ const thermalSurge: ModifierCardDefinition = {
     type: 'system',
     modifier: 'Conditional',
     effects: [{ type: 'applyStatus', status: 'Strength', stacks: 2, target: 'self' }],
+    homeSlot: 'Head',
   },
   keywords: [],
   heatCondition: 'Warm',
@@ -343,6 +354,7 @@ const thermalSurge: ModifierCardDefinition = {
       type: 'system',
       modifier: 'Conditional',
       effects: [{ type: 'applyStatus', status: 'Strength', stacks: 3, target: 'self' }],
+    homeSlot: 'Head',
     },
     keywords: [],
     heatCondition: 'Warm',
@@ -358,6 +370,7 @@ const meltdown: ModifierCardDefinition = {
     type: 'system',
     modifier: 'Conditional',
     effects: [{ type: 'damage', value: 15, targetMode: 'single_enemy' }],
+    homeSlot: 'Arms',
   },
   keywords: [],
   heatCondition: 'Hot',
@@ -370,6 +383,7 @@ const meltdown: ModifierCardDefinition = {
       type: 'system',
       modifier: 'Conditional',
       effects: [{ type: 'damage', value: 20, targetMode: 'single_enemy' }],
+    homeSlot: 'Arms',
     },
     keywords: [],
     heatCondition: 'Hot',
@@ -385,6 +399,7 @@ const fieldRepair: ModifierCardDefinition = {
     type: 'system',
     modifier: 'Cooling',
     effects: [{ type: 'heal', value: 6 }],
+    homeSlot: 'Torso',
   },
   keywords: [],
   upgraded: {
@@ -396,6 +411,7 @@ const fieldRepair: ModifierCardDefinition = {
       type: 'system',
       modifier: 'Cooling',
       effects: [{ type: 'heal', value: 9 }],
+    homeSlot: 'Torso',
     },
     keywords: [],
   },
@@ -410,6 +426,7 @@ const targetLock: ModifierCardDefinition = {
     type: 'system',
     modifier: 'Conditional',
     effects: [{ type: 'applyStatus', status: 'Vulnerable', stacks: 2, target: 'all_enemies' }],
+    homeSlot: 'Head',
   },
   keywords: [],
   heatCondition: 'Warm',
@@ -422,6 +439,7 @@ const targetLock: ModifierCardDefinition = {
       type: 'system',
       modifier: 'Conditional',
       effects: [{ type: 'applyStatus', status: 'Vulnerable', stacks: 3, target: 'all_enemies' }],
+    homeSlot: 'Head',
     },
     keywords: [],
     heatCondition: 'Warm',
@@ -440,6 +458,7 @@ const precisionStrike: ModifierCardDefinition = {
     type: 'system',
     modifier: 'Conditional',
     effects: [{ type: 'damage', value: 8, targetMode: 'single_enemy' }],
+    homeSlot: 'Arms',
   },
   keywords: [],
   heatBonus: {
@@ -455,6 +474,7 @@ const precisionStrike: ModifierCardDefinition = {
       type: 'system',
       modifier: 'Conditional',
       effects: [{ type: 'damage', value: 10, targetMode: 'single_enemy' }],
+    homeSlot: 'Arms',
     },
     keywords: [],
     heatBonus: {
@@ -473,6 +493,7 @@ const coldEfficiency: ModifierCardDefinition = {
     type: 'system',
     modifier: 'Draw',
     effects: [{ type: 'draw', count: 2 }],
+    homeSlot: 'Head',
   },
   keywords: [],
   heatBonus: {
@@ -488,6 +509,7 @@ const coldEfficiency: ModifierCardDefinition = {
       type: 'system',
       modifier: 'Draw',
       effects: [{ type: 'draw', count: 3 }],
+    homeSlot: 'Head',
     },
     keywords: [],
     heatBonus: {
@@ -507,6 +529,7 @@ const fuelTheFire: ModifierCardDefinition = {
     type: 'system',
     modifier: 'Conditional',
     effects: [{ type: 'damage', value: 6, targetMode: 'single_enemy' }],
+    homeSlot: 'Arms',
   },
   keywords: [],
   heatBonus: {
@@ -525,6 +548,7 @@ const fuelTheFire: ModifierCardDefinition = {
       type: 'system',
       modifier: 'Conditional',
       effects: [{ type: 'damage', value: 8, targetMode: 'single_enemy' }],
+    homeSlot: 'Arms',
     },
     keywords: [],
     heatBonus: {
@@ -546,6 +570,7 @@ const heatSurge: ModifierCardDefinition = {
     type: 'system',
     modifier: 'Draw',
     effects: [{ type: 'draw', count: 2 }],
+    homeSlot: 'Head',
   },
   keywords: [],
   heatBonus: {
@@ -561,6 +586,7 @@ const heatSurge: ModifierCardDefinition = {
       type: 'system',
       modifier: 'Draw',
       effects: [{ type: 'draw', count: 3 }],
+    homeSlot: 'Head',
     },
     keywords: [],
     heatBonus: {
@@ -579,6 +605,7 @@ const recklessCharge: ModifierCardDefinition = {
     type: 'system',
     modifier: 'Conditional',
     effects: [{ type: 'damage', value: 18, targetMode: 'single_enemy' }],
+    homeSlot: 'Arms',
   },
   keywords: [],
   upgraded: {
@@ -590,6 +617,7 @@ const recklessCharge: ModifierCardDefinition = {
       type: 'system',
       modifier: 'Conditional',
       effects: [{ type: 'damage', value: 24, targetMode: 'single_enemy' }],
+    homeSlot: 'Arms',
     },
     keywords: [],
   },
@@ -604,7 +632,8 @@ const thermalFlux: ModifierCardDefinition = {
   category: {
     type: 'system',
     modifier: 'Cooling',
-    effects: [], // damage resolved dynamically from heatChangeThisTurn
+    effects: [],
+    homeSlot: 'Legs', // damage resolved dynamically from heatChangeThisTurn
   },
   keywords: [],
   upgraded: {
@@ -615,7 +644,8 @@ const thermalFlux: ModifierCardDefinition = {
     category: {
       type: 'system',
       modifier: 'Cooling',
-      effects: [], // damage + block resolved dynamically
+      effects: [],
+    homeSlot: 'Legs', // damage + block resolved dynamically
     },
     keywords: [],
   },
@@ -630,6 +660,7 @@ const overclock: ModifierCardDefinition = {
     type: 'system',
     modifier: 'Conditional',
     effects: [{ type: 'applyStatus', status: 'Strength', stacks: 1, target: 'self' }],
+    homeSlot: 'Head',
   },
   keywords: [],
   upgraded: {
@@ -641,6 +672,7 @@ const overclock: ModifierCardDefinition = {
       type: 'system',
       modifier: 'Conditional',
       effects: [{ type: 'applyStatus', status: 'Strength', stacks: 2, target: 'self' }],
+    homeSlot: 'Head',
     },
     keywords: [],
   },
@@ -659,6 +691,7 @@ const failsafeProtocol: ModifierCardDefinition = {
     type: 'system',
     modifier: 'Conditional',
     effects: [{ type: 'gainBlock', value: 10 }, { type: 'draw', count: 1 }],
+    homeSlot: 'Torso',
   },
   keywords: [],
   upgraded: {
@@ -670,6 +703,7 @@ const failsafeProtocol: ModifierCardDefinition = {
       type: 'system',
       modifier: 'Conditional',
       effects: [{ type: 'gainBlock', value: 14 }, { type: 'draw', count: 1 }],
+    homeSlot: 'Torso',
     },
     keywords: [],
   },
@@ -717,6 +751,7 @@ const glacierLance: ModifierCardDefinition = {
     type: 'system',
     modifier: 'Conditional',
     effects: [{ type: 'damage', value: 10, targetMode: 'single_enemy' }],
+    homeSlot: 'Arms',
   },
   keywords: [],
   heatBonus: {
@@ -735,6 +770,7 @@ const glacierLance: ModifierCardDefinition = {
       type: 'system',
       modifier: 'Conditional',
       effects: [{ type: 'damage', value: 12, targetMode: 'single_enemy' }],
+    homeSlot: 'Arms',
     },
     keywords: [],
     heatBonus: {
@@ -756,6 +792,7 @@ const controlledBurn: ModifierCardDefinition = {
     type: 'system',
     modifier: 'Conditional',
     effects: [{ type: 'applyStatus', status: 'Strength', stacks: 2, target: 'self' }],
+    homeSlot: 'Arms',
   },
   keywords: [],
   heatBonus: {
@@ -774,6 +811,7 @@ const controlledBurn: ModifierCardDefinition = {
       type: 'system',
       modifier: 'Conditional',
       effects: [{ type: 'applyStatus', status: 'Strength', stacks: 3, target: 'self' }],
+    homeSlot: 'Arms',
     },
     keywords: [],
     heatBonus: {
@@ -795,6 +833,7 @@ const fluxSpike: ModifierCardDefinition = {
     type: 'system',
     modifier: 'Conditional',
     effects: [{ type: 'damage', value: 14, targetMode: 'all_enemies' }],
+    homeSlot: 'Arms',
   },
   keywords: [],
   heatCondition: 'Warm',
@@ -807,6 +846,7 @@ const fluxSpike: ModifierCardDefinition = {
       type: 'system',
       modifier: 'Conditional',
       effects: [{ type: 'damage', value: 20, targetMode: 'all_enemies' }],
+    homeSlot: 'Arms',
     },
     keywords: [],
     heatCondition: 'Warm',
@@ -822,6 +862,7 @@ const thermalEquilibrium: ModifierCardDefinition = {
     type: 'system',
     modifier: 'Cooling',
     effects: [{ type: 'gainBlock', value: 6 }],
+    homeSlot: 'Legs',
   },
   keywords: [],
   upgraded: {
@@ -833,6 +874,7 @@ const thermalEquilibrium: ModifierCardDefinition = {
       type: 'system',
       modifier: 'Cooling',
       effects: [{ type: 'gainBlock', value: 8 }],
+    homeSlot: 'Legs',
     },
     keywords: [],
   },
@@ -849,6 +891,7 @@ const armorProtocol: ModifierCardDefinition = {
     type: 'system',
     modifier: 'Conditional',
     effects: [{ type: 'applyStatus', status: 'Dexterity', stacks: 2, target: 'self' }],
+    homeSlot: 'Torso',
   },
   keywords: [],
   upgraded: {
@@ -860,6 +903,7 @@ const armorProtocol: ModifierCardDefinition = {
       type: 'system',
       modifier: 'Conditional',
       effects: [{ type: 'applyStatus', status: 'Dexterity', stacks: 3, target: 'self' }],
+    homeSlot: 'Torso',
     },
     keywords: [],
   },
@@ -874,6 +918,7 @@ const salvageBurst: ModifierCardDefinition = {
     type: 'system',
     modifier: 'Draw',
     effects: [{ type: 'draw', count: 3 }],
+    homeSlot: 'Legs',
   },
   keywords: [],
   upgraded: {
@@ -885,6 +930,7 @@ const salvageBurst: ModifierCardDefinition = {
       type: 'system',
       modifier: 'Draw',
       effects: [{ type: 'draw', count: 4 }],
+    homeSlot: 'Legs',
     },
     keywords: [],
   },
@@ -953,6 +999,7 @@ export const yanah: ModifierCardDefinition = {
     effects: [
       { type: 'gainBlock', value: 4 },
     ],
+    homeSlot: 'Torso',
   },
   keywords: [],
   heatBonus: {
@@ -972,6 +1019,7 @@ export const yanah: ModifierCardDefinition = {
       effects: [
         { type: 'gainBlock', value: 6 },
       ],
+    homeSlot: 'Torso',
     },
     keywords: [],
     heatBonus: {
@@ -994,6 +1042,7 @@ export const yuri: ModifierCardDefinition = {
     effects: [
       { type: 'damage', value: 8, targetMode: 'single_enemy' },
     ],
+    homeSlot: 'Head',
   },
   keywords: [],
   heatBonus: {
@@ -1013,6 +1062,7 @@ export const yuri: ModifierCardDefinition = {
       effects: [
         { type: 'damage', value: 10, targetMode: 'single_enemy' },
       ],
+    homeSlot: 'Head',
     },
     keywords: [],
     heatBonus: {

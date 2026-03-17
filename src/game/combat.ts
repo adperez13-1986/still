@@ -21,7 +21,6 @@ import {
   OVERHEAT_THRESHOLD,
   OVERHEAT_DAMAGE_PER_POINT,
   getHeatThreshold,
-  isCool,
   isHot,
 } from '../game/types'
 
@@ -87,9 +86,10 @@ export function decrementStatuses(effects: StatusEffect[]): StatusEffect[] {
 
 // ─── Slot Restrictions ───────────────────────────────────────────────────────
 
-/** Return the allowed body slots for a slot modifier card, or null if universal. */
+/** Return the allowed body slots for a card, or null if universal. */
 export function getAllowedSlots(card: ModifierCardDefinition): BodySlot[] | null {
-  if (card.category.type !== 'slot') return null
+  // System cards: only their home slot
+  if (card.category.type === 'system') return [card.category.homeSlot]
   const effect = card.category.effect
   switch (effect.type) {
     case 'amplify':  return ['Arms', 'Torso']
@@ -549,19 +549,6 @@ export function executeBodyActions(ctx: CombatContext): CombatResult {
     log: [],
   }
 
-  // Cool bonus: gain Block equal to unplayed cards (restraint reward)
-  if (isCool(result.combat.heat)) {
-    const assignedIds = new Set([
-      ...Object.values(result.combat.slotModifiers).filter((id): id is string => id !== null),
-      ...Object.values(result.combat.slotModifiers2).filter((id): id is string => id !== null),
-    ])
-    const unplayedCards = result.combat.hand.filter(c => !assignedIds.has(c.instanceId)).length
-    if (unplayedCards > 0) {
-      result.combat.block += unplayedCards
-      result.log.push(`Cool focus: +${unplayedCards} Block (${unplayedCards} cards held)`)
-    }
-  }
-
   // Fire onPlanningEnd part triggers (Empty Chamber: block per unplayed card)
   for (const part of ctx.parts) {
     if (part.trigger.type === 'onPlanningEnd') {
@@ -572,6 +559,12 @@ export function executeBodyActions(ctx: CombatContext): CombatResult {
   const slotsFired: BodySlot[] = []
 
   for (const slot of BODY_SLOTS) {
+    // System card slots: already fired during planning, skip execution
+    if (result.combat.slotModifiers[slot] === '__system__') {
+      slotsFired.push(slot) // counts as "fired" for parts like Momentum Core
+      continue
+    }
+
     // Disabled slots: Salvage Protocol generates Block, otherwise skip
     if (result.combat.disabledSlots.includes(slot)) {
       let salvaged = false
@@ -827,7 +820,34 @@ export function playModifierCard(
 
     result.log.push(`Assigned ${card.name} to ${targetSlot}`)
   } else {
-    // System card — apply effects immediately
+    // System card — assigned to home slot, fires instantly during planning
+    if (!targetSlot) {
+      result.log.push(`${card.name} requires its home slot (${card.category.homeSlot})`)
+      return result
+    }
+
+    // Validate home slot
+    if (targetSlot !== card.category.homeSlot) {
+      result.log.push(`${card.name} can only be assigned to ${card.category.homeSlot}`)
+      return result
+    }
+
+    // Check slot not disabled
+    if (result.combat.disabledSlots.includes(targetSlot)) {
+      result.log.push(`Cannot target disabled slot: ${targetSlot}`)
+      return result
+    }
+
+    // Check slot not already occupied (by modifier or another system card)
+    if (result.combat.slotModifiers[targetSlot] !== null) {
+      result.log.push(`${targetSlot} already has a card assigned`)
+      return result
+    }
+
+    // Mark slot as occupied by system card
+    result.combat.slotModifiers[targetSlot] = '__system__'
+
+    // Remove from hand and apply effects immediately
     const handIdx = result.combat.hand.findIndex(c => c.instanceId === instanceId)
     let cardInst: CardInstance | undefined
     if (handIdx !== -1) {

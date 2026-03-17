@@ -159,14 +159,21 @@ export default function BodySlotPanel({ combat, equipment, parts, selectedCardId
       longPressTimer.current = null
     }
   }, [])
-  // If a slot modifier card is selected, determine valid slots
+  // If a card is selected, determine valid slots
   const hasDualLoader = parts.some(p => p.effect.type === 'dualLoader')
   let validSlots: Set<BodySlot> | null = null
   if (selectedCardId) {
     const cardInst = combat.hand.find(c => c.instanceId === selectedCardId)
     if (cardInst) {
       const def = ALL_CARDS[cardInst.definitionId]
-      if (def?.category.type === 'slot') {
+      if (def?.category.type === 'system') {
+        // System card: only home slot, must be unoccupied
+        const homeSlot = def.category.homeSlot
+        validSlots = new Set<BodySlot>()
+        if (!combat.disabledSlots.includes(homeSlot) && combat.slotModifiers[homeSlot] === null) {
+          validSlots.add(homeSlot)
+        }
+      } else if (def?.category.type === 'slot') {
         const isOverride = def.category.effect.type === 'override'
         const allowed = getAllowedSlots(def)
         validSlots = new Set<BodySlot>()
@@ -174,6 +181,8 @@ export default function BodySlotPanel({ combat, equipment, parts, selectedCardId
           if (combat.disabledSlots.includes(slot)) continue
           // Slot restriction: skip slots not in allowed set
           if (allowed && !allowed.includes(slot)) continue
+          // Skip slots occupied by system cards
+          if (combat.slotModifiers[slot] === '__system__') continue
           // Dual Loader: allow if primary filled but secondary empty
           if (combat.slotModifiers[slot] !== null) {
             if (!hasDualLoader || combat.slotModifiers2[slot] !== null) continue
@@ -207,11 +216,15 @@ export default function BodySlotPanel({ combat, equipment, parts, selectedCardId
           // Find modifier card names
           let modName: string | null = null
           let modName2: string | null = null
+          const isSystemSlot = modInstanceId === '__system__'
+          if (isSystemSlot) {
+            modName = '⚡ System'
+          }
           const allCardsArr = [
             ...combat.hand, ...combat.drawPile,
             ...combat.discardPile, ...combat.exhaustPile,
           ]
-          if (modInstanceId) {
+          if (modInstanceId && !isSystemSlot) {
             const inst = allCardsArr.find(c => c.instanceId === modInstanceId)
             if (inst) modName = ALL_CARDS[inst.definitionId]?.name ?? null
           }

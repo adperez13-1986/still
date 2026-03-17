@@ -14,19 +14,26 @@ interface BodySlotPanelProps {
 export default function BodySlotPanel({ combat, equipment, selectedCardId, onAssign, onUnassign }: BodySlotPanelProps) {
   if (!combat) return null
 
-  // If a slot modifier card is selected, determine valid slots
+  // If a card is selected, determine valid slots
   let validSlots: Set<BodySlot> | null = null
   if (selectedCardId) {
     const cardInst = combat.hand.find(c => c.instanceId === selectedCardId)
     if (cardInst) {
       const def = ALL_CARDS[cardInst.definitionId]
-      if (def?.category.type === 'slot') {
+      if (def?.category.type === 'system') {
+        const homeSlot = def.category.homeSlot
+        validSlots = new Set<BodySlot>()
+        if (!combat.disabledSlots.includes(homeSlot) && combat.slotModifiers[homeSlot] === null) {
+          validSlots.add(homeSlot)
+        }
+      } else if (def?.category.type === 'slot') {
         const isOverride = def.category.effect.type === 'override'
         const allowed = getAllowedSlots(def)
         validSlots = new Set<BodySlot>()
         for (const slot of BODY_SLOTS) {
           if (combat.disabledSlots.includes(slot)) continue
           if (allowed && !allowed.includes(slot)) continue
+          if (combat.slotModifiers[slot] === '__system__') continue
           if (combat.slotModifiers[slot] !== null) continue
           if (!isOverride && !equipment[slot]) continue
           validSlots.add(slot)
