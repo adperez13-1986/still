@@ -208,12 +208,6 @@ export default function CombatScreen() {
     setSelectedCardId(instanceId)
   }, [animating])
 
-  const handlePlaySystemCard = useCallback((instanceId: string) => {
-    if (animating) return
-    run.playCard(instanceId, undefined, targetEnemyId ?? undefined)
-    setSelectedCardId(null)
-  }, [run, targetEnemyId, animating])
-
   const handleAssignSlot = useCallback((slot: BodySlot) => {
     if (animating || !selectedCardId) return
     run.playCard(selectedCardId, slot, targetEnemyId ?? undefined)
@@ -744,7 +738,6 @@ export default function CombatScreen() {
           combat={combat}
           selectedCardId={selectedCardId}
           onSelectSlotCard={handleSelectSlotCard}
-          onPlaySystemCard={handlePlaySystemCard}
           compact={isMobile}
         />
       </div>

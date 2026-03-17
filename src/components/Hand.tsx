@@ -8,7 +8,6 @@ interface Props {
   combat: CombatState
   selectedCardId: string | null
   onSelectSlotCard: (instanceId: string | null) => void
-  onPlaySystemCard: (instanceId: string) => void
   compact?: boolean
 }
 
@@ -18,7 +17,7 @@ function isThresholdMet(currentHeat: number, required: string): boolean {
   return order.indexOf(current) >= order.indexOf(required)
 }
 
-export default function Hand({ combat, selectedCardId, onSelectSlotCard, onPlaySystemCard, compact }: Props) {
+export default function Hand({ combat, selectedCardId, onSelectSlotCard, compact }: Props) {
   // Filter out cards assigned to slots
   const assignedIds = new Set(
     Object.values(combat.slotModifiers).filter((id): id is string => id !== null)
@@ -58,8 +57,6 @@ export default function Hand({ combat, selectedCardId, onSelectSlotCard, onPlayS
             if (!baseDef) return null
             const def = card.isUpgraded && baseDef.upgraded ? baseDef.upgraded : baseDef
 
-            const isSlot = def.category.type === 'slot'
-            const isSystem = def.category.type === 'system'
             const isSelected = selectedCardId === card.instanceId
             const heatMet = !def.heatCondition || isThresholdMet(combat.heat, def.heatCondition)
             const playable = canPlay && heatMet
@@ -87,11 +84,8 @@ export default function Hand({ combat, selectedCardId, onSelectSlotCard, onPlayS
                     return
                   }
                   if (!playable) return
-                  if (isSlot) {
-                    onSelectSlotCard(isSelected ? null : card.instanceId)
-                  } else if (isSystem) {
-                    onPlaySystemCard(card.instanceId)
-                  }
+                  // Both slot modifiers and system cards are selected, then assigned to a slot
+                  onSelectSlotCard(isSelected ? null : card.instanceId)
                 }}
                 style={{
                   padding: '4px 10px',
@@ -165,7 +159,6 @@ export default function Hand({ combat, selectedCardId, onSelectSlotCard, onPlayS
         const def = card.isUpgraded && baseDef.upgraded ? baseDef.upgraded : baseDef
 
         const isSlot = def.category.type === 'slot'
-        const isSystem = def.category.type === 'system'
         const isSelected = selectedCardId === card.instanceId
         const heatMet = !def.heatCondition || isThresholdMet(combat.heat, def.heatCondition)
         const playable = canPlay && heatMet
@@ -185,11 +178,7 @@ export default function Hand({ combat, selectedCardId, onSelectSlotCard, onPlayS
             key={card.instanceId}
             onClick={() => {
               if (!playable) return
-              if (isSlot) {
-                onSelectSlotCard(isSelected ? null : card.instanceId)
-              } else if (isSystem) {
-                onPlaySystemCard(card.instanceId)
-              }
+              onSelectSlotCard(isSelected ? null : card.instanceId)
             }}
             style={{
               width: '130px',
