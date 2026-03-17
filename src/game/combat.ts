@@ -660,8 +660,8 @@ export function executeBodyActions(ctx: CombatContext): CombatResult {
       }
     }
 
-    // Apply card draw from body actions
-    if (actionResult.cardsDrawn > 0) {
+    // Apply card draw from body actions (skip HEAD — HEAD draw happens at turn start)
+    if (actionResult.cardsDrawn > 0 && slot !== 'Head') {
       drawCards(result.combat, actionResult.cardsDrawn)
     }
 
@@ -1326,12 +1326,26 @@ export function startTurn(ctx: CombatContext, inspiredBonus = 0): CombatResult {
   // Step 2: Block resets to 0
   result.combat.block = 0
 
+  // HEAD draw bonus: HEAD equipment's draw value is added to turn draw count
+  // (HEAD fires at turn start, not during execution, so cards are available for planning)
+  let headDrawBonus = 0
+  const headEquip = ctx.equipment.Head
+  if (headEquip && headEquip.action.type === 'draw' && !result.combat.disabledSlots.includes('Head')) {
+    headDrawBonus = headEquip.action.baseValue
+    // Heat-conditional bonus (e.g., Calibrated Optics: draw 2 while Cool)
+    if (headEquip.heatBonusThreshold && headEquip.heatBonusValue) {
+      if (getHeatThreshold(result.combat.heat) === headEquip.heatBonusThreshold) {
+        headDrawBonus += headEquip.heatBonusValue
+      }
+    }
+  }
+
   // Step 3: Reshuffle discard into draw pile if needed, then draw
-  if (result.combat.drawPile.length < ctx.drawCount + inspiredBonus && result.combat.discardPile.length > 0) {
+  const drawCount = ctx.drawCount + inspiredBonus + headDrawBonus
+  if (result.combat.drawPile.length < drawCount && result.combat.discardPile.length > 0) {
     result.combat.drawPile = shuffle([...result.combat.drawPile, ...result.combat.discardPile])
     result.combat.discardPile = []
   }
-  const drawCount = ctx.drawCount + inspiredBonus
   const actualDrawn = drawCards(result.combat, drawCount)
   result.log.push(`Drew ${actualDrawn}/${drawCount} cards`)
 
