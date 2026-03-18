@@ -1266,6 +1266,13 @@ export function endTurn(ctx: CombatContext): CombatResult {
     result.log.push(`Hot penalty: took ${HOT_DAMAGE} damage`)
   }
 
+  // Passive heat decay: -1 per turn (unconditional cooling floor)
+  if (result.combat.heat > 0) {
+    const decayResult = applyHeatChange(result.combat, -1)
+    if (decayResult.crossed) fireThresholdCrossTriggers(ctx.parts, result, ctx)
+    result.log.push(`Heat decay: -1 (heat ${result.combat.heat})`)
+  }
+
   // Clear Overheat Reactor flag at end of turn
   result.combat.overheatReactorFired = false
 

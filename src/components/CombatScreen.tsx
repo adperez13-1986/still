@@ -199,8 +199,8 @@ export default function CombatScreen() {
     return Math.max(0, combat.heat + legsCooling)
   }, [combat, projections])
 
-  // No free passive cooling — heat persists between turns (only LEGS equipment cools)
-  const nextRoundHeat = projectedHeat
+  // Passive heat decay: -1 per turn (unconditional cooling floor)
+  const nextRoundHeat = Math.max(0, projectedHeat - 1)
 
   // ─── Card Interaction ─────────────────────────────────────────────
   const handleSelectSlotCard = useCallback((instanceId: string | null) => {
