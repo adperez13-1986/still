@@ -1086,7 +1086,7 @@ export const STARTING_CARDS: ModifierCardDefinition[] = [
 export const SECTOR1_CARD_POOL: ModifierCardDefinition[] = [
   overcharge, spreadShot, echoProtocol, shieldBash, emergencyShield,
   deepFreeze, heatVent, quickScan, thermalSurge, meltdown,
-  fieldRepair, targetLock,
+  fieldRepair, targetLock, armorProtocol,
   precisionStrike, coldEfficiency, fuelTheFire, heatSurge, recklessCharge,
   thermalFlux, overclock,
 ]
@@ -1094,7 +1094,7 @@ export const SECTOR1_CARD_POOL: ModifierCardDefinition[] = [
 export const SECTOR2_CARD_POOL: ModifierCardDefinition[] = [
   failsafeProtocol, reroute,
   glacierLance, controlledBurn, fluxSpike, thermalEquilibrium,
-  armorProtocol, salvageBurst, cascade, resonance,
+  salvageBurst, cascade, resonance,
 ]
 
 const allCardList: ModifierCardDefinition[] = [
