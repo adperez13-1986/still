@@ -41,7 +41,7 @@ const INTENT_COLORS: Record<string, string> = {
 
 function getEffectiveDamage(intent: Intent, enemy: EnemyInstance, isBoss: boolean, combatsCleared: number): number {
   let dmg = intent.value
-  const scalingMultiplier = isBoss ? 1.15 : 1 + combatsCleared * 0.08
+  const scalingMultiplier = isBoss ? 1.15 : 1 + combatsCleared * 0.05
   dmg = Math.floor(dmg * scalingMultiplier)
   dmg += getStatus(enemy.statusEffects, 'Strength')
   if (getStatus(enemy.statusEffects, 'Weak') > 0) dmg = Math.floor(dmg * 0.75)

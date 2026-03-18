@@ -559,10 +559,10 @@ export function executeBodyActions(ctx: CombatContext): CombatResult {
   const slotsFired: BodySlot[] = []
 
   for (const slot of BODY_SLOTS) {
-    // System card slots: already fired during planning, skip execution
+    // System card slots: card effect already fired during planning,
+    // but equipment still fires during execution (stacks with system card)
     if (result.combat.slotModifiers[slot] === '__system__') {
-      slotsFired.push(slot) // counts as "fired" for parts like Momentum Core
-      continue
+      result.combat.slotModifiers[slot] = null // clear sentinel so equipment fires unmodified
     }
 
     // Disabled slots: Salvage Protocol generates Block, otherwise skip
@@ -1131,7 +1131,7 @@ export function executeEnemyTurn(ctx: CombatContext): CombatResult {
         // Damage scaling: bosses get flat +15%, regular enemies scale with combatsCleared
         const scalingMultiplier = def.isBoss
           ? 1.15
-          : 1 + ctx.combatsCleared * 0.08
+          : 1 + ctx.combatsCleared * 0.05
         perHit = Math.floor(perHit * scalingMultiplier)
         // Enemy Strength
         perHit += getStatus(enemy.statusEffects, 'Strength')

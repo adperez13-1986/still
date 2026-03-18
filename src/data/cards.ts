@@ -6,7 +6,7 @@ const boost: ModifierCardDefinition = {
   id: 'boost',
   name: 'Boost',
   description: '+50% to one slot\'s output.',
-  heatCost: 1,
+  heatCost: 2,
   category: {
     type: 'slot',
     modifier: 'Amplify',
@@ -45,7 +45,7 @@ const emergencyStrike: ModifierCardDefinition = {
     id: 'emergency-strike',
     name: 'Emergency Strike+',
     description: 'Override: deal 7 damage to ALL enemies.',
-    heatCost: 2,
+    heatCost: 1,
     category: {
       type: 'slot',
       modifier: 'Override',
@@ -61,8 +61,8 @@ const emergencyStrike: ModifierCardDefinition = {
 const coolantFlush: ModifierCardDefinition = {
   id: 'coolant-flush',
   name: 'Coolant Flush',
-  description: 'Reduce Heat by 3.',
-  heatCost: -3,
+  description: 'Reduce Heat by 4.',
+  heatCost: -4,
   category: {
     type: 'system',
     modifier: 'Cooling',
@@ -73,8 +73,8 @@ const coolantFlush: ModifierCardDefinition = {
   upgraded: {
     id: 'coolant-flush',
     name: 'Coolant Flush+',
-    description: 'Reduce Heat by 4.',
-    heatCost: -4,
+    description: 'Reduce Heat by 5.',
+    heatCost: -5,
     category: {
       type: 'system',
       modifier: 'Cooling',
@@ -89,7 +89,7 @@ const diagnostics: ModifierCardDefinition = {
   id: 'diagnostics',
   name: 'Diagnostics',
   description: 'Draw 2 modifier cards.',
-  heatCost: 1,
+  heatCost: 2,
   category: {
     type: 'system',
     modifier: 'Draw',
@@ -118,7 +118,7 @@ const overcharge: ModifierCardDefinition = {
   id: 'overcharge',
   name: 'Overcharge',
   description: '+100% to one slot\'s output.',
-  heatCost: 2,
+  heatCost: 3,
   category: {
     type: 'slot',
     modifier: 'Amplify',
@@ -143,7 +143,7 @@ const spreadShot: ModifierCardDefinition = {
   id: 'spread-shot',
   name: 'Spread Shot',
   description: 'Redirect: slot targets ALL enemies.',
-  heatCost: 1,
+  heatCost: 2,
   category: {
     type: 'slot',
     modifier: 'Redirect',
@@ -154,7 +154,7 @@ const spreadShot: ModifierCardDefinition = {
     id: 'spread-shot',
     name: 'Spread Shot+',
     description: 'Redirect: slot targets ALL enemies.',
-    heatCost: 0,
+    heatCost: 1,
     category: {
       type: 'slot',
       modifier: 'Redirect',
@@ -179,7 +179,7 @@ const echoProtocol: ModifierCardDefinition = {
     id: 'echo-protocol',
     name: 'Echo Protocol+',
     description: 'Repeat: slot action fires three times.',
-    heatCost: 3,
+    heatCost: 1,
     category: {
       type: 'slot',
       modifier: 'Repeat',
@@ -193,7 +193,7 @@ const shieldBash: ModifierCardDefinition = {
   id: 'shield-bash',
   name: 'Shield Bash',
   description: 'Override: deal 10 damage to one enemy.',
-  heatCost: 1,
+  heatCost: 2,
   category: {
     type: 'slot',
     modifier: 'Override',
@@ -224,7 +224,7 @@ const emergencyShield: ModifierCardDefinition = {
   id: 'emergency-shield',
   name: 'Emergency Shield',
   description: 'Override: gain 12 Block.',
-  heatCost: 1,
+  heatCost: 2,
   category: {
     type: 'slot',
     modifier: 'Override',
@@ -254,8 +254,8 @@ const emergencyShield: ModifierCardDefinition = {
 const deepFreeze: ModifierCardDefinition = {
   id: 'deep-freeze',
   name: 'Deep Freeze',
-  description: 'Reduce Heat by 5.',
-  heatCost: -5,
+  description: 'Reduce Heat by 6.',
+  heatCost: -6,
   category: {
     type: 'system',
     modifier: 'Cooling',
@@ -266,8 +266,8 @@ const deepFreeze: ModifierCardDefinition = {
   upgraded: {
     id: 'deep-freeze',
     name: 'Deep Freeze+',
-    description: 'Reduce Heat by 5. Gain 4 Block.',
-    heatCost: -5,
+    description: 'Reduce Heat by 7. Gain 4 Block.',
+    heatCost: -7,
     category: {
       type: 'system',
       modifier: 'Cooling',
@@ -281,8 +281,8 @@ const deepFreeze: ModifierCardDefinition = {
 const heatVent: ModifierCardDefinition = {
   id: 'heat-vent',
   name: 'Heat Vent',
-  description: 'Reduce Heat by 2. Deal 4 damage to all enemies.',
-  heatCost: -2,
+  description: 'Reduce Heat by 3. Deal 4 damage to all enemies.',
+  heatCost: -3,
   category: {
     type: 'system',
     modifier: 'Cooling',
@@ -293,8 +293,8 @@ const heatVent: ModifierCardDefinition = {
   upgraded: {
     id: 'heat-vent',
     name: 'Heat Vent+',
-    description: 'Reduce Heat by 3. Deal 6 damage to all enemies.',
-    heatCost: -3,
+    description: 'Reduce Heat by 4. Deal 6 damage to all enemies.',
+    heatCost: -4,
     category: {
       type: 'system',
       modifier: 'Cooling',
@@ -309,7 +309,7 @@ const quickScan: ModifierCardDefinition = {
   id: 'quick-scan',
   name: 'Quick Scan',
   description: 'Draw 3 cards.',
-  heatCost: 1,
+  heatCost: 2,
   category: {
     type: 'system',
     modifier: 'Draw',
@@ -336,7 +336,7 @@ const thermalSurge: ModifierCardDefinition = {
   id: 'thermal-surge',
   name: 'Thermal Surge',
   description: 'Requires Warm+. Gain 2 Strength.',
-  heatCost: 2,
+  heatCost: 3,
   category: {
     type: 'system',
     modifier: 'Conditional',
@@ -365,7 +365,7 @@ const meltdown: ModifierCardDefinition = {
   id: 'meltdown',
   name: 'Meltdown',
   description: 'Requires Hot. Deal 15 damage to one enemy.',
-  heatCost: 0,
+  heatCost: 1,
   category: {
     type: 'system',
     modifier: 'Conditional',
@@ -393,8 +393,8 @@ const meltdown: ModifierCardDefinition = {
 const fieldRepair: ModifierCardDefinition = {
   id: 'field-repair',
   name: 'Field Repair',
-  description: 'Heal 6 HP. Reduce Heat by 1.',
-  heatCost: -1,
+  description: 'Heal 6 HP. Reduce Heat by 2.',
+  heatCost: -2,
   category: {
     type: 'system',
     modifier: 'Cooling',
@@ -405,8 +405,8 @@ const fieldRepair: ModifierCardDefinition = {
   upgraded: {
     id: 'field-repair',
     name: 'Field Repair+',
-    description: 'Heal 9 HP. Reduce Heat by 2.',
-    heatCost: -2,
+    description: 'Heal 9 HP. Reduce Heat by 3.',
+    heatCost: -3,
     category: {
       type: 'system',
       modifier: 'Cooling',
@@ -421,7 +421,7 @@ const targetLock: ModifierCardDefinition = {
   id: 'target-lock',
   name: 'Target Lock',
   description: 'Requires Warm+. Apply 2 Vulnerable to all enemies.',
-  heatCost: 0,
+  heatCost: 1,
   category: {
     type: 'system',
     modifier: 'Conditional',
@@ -453,7 +453,7 @@ const precisionStrike: ModifierCardDefinition = {
   id: 'precision-strike',
   name: 'Precision Strike',
   description: 'Deal 8 damage. While Cool: deal 12.',
-  heatCost: 1,
+  heatCost: 2,
   category: {
     type: 'system',
     modifier: 'Conditional',
@@ -488,7 +488,7 @@ const coldEfficiency: ModifierCardDefinition = {
   id: 'cold-efficiency',
   name: 'Cold Efficiency',
   description: 'Draw 2 cards. While Cool: draw 3.',
-  heatCost: 1,
+  heatCost: 2,
   category: {
     type: 'system',
     modifier: 'Draw',
@@ -524,7 +524,7 @@ const fuelTheFire: ModifierCardDefinition = {
   id: 'fuel-the-fire',
   name: 'Fuel the Fire',
   description: 'Deal 6 damage. While Hot: also gain 4 Block.',
-  heatCost: 1,
+  heatCost: 2,
   category: {
     type: 'system',
     modifier: 'Conditional',
@@ -565,7 +565,7 @@ const heatSurge: ModifierCardDefinition = {
   id: 'heat-surge',
   name: 'Heat Surge',
   description: 'Draw 2 cards. While Hot: draw 3.',
-  heatCost: 1,
+  heatCost: 2,
   category: {
     type: 'system',
     modifier: 'Draw',
@@ -600,7 +600,7 @@ const recklessCharge: ModifierCardDefinition = {
   id: 'reckless-charge',
   name: 'Reckless Charge',
   description: 'Deal 18 damage.',
-  heatCost: 3,
+  heatCost: 4,
   category: {
     type: 'system',
     modifier: 'Conditional',
@@ -627,8 +627,8 @@ const recklessCharge: ModifierCardDefinition = {
 const thermalFlux: ModifierCardDefinition = {
   id: 'thermal-flux',
   name: 'Thermal Flux',
-  description: 'Reduce Heat by 2. Deal damage equal to heat change this turn.',
-  heatCost: -2,
+  description: 'Reduce Heat by 3. Deal damage equal to heat change this turn.',
+  heatCost: -3,
   category: {
     type: 'system',
     modifier: 'Cooling',
@@ -639,8 +639,8 @@ const thermalFlux: ModifierCardDefinition = {
   upgraded: {
     id: 'thermal-flux',
     name: 'Thermal Flux+',
-    description: 'Reduce Heat by 2. Deal damage equal to heat change this turn. Gain Block equal to half.',
-    heatCost: -2,
+    description: 'Reduce Heat by 4. Deal damage equal to heat change this turn. Gain Block equal to half.',
+    heatCost: -4,
     category: {
       type: 'system',
       modifier: 'Cooling',
@@ -655,7 +655,7 @@ const overclock: ModifierCardDefinition = {
   id: 'overclock',
   name: 'Overclock',
   description: 'Gain 1 Strength. If a threshold was crossed this turn: gain 2 instead.',
-  heatCost: 1,
+  heatCost: 2,
   category: {
     type: 'system',
     modifier: 'Conditional',
@@ -686,7 +686,7 @@ const failsafeProtocol: ModifierCardDefinition = {
   id: 'failsafe-protocol',
   name: 'Failsafe Protocol',
   description: 'Gain 10 Block. Draw 1 card.',
-  heatCost: 1,
+  heatCost: 2,
   category: {
     type: 'system',
     modifier: 'Conditional',
@@ -713,7 +713,7 @@ const reroute: ModifierCardDefinition = {
   id: 'reroute',
   name: 'Reroute',
   description: 'Override: deal 12 damage to one enemy.',
-  heatCost: 1,
+  heatCost: 2,
   category: {
     type: 'slot',
     modifier: 'Override',
@@ -746,7 +746,7 @@ const glacierLance: ModifierCardDefinition = {
   id: 'glacier-lance',
   name: 'Glacier Lance',
   description: 'Deal 10 damage. While Cool: deal 16 + apply 1 Weak.',
-  heatCost: 1,
+  heatCost: 2,
   category: {
     type: 'system',
     modifier: 'Conditional',
@@ -787,7 +787,7 @@ const controlledBurn: ModifierCardDefinition = {
   id: 'controlled-burn',
   name: 'Controlled Burn',
   description: 'Gain 2 Strength. While Hot: also gain 2 Dexterity.',
-  heatCost: 2,
+  heatCost: 3,
   category: {
     type: 'system',
     modifier: 'Conditional',
@@ -828,7 +828,7 @@ const fluxSpike: ModifierCardDefinition = {
   id: 'flux-spike',
   name: 'Flux Spike',
   description: 'Requires Warm+. Deal 14 damage to all enemies.',
-  heatCost: 0,
+  heatCost: 1,
   category: {
     type: 'system',
     modifier: 'Conditional',
@@ -856,8 +856,8 @@ const fluxSpike: ModifierCardDefinition = {
 const thermalEquilibrium: ModifierCardDefinition = {
   id: 'thermal-equilibrium',
   name: 'Thermal Equilibrium',
-  description: 'Reduce Heat by 3. Gain 6 Block.',
-  heatCost: -3,
+  description: 'Reduce Heat by 4. Gain 6 Block.',
+  heatCost: -4,
   category: {
     type: 'system',
     modifier: 'Cooling',
@@ -868,8 +868,8 @@ const thermalEquilibrium: ModifierCardDefinition = {
   upgraded: {
     id: 'thermal-equilibrium',
     name: 'Thermal Equilibrium+',
-    description: 'Reduce Heat by 4. Gain 8 Block.',
-    heatCost: -4,
+    description: 'Reduce Heat by 5. Gain 8 Block.',
+    heatCost: -5,
     category: {
       type: 'system',
       modifier: 'Cooling',
@@ -886,7 +886,7 @@ const armorProtocol: ModifierCardDefinition = {
   id: 'armor-protocol',
   name: 'Armor Protocol',
   description: 'Gain 2 Dexterity.',
-  heatCost: 1,
+  heatCost: 2,
   category: {
     type: 'system',
     modifier: 'Conditional',
@@ -912,8 +912,8 @@ const armorProtocol: ModifierCardDefinition = {
 const salvageBurst: ModifierCardDefinition = {
   id: 'salvage-burst',
   name: 'Salvage Burst',
-  description: 'Draw 3 cards. Reduce Heat by 1.',
-  heatCost: -1,
+  description: 'Draw 3 cards. Reduce Heat by 2.',
+  heatCost: -2,
   category: {
     type: 'system',
     modifier: 'Draw',
@@ -924,8 +924,8 @@ const salvageBurst: ModifierCardDefinition = {
   upgraded: {
     id: 'salvage-burst',
     name: 'Salvage Burst+',
-    description: 'Draw 4 cards. Reduce Heat by 2.',
-    heatCost: -2,
+    description: 'Draw 4 cards. Reduce Heat by 3.',
+    heatCost: -3,
     category: {
       type: 'system',
       modifier: 'Draw',
@@ -940,7 +940,7 @@ const cascade: ModifierCardDefinition = {
   id: 'cascade',
   name: 'Cascade',
   description: 'Repeat: slot fires 3 times.',
-  heatCost: 4,
+  heatCost: 5,
   category: {
     type: 'slot',
     modifier: 'Repeat',
@@ -951,7 +951,7 @@ const cascade: ModifierCardDefinition = {
     id: 'cascade',
     name: 'Cascade+',
     description: 'Repeat: slot fires 3 times.',
-    heatCost: 3,
+    heatCost: 4,
     category: {
       type: 'slot',
       modifier: 'Repeat',
@@ -965,7 +965,7 @@ const resonance: ModifierCardDefinition = {
   id: 'resonance',
   name: 'Resonance',
   description: '+200% to one slot\'s output. Exhaust.',
-  heatCost: 3,
+  heatCost: 4,
   category: {
     type: 'slot',
     modifier: 'Amplify',
@@ -992,7 +992,7 @@ export const yanah: ModifierCardDefinition = {
   id: 'yanah',
   name: 'Yanah',
   description: 'Gain 4 Block. While Cool: gain 8 Block instead.',
-  heatCost: 0,
+  heatCost: 1,
   category: {
     type: 'system',
     modifier: 'Cooling',
@@ -1035,7 +1035,7 @@ export const yuri: ModifierCardDefinition = {
   id: 'yuri',
   name: 'Yuri',
   description: 'Deal 8 damage. While Hot: deal 14 instead.',
-  heatCost: 1,
+  heatCost: 2,
   category: {
     type: 'system',
     modifier: 'Conditional',

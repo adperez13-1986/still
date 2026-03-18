@@ -21,8 +21,9 @@ const rustGuard: EnemyDefinition = {
   name: 'Rust Guard',
   maxHealth: 55,
   intentPattern: [
-    { type: 'Block', value: 8 },
+    { type: 'Attack', value: 8 },
     { type: 'Attack', value: 10 },
+    { type: 'Block', value: 8 },
   ],
   dropPool: [
     { type: 'shards', amount: 10, weight: 2 },
@@ -79,7 +80,7 @@ const glitchNode: EnemyDefinition = {
   maxHealth: 24,
   intentPattern: [
     { type: 'Buff', value: 1, status: 'Strength' },
-    { type: 'Buff', value: 1, status: 'Strength' },
+    { type: 'Attack', value: 8 },
     { type: 'Attack', value: 10 },
   ],
   dropPool: [
@@ -93,7 +94,7 @@ const sentinelShard: EnemyDefinition = {
   maxHealth: 42,
   intentPattern: [
     { type: 'Block', value: 8 },
-    { type: 'Block', value: 8 },
+    { type: 'Attack', value: 10 },
     { type: 'Attack', value: 14 },
   ],
   dropPool: [
@@ -109,7 +110,7 @@ const hollowRepeater: EnemyDefinition = {
   intentPattern: [
     { type: 'Buff', value: 1, status: 'Strength' },
     { type: 'Attack', value: 3, hits: 3 },
-    { type: 'Block', value: 4 },
+    { type: 'Attack', value: 5 },
   ],
   dropPool: [
     { type: 'shards', amount: 8, weight: 1 },
@@ -138,7 +139,7 @@ const echoConstruct: EnemyDefinition = {
   name: 'Echo Construct',
   maxHealth: 60,
   intentPattern: [
-    { type: 'Block', value: 7 },
+    { type: 'Attack', value: 10 },
     { type: 'Attack', value: 12 },
     { type: 'Debuff', value: 2, status: 'Weak' },
     { type: 'Attack', value: 12 },
