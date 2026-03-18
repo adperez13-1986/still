@@ -909,6 +909,33 @@ const armorProtocol: ModifierCardDefinition = {
   },
 }
 
+const powerSurge: ModifierCardDefinition = {
+  id: 'power-surge',
+  name: 'Power Surge',
+  description: 'Gain 2 Strength.',
+  heatCost: 2,
+  category: {
+    type: 'system',
+    modifier: 'Conditional',
+    effects: [{ type: 'applyStatus', status: 'Strength', stacks: 2, target: 'self' }],
+    homeSlot: 'Arms',
+  },
+  keywords: [],
+  upgraded: {
+    id: 'power-surge',
+    name: 'Power Surge+',
+    description: 'Gain 3 Strength.',
+    heatCost: 1,
+    category: {
+      type: 'system',
+      modifier: 'Conditional',
+      effects: [{ type: 'applyStatus', status: 'Strength', stacks: 3, target: 'self' }],
+    homeSlot: 'Arms',
+    },
+    keywords: [],
+  },
+}
+
 const salvageBurst: ModifierCardDefinition = {
   id: 'salvage-burst',
   name: 'Salvage Burst',
@@ -1086,7 +1113,7 @@ export const STARTING_CARDS: ModifierCardDefinition[] = [
 export const SECTOR1_CARD_POOL: ModifierCardDefinition[] = [
   overcharge, spreadShot, echoProtocol, shieldBash, emergencyShield,
   deepFreeze, heatVent, quickScan, thermalSurge, meltdown,
-  fieldRepair, targetLock, armorProtocol,
+  fieldRepair, targetLock, armorProtocol, powerSurge,
   precisionStrike, coldEfficiency, fuelTheFire, heatSurge, recklessCharge,
   thermalFlux, overclock,
 ]
@@ -1101,7 +1128,7 @@ const allCardList: ModifierCardDefinition[] = [
   boost, emergencyStrike, coolantFlush, diagnostics,
   overcharge, spreadShot, echoProtocol, shieldBash, emergencyShield,
   deepFreeze, heatVent, quickScan, thermalSurge, meltdown,
-  fieldRepair, targetLock,
+  fieldRepair, targetLock, powerSurge,
   precisionStrike, coldEfficiency, fuelTheFire, heatSurge, recklessCharge,
   thermalFlux, overclock,
   failsafeProtocol, reroute,
