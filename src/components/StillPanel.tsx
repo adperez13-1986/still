@@ -88,9 +88,17 @@ export default function StillPanel({
         {/* Heat */}
         <span style={{ fontWeight: 'bold' }}>
           <span style={{ color: heatColor }}>H {heat}</span>
+          {heat >= 7 && (
+            <span style={{ color: '#e67e22', fontWeight: 'normal', fontSize: '10px' }}>
+              {' '}[−{(heat - 4) * 2}dmg]
+            </span>
+          )}
           {projectedHeat != null && projectedHeat !== heat && (
             <span style={{ color: '#888', fontWeight: 'normal', fontSize: '10px' }}>
               {' '}→<span style={{ color: HEAT_COLORS[getHeatThreshold(projectedHeat)], fontWeight: 'bold' }}>{projectedHeat}</span>
+              {projectedHeat >= 7 && (
+                <span style={{ color: '#e67e22' }}> [−{(projectedHeat - 4) * 2}]</span>
+              )}
               {nextRoundHeat != null && (
                 <span> →<span style={{ color: HEAT_COLORS[getHeatThreshold(nextRoundHeat)], fontWeight: 'bold' }}>{nextRoundHeat}</span></span>
               )}
