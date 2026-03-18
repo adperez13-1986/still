@@ -327,6 +327,9 @@ export interface RunHistoryEntry {
   outcome: 'victory' | 'defeat'
   message: string
   notable: string[] // key parts/cards acquired
+  deck?: string[] // card names at end of run
+  equipment?: Record<string, string | null> // slot → equipment name
+  parts?: string[] // part names at end of run
 }
 
 export interface PermanentState {

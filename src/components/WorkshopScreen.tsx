@@ -462,6 +462,25 @@ export default function WorkshopScreen() {
                 <p style={{ fontSize: '12px', color: '#aaa', margin: 0, fontStyle: 'italic' }}>
                   "{run.message}"
                 </p>
+                {run.equipment && (
+                  <div style={{ fontSize: '11px', color: '#74b9ff', marginTop: '6px' }}>
+                    <span style={{ color: '#555' }}>Equip:</span>{' '}
+                    {Object.entries(run.equipment)
+                      .filter(([, name]) => name)
+                      .map(([slot, name]) => `${slot}: ${name}`)
+                      .join(', ') || 'None'}
+                  </div>
+                )}
+                {run.parts && run.parts.length > 0 && (
+                  <div style={{ fontSize: '11px', color: '#55efc4', marginTop: '2px' }}>
+                    <span style={{ color: '#555' }}>Parts:</span> {run.parts.join(', ')}
+                  </div>
+                )}
+                {run.deck && (
+                  <div style={{ fontSize: '11px', color: '#dfe6e9', marginTop: '2px' }}>
+                    <span style={{ color: '#555' }}>Deck:</span> {run.deck.join(', ')}
+                  </div>
+                )}
               </div>
             ))}
           </div>

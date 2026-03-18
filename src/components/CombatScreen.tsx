@@ -392,6 +392,11 @@ export default function CombatScreen() {
                   outcome: 'victory',
                   message: 'Cleared the sector.',
                   notable: run.parts.map(p => p.name),
+                  deck: run.deck.map(c => c.definitionId + (c.isUpgraded ? '+' : '')),
+                  equipment: Object.fromEntries(
+                    Object.entries(run.equipment).map(([slot, eq]) => [slot, eq?.name ?? null])
+                  ),
+                  parts: run.parts.map(p => p.name),
                 })
                 // Archive new parts from this run
                 for (const part of run.parts) {
@@ -528,6 +533,11 @@ export default function CombatScreen() {
                 outcome: 'defeat',
                 message: 'Fell in combat.',
                 notable: run.parts.map(p => p.name),
+                deck: run.deck.map(c => c.definitionId + (c.isUpgraded ? '+' : '')),
+                equipment: Object.fromEntries(
+                  Object.entries(run.equipment).map(([slot, eq]) => [slot, eq?.name ?? null])
+                ),
+                parts: run.parts.map(p => p.name),
               })
               // Archive new parts from this run (no cooldown on defeat)
               for (const part of run.parts) {
