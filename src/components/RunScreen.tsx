@@ -102,7 +102,7 @@ export default function RunScreen() {
         map: generateGridMaze(2),
         health: 70,
         maxHealth: 70,
-        drawCount: 5,
+        drawCount: 3,
         deck,
         parts: preset.parts.map(id => ALL_PARTS[id]).filter(Boolean),
         equipment: {
@@ -156,7 +156,7 @@ export default function RunScreen() {
       map,
       health: 70,
       maxHealth: 70,
-      drawCount: 5,
+      drawCount: 3,
       deck: starterDeck,
       parts: initialParts,
       equipment: startingEquipment,
