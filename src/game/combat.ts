@@ -556,6 +556,9 @@ export function playModifierCard(
     }
 
     result.log.push(`Assigned ${card.name} to ${targetSlot}`)
+  } else if (card.freePlay) {
+    // Free-play system card — fires instantly without occupying a slot (e.g., companions)
+    result.log.push(`${card.name} played freely`)
   } else {
     // System card — assigned to home slot, fires instantly during planning
     if (!targetSlot) {

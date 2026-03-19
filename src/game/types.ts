@@ -61,6 +61,7 @@ export interface ModifierCardDefinition {
   energyCost: number
   category: ModifierCardType
   keywords: Keyword[]
+  freePlay?: boolean // plays instantly without occupying a slot (e.g., companion cards)
   upgraded?: ModifierCardDefinition
 }
 

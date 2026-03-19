@@ -181,8 +181,21 @@ export default function CombatScreen() {
   // ─── Card Interaction ─────────────────────────────────────────────
   const handleSelectSlotCard = useCallback((instanceId: string | null) => {
     if (animating) return
+    // Free-play cards (companions) play immediately without slot selection
+    if (instanceId && combat) {
+      const cardInst = combat.hand.find(c => c.instanceId === instanceId)
+      if (cardInst) {
+        const baseDef = ALL_CARDS[cardInst.definitionId]
+        const def = cardInst.isUpgraded && baseDef?.upgraded ? baseDef.upgraded : baseDef
+        if (def?.freePlay) {
+          const homeSlot = def.category.type === 'system' ? def.category.homeSlot : undefined
+          run.playCard(instanceId, homeSlot ?? 'Head', targetEnemyId ?? undefined)
+          return
+        }
+      }
+    }
     setSelectedCardId(instanceId)
-  }, [animating])
+  }, [animating, combat, run, targetEnemyId])
 
   const handleAssignSlot = useCallback((slot: BodySlot) => {
     if (animating || !selectedCardId) return

@@ -979,6 +979,7 @@ export const yanah: ModifierCardDefinition = {
   name: 'Yanah',
   description: 'Heal 6 HP. Remove 1 debuff.',
   energyCost: 0,
+  freePlay: true,
   category: {
     type: 'system',
     modifier: 'Utility',
@@ -994,6 +995,7 @@ export const yanah: ModifierCardDefinition = {
     name: 'Yanah+',
     description: 'Heal 9 HP. Remove 1 debuff.',
     energyCost: 0,
+    freePlay: true,
     category: {
       type: 'system',
       modifier: 'Utility',
@@ -1012,6 +1014,7 @@ export const yuri: ModifierCardDefinition = {
   name: 'Yuri',
   description: 'Gain 1 Strength and 1 Inspired.',
   energyCost: 1,
+  freePlay: true,
   category: {
     type: 'system',
     modifier: 'Utility',
@@ -1027,6 +1030,7 @@ export const yuri: ModifierCardDefinition = {
     name: 'Yuri+',
     description: 'Gain 2 Strength and 1 Inspired.',
     energyCost: 0,
+    freePlay: true,
     category: {
       type: 'system',
       modifier: 'Utility',
