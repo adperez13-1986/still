@@ -92,7 +92,7 @@ const emptyRunState: RunState = {
   map: null,
   health: 70,
   maxHealth: 70,
-  drawCount: 4,
+  drawCount: 3,
   deck: [],
   parts: [],
   equipment: { Head: null, Torso: null, Arms: null, Legs: null },
