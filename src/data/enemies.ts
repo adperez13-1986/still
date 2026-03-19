@@ -242,7 +242,7 @@ const fractureTitan: EnemyDefinition = {
 const theFirstWarden: EnemyDefinition = {
   id: 'the-first-warden',
   name: 'The First Warden',
-  maxHealth: 120,
+  maxHealth: 135,
   intentPattern: [
     { type: 'Block', value: 10 },
     { type: 'Attack', value: 16 },
