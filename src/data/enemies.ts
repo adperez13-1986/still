@@ -27,7 +27,7 @@ const rustGuard: EnemyDefinition = {
   ],
   dropPool: [
     { type: 'shards', amount: 10, weight: 2 },
-    { type: 'part', ids: ['feedback-loop', 'residual-charge'], weight: 1 },
+    { type: 'part', ids: ['frost-core', 'scrap-recycler'], weight: 1 },
     { type: 'equipment', ids: ['patched-hull'], weight: 1 },
   ],
 }
@@ -156,13 +156,8 @@ const thermalScanner: EnemyDefinition = {
   maxHealth: 35,
   intentPattern: [
     { type: 'Scan', value: 0 },
-    {
-      type: 'HeatReactive', value: 0,
-      coolIntent: { type: 'Attack', value: 12 },
-      warmIntent: { type: 'Attack', value: 7 },
-      hotIntent: { type: 'Buff', value: 2, status: 'Strength' },
-    },
-    { type: 'Attack', value: 8 },
+    { type: 'Debuff', value: 1, status: 'Vulnerable' },
+    { type: 'Attack', value: 12 },
     { type: 'Block', value: 6 },
   ],
   dropPool: [
@@ -185,7 +180,7 @@ const vaultKeeper: EnemyDefinition = {
   ],
   dropPool: [
     { type: 'shards', amount: 25, weight: 1 },
-    { type: 'part', ids: ['pressure-valve', 'feedback-loop'], weight: 2 },
+    { type: 'part', ids: ['ablative-shell', 'scrap-recycler'], weight: 2 },
     { type: 'equipment', ids: ['basic-scanner', 'patched-hull'], weight: 1 },
   ],
   isElite: true,
@@ -203,7 +198,7 @@ const corruptedOverseer: EnemyDefinition = {
   ],
   dropPool: [
     { type: 'shards', amount: 30, weight: 1 },
-    { type: 'part', ids: ['flux-capacitor', 'scrap-recycler'], weight: 2 },
+    { type: 'part', ids: ['frost-core', 'scrap-recycler'], weight: 2 },
   ],
   isElite: true,
 }
@@ -243,7 +238,7 @@ const theFirstWarden: EnemyDefinition = {
   ],
   dropPool: [
     { type: 'shards', amount: 60, weight: 1 },
-    { type: 'part', ids: ['reactive-frame', 'flux-capacitor', 'pressure-valve'], weight: 3 },
+    { type: 'part', ids: ['reactive-frame', 'frost-core', 'ablative-shell'], weight: 3 },
     { type: 'equipment', ids: ['cracked-lens', 'salvaged-treads', 'welding-torch'], weight: 2 },
   ],
   isBoss: true,
@@ -292,7 +287,7 @@ const slagHeap: EnemyDefinition = {
   ],
   dropPool: [
     { type: 'shards', amount: 22, weight: 2 },
-    { type: 'part', ids: ['salvage-protocol', 'thermal-oscillator'], weight: 1 },
+    { type: 'part', ids: ['salvage-protocol', 'empty-chamber'], weight: 1 },
     { type: 'equipment', ids: ['reactive-plating', 'heat-shield'], weight: 1 },
   ],
 }
@@ -384,7 +379,7 @@ const overchargeSentinel: EnemyDefinition = {
   ],
   dropPool: [
     { type: 'shards', amount: 45, weight: 1 },
-    { type: 'part', ids: ['volatile-reactor', 'failsafe-armor', 'zero-point-field'], weight: 2 },
+    { type: 'part', ids: ['failsafe-armor', 'cryo-engine', 'empty-chamber'], weight: 2 },
     { type: 'equipment', ids: ['stabilizer-treads', 'predictive-array'], weight: 1 },
   ],
   isElite: true,
@@ -421,7 +416,7 @@ const meltdownCore: EnemyDefinition = {
   ],
   dropPool: [
     { type: 'shards', amount: 55, weight: 1 },
-    { type: 'part', ids: ['volatile-reactor', 'cryo-engine'], weight: 2 },
+    { type: 'part', ids: ['cryo-engine', 'gyro-stabilizer'], weight: 2 },
     { type: 'equipment', ids: ['plasma-cutter', 'heat-shield'], weight: 1 },
   ],
   isElite: true,
@@ -445,7 +440,7 @@ const theThermalArbiter: EnemyDefinition = {
   ],
   dropPool: [
     { type: 'shards', amount: 80, weight: 1 },
-    { type: 'part', ids: ['volatile-reactor', 'meltdown-core', 'gyro-stabilizer'], weight: 3 },
+    { type: 'part', ids: ['meltdown-core', 'gyro-stabilizer', 'reactive-frame'], weight: 3 },
     { type: 'equipment', ids: ['arc-welder', 'stabilizer-treads', 'predictive-array'], weight: 2 },
   ],
   isBoss: true,

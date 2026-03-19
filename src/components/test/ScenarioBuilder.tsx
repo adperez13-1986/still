@@ -174,7 +174,7 @@ export default function ScenarioBuilder({ scenario, onChange, onStart }: Scenari
                 <span style={{ fontSize: 13 }}>
                   {card.name}
                   <span style={{ color: 'var(--muted)', marginLeft: 4 }}>
-                    ({card.heatCost >= 0 ? '+' : ''}{card.heatCost}H)
+                    ({card.energyCost}E)
                   </span>
                 </span>
               </div>

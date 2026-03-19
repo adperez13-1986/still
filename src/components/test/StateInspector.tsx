@@ -1,5 +1,4 @@
 import type { CombatState, BodySlot, EquipmentDefinition, BehavioralPartDefinition } from '../../game/types'
-import { getHeatThreshold } from '../../game/types'
 import { ALL_CARDS } from '../../data/cards'
 
 interface StateInspectorProps {
@@ -35,7 +34,7 @@ export default function StateInspector({ combat, stillHealth, maxHealth, equipme
   const rows: [string, string | number][] = [
     ['Phase', combat.phase],
     ['Round', combat.roundNumber],
-    ['Heat', `${combat.heat} (${getHeatThreshold(combat.heat)})`],
+    ['Energy', `${combat.currentEnergy}/${combat.maxEnergy}`],
     ['Health', `${stillHealth}/${maxHealth}`],
     ['Block', combat.block],
     ['Hand', assignedCount > 0 ? `${visibleHand} cards (+${assignedCount} assigned)` : `${visibleHand} cards`],

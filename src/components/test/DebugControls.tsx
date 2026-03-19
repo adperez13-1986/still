@@ -79,19 +79,19 @@ export default function DebugControls({
         </button>
       </div>
 
-      {/* Still Health/Heat */}
+      {/* Still Energy/Health */}
       <div style={sectionLabelStyle}>Still</div>
       <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexWrap: 'wrap', marginBottom: 4 }}>
-        <span style={{ fontSize: 12, width: 40 }}>Heat:</span>
+        <span style={{ fontSize: 12, width: 50 }}>Energy:</span>
         <input
           type="range"
           min={0}
-          max={15}
-          value={combat.heat}
-          onChange={(e) => dispatch({ type: 'DEBUG_SET_HEAT', heat: Number(e.target.value) })}
+          max={combat.maxEnergy}
+          value={combat.currentEnergy}
+          onChange={(e) => dispatch({ type: 'DEBUG_SET_ENERGY', energy: Number(e.target.value) })}
           style={{ flex: 1, maxWidth: 120 }}
         />
-        <span style={{ fontSize: 12, fontFamily: 'monospace', width: 20 }}>{combat.heat}</span>
+        <span style={{ fontSize: 12, fontFamily: 'monospace', width: 20 }}>{combat.currentEnergy}</span>
       </div>
       <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexWrap: 'wrap', marginBottom: 4 }}>
         <span style={{ fontSize: 12, width: 40 }}>HP:</span>

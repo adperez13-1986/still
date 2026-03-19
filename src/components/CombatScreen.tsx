@@ -14,7 +14,7 @@ import useIsMobile from '../hooks/useIsMobile'
 import StillPanel from './StillPanel'
 import EnemyCard from './EnemyCard'
 import BodySlotPanel from './BodySlotPanel'
-import HeatTrack from './HeatTrack'
+// HeatTrack removed — energy system uses simple display in StillPanel
 import Hand from './Hand'
 import RewardScreen from './RewardScreen'
 import EquipCompareOverlay from './EquipCompareOverlay'
@@ -116,12 +116,6 @@ export default function CombatScreen() {
           const id = ++dmgIdRef.current
           setDamageNumbers(prev => [...prev, { id, value: event.blocked!, color: '#3498db', target: 'still' }])
         }
-      } else if (event.type === 'hotPenalty') {
-        setScreenFlash(true)
-        setTimeout(() => setScreenFlash(false), 250)
-        setDisplayHealth(prev => Math.max(0, (prev ?? run.health) - event.damage))
-        const id = ++dmgIdRef.current
-        setDamageNumbers(prev => [...prev, { id, value: -event.damage, color: '#e67e22', target: 'still' }])
       }
     }
 
@@ -159,12 +153,6 @@ export default function CombatScreen() {
           applyEvent(event)
           setTimeout(playNext, 550)
         }, 250)
-      } else if (event.type === 'hotPenalty') {
-        setActiveSlot(null)
-        setTimeout(() => {
-          applyEvent(event)
-          setTimeout(playNext, 500)
-        }, 200)
       } else if (event.type === 'partTrigger') {
         // Glow the badge immediately, clear after 600ms, no delay on sequence
         setActivePartIds(prev => new Set([...prev, event.partId]))
@@ -176,8 +164,6 @@ export default function CombatScreen() {
           })
         }, 600)
         playNext()
-      } else if (event.type === 'overheatDamage') {
-        setTimeout(playNext, 400)
       } else {
         setTimeout(playNext, 300)
       }
@@ -191,16 +177,6 @@ export default function CombatScreen() {
     if (!combat) return []
     return projectSlotActions(combat, run.equipment, ALL_CARDS, run.parts)
   }, [combat, run.equipment, run.parts])
-
-  // Projected heat after execution: current heat + LEGS cooling (slots no longer generate heat)
-  const projectedHeat = useMemo(() => {
-    if (!combat) return 0
-    const legsCooling = projections.reduce((sum, p) => sum + p.heatCost, 0)
-    return Math.max(0, combat.heat + legsCooling)
-  }, [combat, projections])
-
-  // Passive heat decay: -1 per turn (unconditional cooling floor)
-  const nextRoundHeat = Math.max(0, projectedHeat - 1)
 
   // ─── Card Interaction ─────────────────────────────────────────────
   const handleSelectSlotCard = useCallback((instanceId: string | null) => {
@@ -600,12 +576,11 @@ export default function CombatScreen() {
             <StillPanel
               health={displayHealth ?? run.health}
               maxHealth={run.maxHealth}
-              heat={combat.heat}
+              energy={combat.currentEnergy}
+              maxEnergy={combat.maxEnergy}
               block={displayBlock ?? combat.block}
               statusEffects={combat.statusEffects}
               compact
-              projectedHeat={animating ? combat.heat : projectedHeat}
-              nextRoundHeat={animating ? undefined : nextRoundHeat}
             />
             {damageNumbers.filter(dn => dn.target === 'still').map(dn => (
               <DamageNumber key={dn.id} value={dn.value} color={dn.color} x="50%" y="0%" />
@@ -645,7 +620,8 @@ export default function CombatScreen() {
             <StillPanel
               health={displayHealth ?? run.health}
               maxHealth={run.maxHealth}
-              heat={combat.heat}
+              energy={combat.currentEnergy}
+              maxEnergy={combat.maxEnergy}
               block={displayBlock ?? combat.block}
               statusEffects={combat.statusEffects}
             />
@@ -698,18 +674,6 @@ export default function CombatScreen() {
         compact={isMobile}
         activeSlot={activeSlot}
       />
-
-      {/* Heat Track — hidden on mobile (heat shown in compact StillPanel) */}
-      {!isMobile && (
-        <HeatTrack
-          heat={combat.heat}
-          projectedHeat={animating ? combat.heat : projectedHeat}
-          nextRoundHeat={animating ? undefined : nextRoundHeat}
-          heatLocked={combat.heatLocked}
-          heatLockTurnsLeft={combat.heatLockTurnsLeft}
-          heatDebt={combat.heatDebt}
-        />
-      )}
 
       {/* Hand */}
       <div style={{
@@ -942,9 +906,9 @@ export default function CombatScreen() {
                           {cat}
                         </span>
                         <span style={{ color: '#e8e8e8', fontWeight: 'bold' }}>{card.name}</span>
-                        {card.heatCost !== 0 && (
+                        {card.energyCost > 0 && (
                           <span style={{ color: '#e67e22', fontSize: '10px', marginLeft: 'auto' }}>
-                            {card.heatCost > 0 ? '+' : ''}{card.heatCost}H
+                            {card.energyCost}E
                           </span>
                         )}
                       </div>

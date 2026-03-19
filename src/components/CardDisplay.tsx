@@ -13,7 +13,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   Redirect: '#74b9ff',
   Repeat: '#fd79a8',
   Override: '#e17055',
-  Cooling: '#00cec9',
+  Utility: '#00cec9',
   Draw: '#ffeaa7',
   Conditional: '#fab1a0',
 }
@@ -50,7 +50,7 @@ export default function CardDisplay({ card, disabled, selected, onClick }: Props
         boxShadow: selected ? '0 0 8px #f1c40f' : 'none',
       }}
     >
-      {/* Heat cost */}
+      {/* Energy cost */}
       <div style={{
         position: 'absolute',
         top: '6px',
@@ -58,7 +58,7 @@ export default function CardDisplay({ card, disabled, selected, onClick }: Props
         width: '24px',
         height: '24px',
         borderRadius: '50%',
-        backgroundColor: card.heatCost > 0 ? '#e74c3c' : card.heatCost < 0 ? '#00cec9' : '#555',
+        backgroundColor: card.energyCost > 0 ? '#e67e22' : '#555',
         color: '#fff',
         fontWeight: 'bold',
         fontSize: '13px',
@@ -66,7 +66,7 @@ export default function CardDisplay({ card, disabled, selected, onClick }: Props
         alignItems: 'center',
         justifyContent: 'center',
       }}>
-        {card.heatCost >= 0 ? `+${card.heatCost}` : card.heatCost}
+        {card.energyCost}
       </div>
 
       {/* Category badge */}
@@ -106,7 +106,7 @@ export default function CardDisplay({ card, disabled, selected, onClick }: Props
         {card.description}
       </div>
 
-      {/* Keywords + Heat condition */}
+      {/* Keywords */}
       <div style={{ fontSize: '9px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
         {(card.keywords.length > 0 || card.category.type === 'system') && (
           <div style={{ color: '#f39c12', fontStyle: 'italic' }}>
@@ -115,11 +115,6 @@ export default function CardDisplay({ card, disabled, selected, onClick }: Props
                 ? [...new Set([...card.keywords, 'Exhaust'])].join(', ')
                 : 'Exhaust'
               : card.keywords.join(', ')}
-          </div>
-        )}
-        {card.heatCondition && (
-          <div style={{ color: '#e67e22' }}>
-            Req: {card.heatCondition}+
           </div>
         )}
       </div>

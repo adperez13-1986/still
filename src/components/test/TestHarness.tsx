@@ -19,7 +19,6 @@ import {
   startTurn,
   playModifierCard,
   unassignModifier,
-  projectHeat,
   allEnemiesDefeated,
   isStillDefeated,
 } from '../../game/combat'
@@ -27,7 +26,7 @@ import type { CombatContext } from '../../game/combat'
 import { ALL_CARDS, STARTING_CARDS } from '../../data/cards'
 import { ALL_ENEMIES } from '../../data/enemies'
 import { ALL_EQUIPMENT } from '../../data/parts'
-import HeatGauge from './HeatGauge'
+import EnergyGauge from './HeatGauge'
 import StateInspector from './StateInspector'
 import ScenarioBuilder from './ScenarioBuilder'
 import HandPanel from './HandPanel'
@@ -86,7 +85,7 @@ interface HarnessState {
 type HarnessAction =
   | { type: 'SET_SCENARIO'; scenario: ScenarioConfig }
   | { type: 'START_COMBAT' }
-  | { type: 'SET_HEAT'; heat: number }
+  | { type: 'SET_ENERGY'; energy: number }
   | { type: 'SELECT_CARD'; instanceId: string | null }
   | { type: 'ASSIGN_MODIFIER'; slot: BodySlot }
   | { type: 'UNASSIGN_MODIFIER'; slot: BodySlot }
@@ -99,7 +98,7 @@ type HarnessAction =
   | { type: 'RESET_COMBAT' }
   | { type: 'BACK_TO_SETUP' }
   // Debug overrides
-  | { type: 'DEBUG_SET_HEAT'; heat: number }
+  | { type: 'DEBUG_SET_ENERGY'; energy: number }
   | { type: 'DEBUG_SET_HEALTH'; health: number }
   | { type: 'DEBUG_SET_ENEMY_HEALTH'; enemyId: string; health: number }
   | { type: 'DEBUG_ADD_STATUS'; status: StatusEffect }
@@ -171,11 +170,11 @@ function reducer(state: HarnessState, action: HarnessAction): HarnessState {
       }
     }
 
-    case 'SET_HEAT': {
+    case 'SET_ENERGY': {
       if (!state.combat) return state
       return {
         ...state,
-        combat: { ...state.combat, heat: Math.max(0, action.heat) },
+        combat: { ...state.combat, currentEnergy: Math.max(0, Math.min(state.combat.maxEnergy, action.energy)) },
       }
     }
 
@@ -369,13 +368,13 @@ function reducer(state: HarnessState, action: HarnessAction): HarnessState {
 
     // ─── Debug overrides ───────────────────────────────────────────────────
 
-    case 'DEBUG_SET_HEAT': {
+    case 'DEBUG_SET_ENERGY': {
       if (!state.combat) return state
-      const heat = Math.max(0, action.heat)
+      const energy = Math.max(0, Math.min(state.combat.maxEnergy, action.energy))
       return {
         ...state,
-        combat: { ...state.combat, heat },
-        log: [...state.log, `[DEBUG] Heat set to ${heat}`],
+        combat: { ...state.combat, currentEnergy: energy },
+        log: [...state.log, `[DEBUG] Energy set to ${energy}`],
       }
     }
 
@@ -522,16 +521,6 @@ const initialState: HarnessState = {
 export default function TestHarness() {
   const [state, dispatch] = useReducer(reducer, initialState)
 
-  const projectedHeat = state.combat
-    ? projectHeat(
-        state.combat.heat,
-        state.scenario.equipment,
-        state.combat.slotModifiers,
-        buildCardDefs(),
-        state.combat
-      )
-    : 0
-
   const targetEnemyId = state.combat?.enemies.find(e => !e.isDefeated)?.instanceId
 
   if (state.mode === 'setup') {
@@ -595,25 +584,11 @@ export default function TestHarness() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
         {/* Left column */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <HeatGauge
-            heat={state.combat?.heat ?? 0}
-            onSetHeat={(heat) => dispatch({ type: 'SET_HEAT', heat })}
+          <EnergyGauge
+            currentEnergy={state.combat?.currentEnergy ?? 0}
+            maxEnergy={state.combat?.maxEnergy ?? 8}
+            onSetEnergy={(energy) => dispatch({ type: 'SET_ENERGY', energy })}
           />
-
-          {state.combat && (
-            <div style={{
-              background: 'var(--bg-raised)',
-              border: '1px solid var(--border)',
-              borderRadius: 8,
-              padding: 12,
-              fontSize: 13,
-            }}>
-              <span style={{ color: 'var(--muted)' }}>Projected Heat after body actions: </span>
-              <span style={{ fontWeight: 'bold', color: projectedHeat >= 8 ? 'var(--danger)' : 'var(--text)' }}>
-                {projectedHeat}
-              </span>
-            </div>
-          )}
 
           <EnemyPanel
             combat={state.combat}

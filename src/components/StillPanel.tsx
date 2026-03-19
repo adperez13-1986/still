@@ -1,29 +1,20 @@
 import { useRef, useState, useEffect } from 'react'
 import type { StatusEffect } from '../game/types'
-import { getHeatThreshold } from '../game/types'
 import Sprite from './Sprite'
 import { STILL_SPRITE } from '../data/sprites'
 
 interface Props {
   health: number
   maxHealth: number
-  heat: number
+  energy: number
+  maxEnergy: number
   block: number
   statusEffects: StatusEffect[]
   compact?: boolean
-  projectedHeat?: number
-  nextRoundHeat?: number
-}
-
-const HEAT_COLORS: Record<string, string> = {
-  Cool: '#27ae60',
-  Warm: '#f1c40f',
-  Hot: '#e67e22',
-  Overheat: '#e74c3c',
 }
 
 export default function StillPanel({
-  health, maxHealth, heat, block, statusEffects, compact, projectedHeat, nextRoundHeat,
+  health, maxHealth, energy, maxEnergy, block, statusEffects, compact,
 }: Props) {
   const healthPct = Math.max(0, (health / maxHealth) * 100)
   const healthColor = healthPct > 50 ? '#27ae60' : healthPct > 25 ? '#f39c12' : '#c0392b'
@@ -41,9 +32,6 @@ export default function StillPanel({
     }
     prevHealthRef.current = health
   }, [health])
-
-  const threshold = getHeatThreshold(heat)
-  const heatColor = HEAT_COLORS[threshold]
 
   if (compact) {
     return (
@@ -85,25 +73,9 @@ export default function StillPanel({
             <span key={damageKey} className="damage-popup" style={{ top: '-16px', fontSize: '10px' }}>hit</span>
           )}
         </div>
-        {/* Heat */}
-        <span style={{ fontWeight: 'bold' }}>
-          <span style={{ color: heatColor }}>H {heat}</span>
-          {heat >= 7 && (
-            <span style={{ color: '#e67e22', fontWeight: 'normal', fontSize: '10px' }}>
-              {' '}[−{(heat - 4) * 2}dmg]
-            </span>
-          )}
-          {projectedHeat != null && projectedHeat !== heat && (
-            <span style={{ color: '#888', fontWeight: 'normal', fontSize: '10px' }}>
-              {' '}→<span style={{ color: HEAT_COLORS[getHeatThreshold(projectedHeat)], fontWeight: 'bold' }}>{projectedHeat}</span>
-              {projectedHeat >= 7 && (
-                <span style={{ color: '#e67e22' }}> [−{(projectedHeat - 4) * 2}]</span>
-              )}
-              {nextRoundHeat != null && (
-                <span> →<span style={{ color: HEAT_COLORS[getHeatThreshold(nextRoundHeat)], fontWeight: 'bold' }}>{nextRoundHeat}</span></span>
-              )}
-            </span>
-          )}
+        {/* Energy */}
+        <span style={{ fontWeight: 'bold', color: '#e67e22' }}>
+          E {energy}/{maxEnergy}
         </span>
         {/* Block */}
         {block > 0 && (
@@ -194,7 +166,7 @@ export default function StillPanel({
         </div>
       )}
 
-      {/* Heat indicator */}
+      {/* Energy indicator */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
@@ -202,18 +174,10 @@ export default function StillPanel({
         marginBottom: '8px',
         fontSize: '13px',
       }}>
-        <span style={{ color: '#aaa' }}>Heat</span>
-        <span style={{ fontWeight: 'bold', fontSize: '16px', color: heatColor }}>
-          {heat}
+        <span style={{ color: '#aaa' }}>Energy</span>
+        <span style={{ fontWeight: 'bold', fontSize: '16px', color: '#e67e22' }}>
+          {energy} / {maxEnergy}
         </span>
-        <span style={{ fontSize: '11px', color: heatColor }}>
-          {threshold}
-        </span>
-        {heat >= 7 && (
-          <span style={{ fontSize: '11px', color: '#e67e22', marginLeft: '4px' }}>
-            [ablative: {(heat - 4) * 2} dmg]
-          </span>
-        )}
       </div>
 
       {/* Status effects */}

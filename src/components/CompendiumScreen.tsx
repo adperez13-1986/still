@@ -38,11 +38,8 @@ function CardEntry({ card }: { card: ModifierCardDefinition }) {
   const [showUpgrade, setShowUpgrade] = useState(false)
   const display = showUpgrade && card.upgraded ? card.upgraded : card
 
-  const heatLabel = display.heatCost < 0
-    ? `${display.heatCost} Heat`
-    : `+${display.heatCost} Heat`
-
-  const heatColor = display.heatCost < 0 ? '#55efc4' : display.heatCost === 0 ? '#888' : '#fdcb6e'
+  const energyLabel = `${display.energyCost} Energy`
+  const energyColor = display.energyCost === 0 ? '#888' : '#fdcb6e'
 
   return (
     <div style={entryStyle}>
@@ -51,7 +48,7 @@ function CardEntry({ card }: { card: ModifierCardDefinition }) {
           {display.name}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '12px', color: heatColor }}>{heatLabel}</span>
+          <span style={{ fontSize: '12px', color: energyColor }}>{energyLabel}</span>
           {card.upgraded && (
             <button
               onClick={() => setShowUpgrade(!showUpgrade)}
@@ -76,11 +73,6 @@ function CardEntry({ card }: { card: ModifierCardDefinition }) {
         <span style={{ fontSize: '10px', color: '#74b9ff', letterSpacing: '1px' }}>
           {display.category.modifier}
         </span>
-        {display.heatCondition && (
-          <span style={{ fontSize: '10px', color: '#fdcb6e', letterSpacing: '1px' }}>
-            Req: {display.heatCondition}+
-          </span>
-        )}
         {display.keywords.map((k) => (
           <span key={k} style={{ fontSize: '10px', color: '#e17055', letterSpacing: '1px' }}>{k}</span>
         ))}
@@ -157,17 +149,12 @@ function EquipmentTab() {
 
 // ─── Mods Tab ───────────────────────────────────────────────────────────────
 
-function PartEntry({ part }: { part: { id: string; name: string; description: string; rarity: string; heatCondition?: string } }) {
+function PartEntry({ part }: { part: { id: string; name: string; description: string; rarity: string } }) {
   return (
     <div style={entryStyle}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#e8e8e8' }}>{part.name}</span>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          {part.heatCondition && (
-            <span style={{ fontSize: '10px', color: '#fdcb6e', letterSpacing: '1px' }}>
-              {part.heatCondition}
-            </span>
-          )}
           <span style={{ fontSize: '10px', color: RARITY_COLORS[part.rarity], letterSpacing: '1px' }}>
             {part.rarity.toUpperCase()}
           </span>

@@ -1,6 +1,6 @@
 import type { EquipmentDefinition, BehavioralPartDefinition } from '../game/types'
 
-// ─── Equipment Definitions (Tasks 3.1-3.4) ──────────────────────────────────
+// ─── Equipment Definitions ──────────────────────────────────────────────────
 
 // HEAD slot: information domain
 const basicScanner: EquipmentDefinition = {
@@ -60,13 +60,13 @@ const weldingTorch: EquipmentDefinition = {
   rarity: 'common',
 }
 
-// LEGS slot: flow domain
-const wornActuators: EquipmentDefinition = {
+// LEGS slot: flow domain (draw, cycling, block)
+const scrapActuators: EquipmentDefinition = {
   id: 'worn-actuators',
   name: 'Scrap Actuators',
-  description: 'Lose 1 Heat.',
+  description: 'Gain 2 Block.',
   slot: 'Legs',
-  action: { type: 'coolHeat', baseValue: 1, targetMode: 'self' },
+  action: { type: 'block', baseValue: 2, targetMode: 'self' },
   rarity: 'common',
 }
 
@@ -79,48 +79,42 @@ const salvagedTreads: EquipmentDefinition = {
   rarity: 'uncommon',
 }
 
-// ─── Archetype Equipment ────────────────────────────────────────────────────
+// ─── Archetype Equipment (reworked to unconditional) ─────────────────────────
 
 const calibratedOptics: EquipmentDefinition = {
   id: 'calibrated-optics',
   name: 'Calibrated Optics',
-  description: 'Draw 1 card. While Cool: draw 2.',
+  description: 'Draw 2 cards.',
   slot: 'Head',
-  action: { type: 'draw', baseValue: 1, targetMode: 'self' },
+  action: { type: 'draw', baseValue: 2, targetMode: 'self' },
   rarity: 'uncommon',
-  heatBonusThreshold: 'Cool',
-  heatBonusValue: 1,
 }
 
 const thermalPlating: EquipmentDefinition = {
   id: 'thermal-plating',
   name: 'Thermal Plating',
-  description: 'Gain 3 Block. While Hot: gain 5.',
+  description: 'Gain 5 Block.',
   slot: 'Torso',
-  action: { type: 'block', baseValue: 3, targetMode: 'self' },
+  action: { type: 'block', baseValue: 5, targetMode: 'self' },
   rarity: 'uncommon',
-  heatBonusThreshold: 'Hot',
-  heatBonusValue: 2,
 }
 
 const overclockedPistons: EquipmentDefinition = {
   id: 'overclocked-pistons',
   name: 'Overclocked Pistons',
-  description: 'Deal 8 damage. Generates +1 Heat.',
+  description: 'Deal 8 damage to one enemy.',
   slot: 'Arms',
   action: { type: 'damage', baseValue: 8, targetMode: 'single_enemy' },
   rarity: 'uncommon',
-  extraHeatGenerated: 1,
 }
 
 const adaptiveTreads: EquipmentDefinition = {
   id: 'adaptive-treads',
   name: 'Adaptive Treads',
-  description: 'Lose 2 Heat. Gain 1 Block per heat lost.',
+  description: 'Draw 2 cards.',
   slot: 'Legs',
-  action: { type: 'coolHeat', baseValue: 2, targetMode: 'self' },
+  action: { type: 'draw', baseValue: 2, targetMode: 'self' },
   rarity: 'uncommon',
-  bonusBlockPerHeatLost: 1,
 }
 
 // ─── Tradeoff Equipment ────────────────────────────────────────────────────
@@ -136,26 +130,24 @@ const shrapnelLauncher: EquipmentDefinition = {
   blockCost: 2,
 }
 
-// ARMS rare: 12 dmg single, only while Cool
+// ARMS rare: 12 dmg single (formerly Cool-only, now unconditional)
 const cryoCannon: EquipmentDefinition = {
   id: 'cryo-cannon',
   name: 'Cryo Cannon',
-  description: 'Deal 12 damage to one enemy. Only fires while Cool.',
+  description: 'Deal 12 damage to one enemy.',
   slot: 'Arms',
   action: { type: 'damage', baseValue: 12, targetMode: 'single_enemy' },
   rarity: 'rare',
-  heatConditionOnly: 'Cool',
 }
 
-// ARMS rare: 4 dmg all, fires twice while Hot
+// ARMS rare: 6 dmg all (formerly multi-fire while Hot, now flat AoE)
 const meltdownCannon: EquipmentDefinition = {
   id: 'meltdown-cannon',
   name: 'Meltdown Cannon',
-  description: 'Deal 4 damage to ALL enemies. Fires twice while Hot.',
+  description: 'Deal 6 damage to ALL enemies.',
   slot: 'Arms',
-  action: { type: 'damage', baseValue: 4, targetMode: 'all_enemies' },
+  action: { type: 'damage', baseValue: 6, targetMode: 'all_enemies' },
   rarity: 'rare',
-  multiFire: { threshold: 'Hot', extraFirings: 1 },
 }
 
 // HEAD uncommon: draw 1 + foresight 1
@@ -180,16 +172,14 @@ const neuralSync: EquipmentDefinition = {
   bonusForesight: 1,
 }
 
-// HEAD rare: draw 1, draw 3 while Hot
+// HEAD rare: draw 2 (formerly draw 1/3 conditional on Hot)
 const pyroclastScanner: EquipmentDefinition = {
   id: 'pyroclast-scanner',
   name: 'Pyroclast Scanner',
-  description: 'Draw 1 card. While Hot: draw 3.',
+  description: 'Draw 2 cards.',
   slot: 'Head',
-  action: { type: 'draw', baseValue: 1, targetMode: 'self' },
+  action: { type: 'draw', baseValue: 2, targetMode: 'self' },
   rarity: 'rare',
-  heatBonusThreshold: 'Hot',
-  heatBonusValue: 2,
 }
 
 // TORSO rare: 6 Block, no conditions
@@ -202,40 +192,35 @@ const ablativePlates: EquipmentDefinition = {
   rarity: 'rare',
 }
 
-// TORSO rare: 4 Block, heal 2 while Cool
+// TORSO rare: 4 Block + heal 2 (formerly Cool-conditional heal, now unconditional)
 const cryoShell: EquipmentDefinition = {
   id: 'cryo-shell',
   name: 'Cryo Shell',
-  description: 'Gain 4 Block. While Cool: also heal 2.',
+  description: 'Gain 4 Block. Heal 2 HP.',
   slot: 'Torso',
   action: { type: 'block', baseValue: 4, targetMode: 'self' },
   rarity: 'rare',
-  heatBonusThreshold: 'Cool',
   bonusHeal: 2,
 }
 
-// LEGS rare: -1 Heat, +5 Block while Cool
+// LEGS rare: gain 5 Block + draw 1 (formerly cooling + Cool block)
 const cryoLock: EquipmentDefinition = {
   id: 'cryo-lock',
   name: 'Cryo Lock',
-  description: 'Lose 1 Heat. While Cool: gain 5 Block.',
+  description: 'Gain 5 Block. Draw 1 card.',
   slot: 'Legs',
-  action: { type: 'coolHeat', baseValue: 1, targetMode: 'self' },
+  action: { type: 'block', baseValue: 5, targetMode: 'self' },
   rarity: 'rare',
-  heatBonusThreshold: 'Cool',
-  heatBonusBlock: 5,
 }
 
-// LEGS rare: -1 Heat, -3 Heat while Hot
+// LEGS rare: draw 2 + gain 2 Block (formerly cooling + Hot cooling)
 const thermalExhaust: EquipmentDefinition = {
   id: 'thermal-exhaust',
   name: 'Thermal Exhaust',
-  description: 'Lose 1 Heat. While Hot: lose 3 Heat.',
+  description: 'Draw 2 cards. Gain 2 Block.',
   slot: 'Legs',
-  action: { type: 'coolHeat', baseValue: 1, targetMode: 'self' },
+  action: { type: 'draw', baseValue: 2, targetMode: 'self' },
   rarity: 'rare',
-  heatBonusThreshold: 'Hot',
-  heatBonusValue: 2,
 }
 
 // ─── Sector 2 Equipment ────────────────────────────────────────────────────
@@ -250,15 +235,14 @@ const thermalImager: EquipmentDefinition = {
   rarity: 'uncommon',
 }
 
+// HEAD rare: draw 2 (formerly draw 1/2 conditional on Cool)
 const predictiveArray: EquipmentDefinition = {
   id: 'predictive-array',
   name: 'Predictive Array',
-  description: 'Draw 1 card. While Cool: draw 2.',
+  description: 'Draw 2 cards.',
   slot: 'Head',
-  action: { type: 'draw', baseValue: 1, targetMode: 'self' },
+  action: { type: 'draw', baseValue: 2, targetMode: 'self' },
   rarity: 'rare',
-  heatBonusThreshold: 'Cool',
-  heatBonusValue: 1,
 }
 
 // TORSO slot
@@ -271,15 +255,14 @@ const reactivePlating: EquipmentDefinition = {
   rarity: 'uncommon',
 }
 
+// TORSO rare: 7 Block (formerly 3/7 conditional on Hot)
 const heatShield: EquipmentDefinition = {
   id: 'heat-shield',
   name: 'Heat Shield',
-  description: 'Gain 3 Block. While Hot: gain 7.',
+  description: 'Gain 7 Block.',
   slot: 'Torso',
-  action: { type: 'block', baseValue: 3, targetMode: 'self' },
+  action: { type: 'block', baseValue: 7, targetMode: 'self' },
   rarity: 'rare',
-  heatBonusThreshold: 'Hot',
-  heatBonusValue: 4,
 }
 
 // ARMS slot
@@ -301,38 +284,35 @@ const arcWelder: EquipmentDefinition = {
   rarity: 'rare',
 }
 
-// LEGS slot
-const coolantInjector: EquipmentDefinition = {
+// LEGS slot: flow domain (formerly cooling)
+const hydraulicPump: EquipmentDefinition = {
   id: 'coolant-injector',
-  name: 'Coolant Injector',
-  description: 'Lose 2 Heat.',
+  name: 'Hydraulic Pump',
+  description: 'Draw 1 card. Gain 3 Block.',
   slot: 'Legs',
-  action: { type: 'coolHeat', baseValue: 2, targetMode: 'self' },
+  action: { type: 'draw', baseValue: 1, targetMode: 'self' },
   rarity: 'uncommon',
 }
 
+// LEGS rare: draw 2 + 3 Block (formerly cooling + block per heat)
 const stabilizerTreads: EquipmentDefinition = {
   id: 'stabilizer-treads',
   name: 'Stabilizer Treads',
-  description: 'Lose 1 Heat. Gain 3 Block per heat lost.',
+  description: 'Draw 2 cards. Gain 3 Block.',
   slot: 'Legs',
-  action: { type: 'coolHeat', baseValue: 1, targetMode: 'self' },
+  action: { type: 'draw', baseValue: 2, targetMode: 'self' },
   rarity: 'rare',
-  bonusBlockPerHeatLost: 3,
 }
 
 // ─── Sector 1 Behavioral Parts ──────────────────────────────────────────────
 
-// Feedback Loop and Residual Charge removed — passive cooling undermines planning-authority heat model
-
 const frostCore: BehavioralPartDefinition = {
   id: 'frost-core',
   name: 'Frost Core',
-  description: 'While Cool: gain 2 Block at turn start.',
+  description: 'Gain 2 Block at turn start.',
   trigger: { type: 'onTurnStart' },
   effect: { type: 'bonusBlock', value: 2 },
   rarity: 'uncommon',
-  heatCondition: 'Cool',
 }
 
 const scrapRecycler: BehavioralPartDefinition = {
@@ -353,47 +333,18 @@ const ablativeShell: BehavioralPartDefinition = {
   rarity: 'uncommon',
 }
 
-// Momentum Core removed — "all 4 slots fire" is unconditional now that all slots start equipped.
-// Revisit with a new condition (e.g., "played 2 or fewer cards") when Cool Runner identity is clearer.
-// { id: 'momentum-core', name: 'Momentum Core', description: 'If all 4 body slots fire, +3 Block + draw 1', rarity: 'uncommon' }
+// Pressure Valve removed — onWouldOverheat trigger no longer exists
+// Flux Capacitor removed — onThresholdCross trigger no longer exists
 
-const pressureValve: BehavioralPartDefinition = {
-  id: 'pressure-valve',
-  name: 'Pressure Valve',
-  description: 'When Heat reaches 10+, set Heat to 7 and deal 5 damage to all enemies.',
-  trigger: { type: 'onWouldOverheat' },
-  effect: { type: 'preventOverheat', setHeat: 7, damage: 5 },
-  rarity: 'uncommon',
-}
+// ─── Sector 2 Behavioral Parts ──────────────────────────────────────────────
 
 const reactiveFrame: BehavioralPartDefinition = {
   id: 'reactive-frame',
   name: 'Reactive Frame',
-  description: 'When Warm+, ARMS fires an extra time.',
-  trigger: { type: 'onHeatThreshold', threshold: 'Warm' },
-  effect: { type: 'extraFiring', slot: 'Arms' },
+  description: 'When ARMS fires, deal 2 bonus damage.',
+  trigger: { type: 'onSlotFire', slot: 'Arms' },
+  effect: { type: 'bonusDamage', value: 2 },
   rarity: 'rare',
-}
-
-const fluxCapacitor: BehavioralPartDefinition = {
-  id: 'flux-capacitor',
-  name: 'Flux Capacitor',
-  description: 'When heat crosses a threshold, draw 1 card.',
-  trigger: { type: 'onThresholdCross' },
-  effect: { type: 'drawCards', count: 1 },
-  rarity: 'rare',
-}
-
-// ─── Sector 2 Behavioral Parts ──────────────────────────────────────────────
-
-const zeroPointField: BehavioralPartDefinition = {
-  id: 'zero-point-field',
-  name: 'Zero Point Field',
-  description: 'At turn start, if Cool: cards cost 1 less Heat this turn (min 0).',
-  trigger: { type: 'onTurnStart' },
-  effect: { type: 'reduceCardHeatCosts', value: 1 },
-  rarity: 'uncommon',
-  heatCondition: 'Cool',
 }
 
 const salvageProtocol: BehavioralPartDefinition = {
@@ -402,15 +353,6 @@ const salvageProtocol: BehavioralPartDefinition = {
   description: 'Disabled slots generate 5 Block instead of doing nothing.',
   trigger: { type: 'onSlotFire', slot: 'Head' }, // checked during execution
   effect: { type: 'blockForDisabledSlots', value: 5 },
-  rarity: 'uncommon',
-}
-
-const thermalOscillator: BehavioralPartDefinition = {
-  id: 'thermal-oscillator',
-  name: 'Thermal Oscillator',
-  description: 'When heat crosses a threshold, gain 3 Block and deal 3 damage to all enemies.',
-  trigger: { type: 'onThresholdCross' },
-  effect: { type: 'bonusBlock', value: 3 },
   rarity: 'uncommon',
 }
 
@@ -435,66 +377,39 @@ const failsafeArmor: BehavioralPartDefinition = {
 const cryoEngine: BehavioralPartDefinition = {
   id: 'cryo-engine',
   name: 'Cryo Engine',
-  description: 'While Cool: gain 1 Block for each card you play.',
+  description: 'When you play a card, gain 1 Block.',
   trigger: { type: 'onCardPlay' },
   effect: { type: 'blockPerCard', value: 1 },
   rarity: 'rare',
-  heatCondition: 'Cool',
 }
 
 const gyroStabilizer: BehavioralPartDefinition = {
   id: 'gyro-stabilizer',
   name: 'Gyro Stabilizer',
-  description: 'While Warm: whenever you play a card, deal 2 damage to a random enemy.',
+  description: 'When you play a card, deal 2 damage to a random enemy.',
   trigger: { type: 'onCardPlay' },
   effect: { type: 'damageRandomEnemy', value: 2 },
   rarity: 'rare',
-  heatCondition: 'Warm',
 }
 
-const meltdownCore: BehavioralPartDefinition = {
+const meltdownCorePart: BehavioralPartDefinition = {
   id: 'meltdown-core',
   name: 'Meltdown Core',
-  description: 'While Hot: slot modifiers get +50% bonus to effect values.',
+  description: 'Slot modifiers get +50% bonus to effect values.',
   trigger: { type: 'onSlotFire', slot: 'Head' }, // checked during execution
   effect: { type: 'amplifyModifiers', multiplier: 1.5 },
   rarity: 'rare',
-  heatCondition: 'Hot',
 }
 
-const volatileReactor: BehavioralPartDefinition = {
-  id: 'volatile-reactor',
-  name: 'Volatile Reactor',
-  description: 'When heat crosses a threshold, draw 1 card and deal +3 bonus damage on next ARMS fire.',
-  trigger: { type: 'onThresholdCross' },
-  effect: { type: 'drawCards', count: 1 },
-  rarity: 'rare',
-}
+// Zero Point Field removed — reduceCardHeatCosts effect no longer exists
+// Thermal Oscillator removed — onThresholdCross trigger no longer exists
+// Volatile Reactor removed — onThresholdCross trigger no longer exists
 
 // ─── Run-Warping Rare Parts ─────────────────────────────────────────────────
 
 // Dual Loader deferred to Sector 3
-// { id: 'dual-loader', name: 'Dual Loader', description: 'You can assign 2 modifiers to the same slot.', rarity: 'rare' }
-
-const thermalDamper: BehavioralPartDefinition = {
-  id: 'thermal-damper',
-  name: 'Thermal Damper',
-  description: 'At the start of each combat, heat is locked for 2 turns. Deferred heat applies all at once when the lock expires.',
-  trigger: { type: 'onCombatStart' },
-  effect: { type: 'heatLock', turns: 2 },
-  rarity: 'rare',
-}
-
-const overheatReactor: BehavioralPartDefinition = {
-  id: 'overheat-reactor',
-  name: 'Overheat Reactor',
-  description: 'When Heat reaches 10+, all slots deal 2x damage this turn, heat resets to 5, max HP permanently reduced by 5.',
-  trigger: { type: 'onWouldOverheat' },
-  effect: { type: 'overheatReactor', heatReset: 5, maxHpCost: 5 },
-  rarity: 'rare',
-}
-
-// Perpetual Core removed — mid-turn reshuffle is now default behavior
+// Thermal Damper removed — heatLock effect no longer exists
+// Overheat Reactor removed — overheatReactor effect no longer exists
 
 // ─── Exports ────────────────────────────────────────────────────────────────
 
@@ -503,7 +418,7 @@ export const EQUIPMENT: EquipmentDefinition[] = [
   basicScanner, crackedLens,
   scrapPlating, patchedHull,
   pistonArm, weldingTorch,
-  wornActuators, salvagedTreads,
+  scrapActuators, salvagedTreads,
   // Archetype (uncommon)
   calibratedOptics, thermalPlating,
   overclockedPistons, adaptiveTreads,
@@ -517,23 +432,21 @@ export const EQUIPMENT: EquipmentDefinition[] = [
   thermalImager, predictiveArray,
   reactivePlating, heatShield,
   plasmaCutter, arcWelder,
-  coolantInjector, stabilizerTreads,
+  hydraulicPump, stabilizerTreads,
 ]
 
 export const SECTOR1_PART_POOL: BehavioralPartDefinition[] = [
   frostCore, scrapRecycler, ablativeShell,
-  pressureValve, fluxCapacitor,
 ]
 
 export const SECTOR2_PART_POOL: BehavioralPartDefinition[] = [
   reactiveFrame,
-  zeroPointField, salvageProtocol, thermalOscillator, emptyChamber,
-  failsafeArmor, cryoEngine, gyroStabilizer, meltdownCore, volatileReactor,
+  salvageProtocol, emptyChamber,
+  failsafeArmor, cryoEngine, gyroStabilizer, meltdownCorePart,
 ]
 
-// Dual Loader deferred to Sector 3 — too powerful with current slot modifier system
 export const RUN_WARPING_PARTS: BehavioralPartDefinition[] = [
-  thermalDamper, overheatReactor,
+  // All run-warping parts removed (heat-dependent)
 ]
 
 export const BEHAVIORAL_PARTS: BehavioralPartDefinition[] = [
@@ -561,7 +474,7 @@ export const ALL_PARTS: Record<string, BehavioralPartDefinition> = Object.fromEn
 export const STARTING_HEAD = basicScanner
 export const STARTING_TORSO = scrapPlating
 export const STARTING_ARMS = pistonArm
-export const STARTING_LEGS = wornActuators
+export const STARTING_LEGS = scrapActuators
 
 // Legacy aliases for old components that haven't been updated yet
 export const PARTS = BEHAVIORAL_PARTS

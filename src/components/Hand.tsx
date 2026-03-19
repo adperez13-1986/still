@@ -1,7 +1,6 @@
 import { useState, useRef } from 'react'
 import type { CombatState } from '../game/types'
 import { ALL_CARDS } from '../data/cards'
-import { getHeatThreshold } from '../game/types'
 import CardDisplay from './CardDisplay'
 
 interface Props {
@@ -9,12 +8,6 @@ interface Props {
   selectedCardId: string | null
   onSelectSlotCard: (instanceId: string | null) => void
   compact?: boolean
-}
-
-function isThresholdMet(currentHeat: number, required: string): boolean {
-  const order = ['Cool', 'Warm', 'Hot', 'Overheat']
-  const current = getHeatThreshold(currentHeat)
-  return order.indexOf(current) >= order.indexOf(required)
 }
 
 export default function Hand({ combat, selectedCardId, onSelectSlotCard, compact }: Props) {
@@ -58,8 +51,8 @@ export default function Hand({ combat, selectedCardId, onSelectSlotCard, compact
             const def = card.isUpgraded && baseDef.upgraded ? baseDef.upgraded : baseDef
 
             const isSelected = selectedCardId === card.instanceId
-            const heatMet = !def.heatCondition || isThresholdMet(combat.heat, def.heatCondition)
-            const playable = canPlay && heatMet
+            const affordable = combat.currentEnergy >= def.energyCost
+            const playable = canPlay && affordable
 
             return (
               <div
@@ -91,7 +84,7 @@ export default function Hand({ combat, selectedCardId, onSelectSlotCard, compact
                   padding: '4px 10px',
                   borderRadius: '12px',
                   backgroundColor: isSelected ? '#a29bfe' : '#1a1a2e',
-                  border: `1px solid ${isSelected ? '#a29bfe' : !heatMet ? '#e74c3c' : '#2c3e50'}`,
+                  border: `1px solid ${isSelected ? '#a29bfe' : !affordable ? '#e74c3c' : '#2c3e50'}`,
                   cursor: playable ? 'pointer' : 'default',
                   opacity: playable ? 1 : 0.5,
                   fontSize: '11px',
@@ -108,10 +101,10 @@ export default function Hand({ combat, selectedCardId, onSelectSlotCard, compact
                 {def.name}
                 <span style={{
                   fontSize: '9px',
-                  color: isSelected ? 'rgba(255,255,255,0.8)' : (def.heatCost > 0 ? '#e74c3c' : def.heatCost < 0 ? '#00cec9' : '#888'),
+                  color: isSelected ? 'rgba(255,255,255,0.8)' : (def.energyCost > 0 ? '#e67e22' : '#888'),
                   fontWeight: 'bold',
                 }}>
-                  {def.heatCost >= 0 ? '+' : ''}{def.heatCost}H
+                  {def.energyCost}E
                 </span>
               </div>
             )
@@ -160,14 +153,14 @@ export default function Hand({ combat, selectedCardId, onSelectSlotCard, compact
 
         const isSlot = def.category.type === 'slot'
         const isSelected = selectedCardId === card.instanceId
-        const heatMet = !def.heatCondition || isThresholdMet(combat.heat, def.heatCondition)
-        const playable = canPlay && heatMet
+        const affordable = combat.currentEnergy >= def.energyCost
+        const playable = canPlay && affordable
 
         const slotColors: Record<string, string> = {
           Amplify: '#a29bfe', Redirect: '#74b9ff', Repeat: '#fd79a8', Override: '#e17055',
         }
         const systemColors: Record<string, string> = {
-          Cooling: '#00cec9', Draw: '#ffeaa7', Conditional: '#fab1a0',
+          Utility: '#00cec9', Draw: '#ffeaa7', Conditional: '#fab1a0',
         }
         const categoryColor = isSlot
           ? (slotColors[def.category.modifier] ?? '#888')
@@ -184,7 +177,7 @@ export default function Hand({ combat, selectedCardId, onSelectSlotCard, compact
               width: '130px',
               padding: '10px',
               backgroundColor: isSelected ? '#a29bfe' : '#1a1a2e',
-              border: `2px solid ${isSelected ? '#a29bfe' : !heatMet ? '#e74c3c' : '#2c3e50'}`,
+              border: `2px solid ${isSelected ? '#a29bfe' : !affordable ? '#e74c3c' : '#2c3e50'}`,
               borderRadius: '8px',
               cursor: playable ? 'pointer' : 'default',
               opacity: playable ? 1 : 0.5,
@@ -210,10 +203,10 @@ export default function Hand({ combat, selectedCardId, onSelectSlotCard, compact
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px' }}>
               <span style={{
-                color: def.heatCost > 0 ? '#e74c3c' : def.heatCost < 0 ? '#00cec9' : '#888',
+                color: def.energyCost > 0 ? '#e67e22' : '#888',
                 fontWeight: 'bold',
               }}>
-                {def.heatCost >= 0 ? '+' : ''}{def.heatCost}H
+                {def.energyCost}E
               </span>
               <span style={{
                 padding: '0 4px',
@@ -228,15 +221,6 @@ export default function Hand({ combat, selectedCardId, onSelectSlotCard, compact
             {def.keywords.length > 0 && (
               <div style={{ fontSize: '9px', color: '#888', marginTop: '3px' }}>
                 {def.keywords.join(', ')}
-              </div>
-            )}
-            {def.heatCondition && (
-              <div style={{
-                fontSize: '9px',
-                color: heatMet ? '#00cec9' : '#e74c3c',
-                marginTop: '2px',
-              }}>
-                Req: {def.heatCondition}+
               </div>
             )}
           </div>

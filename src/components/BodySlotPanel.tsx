@@ -1,57 +1,15 @@
 import { useState, useRef, useCallback } from 'react'
-import type { CombatState, BodySlot, EquipmentDefinition, HeatThreshold, BehavioralPartDefinition } from '../game/types'
-import { BODY_SLOTS, getHeatThreshold } from '../game/types'
+import type { CombatState, BodySlot, EquipmentDefinition, BehavioralPartDefinition } from '../game/types'
+import { BODY_SLOTS } from '../game/types'
 import { ALL_CARDS } from '../data/cards'
 import type { SlotProjection } from '../game/combat'
 import { getAllowedSlots } from '../game/combat'
-
-const HEAT_COLORS: Record<HeatThreshold, string> = {
-  Cool: '#27ae60',
-  Warm: '#f1c40f',
-  Hot: '#e67e22',
-  Overheat: '#e74c3c',
-}
-
-function HeatValueDisplay({ total, heatContrib, suffix, color, fontSize }: {
-  total: number
-  heatContrib: number
-  suffix: string
-  color: string
-  fontSize: string
-}) {
-  if (total <= 0) return null
-  const base = total - heatContrib
-  const showBreakdown = heatContrib > 0 && base > 0
-  return (
-    <span style={{ fontWeight: 'bold', fontSize }}>
-      <span style={{ color }}>→{showBreakdown ? base : total}</span>
-      {showBreakdown && (
-        <span style={{ color: '#e67e22' }}>+{heatContrib}</span>
-      )}
-      <span style={{ color }}>{suffix}</span>
-    </span>
-  )
-}
-
-function ThresholdBadge({ heat, fontSize }: { heat: number; fontSize: string }) {
-  const threshold = getHeatThreshold(heat)
-  return (
-    <span style={{
-      fontSize,
-      color: HEAT_COLORS[threshold],
-      opacity: threshold === 'Cool' ? 0.5 : 1,
-    }}>
-      @{threshold}
-    </span>
-  )
-}
 
 const ACTION_TYPE_LABELS: Record<string, string> = {
   damage: 'Damage',
   block: 'Block',
   heal: 'Heal',
   draw: 'Draw',
-  coolHeat: 'Cool',
   foresight: 'Foresight',
 }
 
@@ -96,34 +54,14 @@ function EquipPopup({ equip, onClose }: { equip: EquipmentDefinition; onClose: (
         <div style={{ fontSize: '12px', color: '#aaa', marginBottom: '10px' }}>{equip.description}</div>
         <div style={{ fontSize: '11px', color: '#dfe6e9', display: 'flex', flexDirection: 'column', gap: '3px' }}>
           <span>{actionLabel} {equip.action.baseValue}{targetLabel}</span>
-          {equip.heatBonusThreshold && equip.heatBonusValue && (
-            <span style={{ color: '#e67e22' }}>@{equip.heatBonusThreshold}: +{equip.heatBonusValue}</span>
-          )}
-          {equip.heatBonusBlock && equip.heatBonusThreshold && (
-            <span style={{ color: '#3498db' }}>@{equip.heatBonusThreshold}: +{equip.heatBonusBlock} Block</span>
-          )}
-          {equip.extraHeatGenerated ? (
-            <span style={{ color: '#e67e22' }}>+{equip.extraHeatGenerated} Heat on assign</span>
-          ) : null}
-          {equip.bonusBlockPerHeatLost ? (
-            <span style={{ color: '#3498db' }}>+{equip.bonusBlockPerHeatLost} Block per Heat cooled</span>
-          ) : null}
           {equip.blockCost ? (
             <span style={{ color: '#e74c3c' }}>-{equip.blockCost} Block on fire</span>
           ) : null}
           {equip.bonusForesight ? (
             <span style={{ color: '#9b59b6' }}>+{equip.bonusForesight} Foresight</span>
           ) : null}
-          {equip.heatConditionOnly && (
-            <span style={{ color: '#e74c3c' }}>Only fires while {equip.heatConditionOnly}</span>
-          )}
-          {equip.multiFire && (
-            <span style={{ color: '#e67e22' }}>Fires {equip.multiFire.extraFirings + 1}x while {equip.multiFire.threshold}</span>
-          )}
           {equip.bonusHeal ? (
-            <span style={{ color: '#2ecc71' }}>
-              +{equip.bonusHeal} Heal{equip.heatBonusThreshold ? ` while ${equip.heatBonusThreshold}` : ''}
-            </span>
+            <span style={{ color: '#2ecc71' }}>+{equip.bonusHeal} Heal</span>
           ) : null}
         </div>
       </div>
@@ -284,18 +222,23 @@ export default function BodySlotPanel({ combat, equipment, parts, selectedCardId
                   {equip ? equip.name : '(empty)'}
                 </span>
                 {/* Projection inline */}
-                {proj && proj.isInactive && (
-                  <span style={{ color: '#e74c3c', fontSize: '9px', fontWeight: 'bold', opacity: 0.7 }}>INACTIVE</span>
-                )}
                 {proj && proj.willFire && (
                   <>
-                    <ThresholdBadge heat={proj.heatAtExecution} fontSize="9px" />
-                    {proj.isMultiFire && (
-                      <span style={{ color: '#e67e22', fontSize: '9px', fontWeight: 'bold' }}>x2</span>
+                    {proj.damage > 0 && (
+                      <span style={{ color: '#e74c3c', fontWeight: 'bold', fontSize: '10px' }}>
+                        →{proj.damage}dmg{proj.targetMode === 'all' ? ' ALL' : ''}
+                      </span>
                     )}
-                    <HeatValueDisplay total={proj.damage} heatContrib={proj.heatDmgContrib} suffix={`dmg${proj.targetMode === 'all' ? ' ALL' : ''}`} color="#e74c3c" fontSize="10px" />
-                    <HeatValueDisplay total={proj.block} heatContrib={proj.heatBlkContrib} suffix="blk" color="#3498db" fontSize="10px" />
-                    <HeatValueDisplay total={proj.heal} heatContrib={proj.heatHealContrib} suffix="hp" color="#2ecc71" fontSize="10px" />
+                    {proj.block > 0 && (
+                      <span style={{ color: '#3498db', fontWeight: 'bold', fontSize: '10px' }}>
+                        →{proj.block}blk
+                      </span>
+                    )}
+                    {proj.heal > 0 && (
+                      <span style={{ color: '#2ecc71', fontWeight: 'bold', fontSize: '10px' }}>
+                        →{proj.heal}hp
+                      </span>
+                    )}
                     {proj.draw > 0 && (
                       <span style={{ color: '#dfe6e9', fontWeight: 'bold', fontSize: '10px' }}>
                         draw {proj.draw}
@@ -304,11 +247,6 @@ export default function BodySlotPanel({ combat, equipment, parts, selectedCardId
                     {proj.foresight > 0 && (
                       <span style={{ color: '#9b59b6', fontWeight: 'bold', fontSize: '10px' }}>
                         eye {proj.foresight}
-                      </span>
-                    )}
-                    {proj.heatCost !== 0 && (
-                      <span style={{ color: '#e67e22', fontWeight: 'bold', fontSize: '10px' }}>
-                        {proj.heatCost > 0 ? '+' : ''}{proj.heatCost}H
                       </span>
                     )}
                   </>
@@ -408,22 +346,25 @@ export default function BodySlotPanel({ combat, equipment, parts, selectedCardId
               )}
 
               {/* Projection display */}
-              {proj?.isInactive && (
-                <div style={{ color: '#e74c3c', fontSize: '10px', fontWeight: 'bold', marginTop: '4px', opacity: 0.7 }}>
-                  INACTIVE — not in {equip?.heatConditionOnly} zone
-                </div>
-              )}
               {(() => {
                 if (!proj || !proj.willFire) return null
                 return (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px', fontSize: '11px', alignItems: 'center' }}>
-                    <ThresholdBadge heat={proj.heatAtExecution} fontSize="10px" />
-                    {proj.isMultiFire && (
-                      <span style={{ color: '#e67e22', fontWeight: 'bold', fontSize: '10px' }}>x2 FIRE</span>
+                    {proj.damage > 0 && (
+                      <span style={{ color: '#e74c3c', fontWeight: 'bold' }}>
+                        →{proj.damage} dmg{proj.targetMode === 'all' ? ' ALL' : ''}
+                      </span>
                     )}
-                    <HeatValueDisplay total={proj.damage} heatContrib={proj.heatDmgContrib} suffix={` dmg${proj.targetMode === 'all' ? ' ALL' : ''}`} color="#e74c3c" fontSize="11px" />
-                    <HeatValueDisplay total={proj.block} heatContrib={proj.heatBlkContrib} suffix=" block" color="#3498db" fontSize="11px" />
-                    <HeatValueDisplay total={proj.heal} heatContrib={proj.heatHealContrib} suffix=" heal" color="#2ecc71" fontSize="11px" />
+                    {proj.block > 0 && (
+                      <span style={{ color: '#3498db', fontWeight: 'bold' }}>
+                        →{proj.block} block
+                      </span>
+                    )}
+                    {proj.heal > 0 && (
+                      <span style={{ color: '#2ecc71', fontWeight: 'bold' }}>
+                        →{proj.heal} heal
+                      </span>
+                    )}
                     {proj.draw > 0 && (
                       <span style={{ color: '#dfe6e9', fontWeight: 'bold' }}>
                         → draw {proj.draw}
@@ -432,11 +373,6 @@ export default function BodySlotPanel({ combat, equipment, parts, selectedCardId
                     {proj.foresight > 0 && (
                       <span style={{ color: '#9b59b6', fontWeight: 'bold' }}>
                         → eye {proj.foresight}
-                      </span>
-                    )}
-                    {proj.heatCost !== 0 && (
-                      <span style={{ color: '#e67e22', fontWeight: 'bold' }}>
-                        {proj.heatCost > 0 ? '+' : ''}{proj.heatCost}H
                       </span>
                     )}
                   </div>

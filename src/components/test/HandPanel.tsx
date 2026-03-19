@@ -55,18 +55,13 @@ export default function HandPanel({ combat, selectedCardId, onSelectCard, onPlay
           const isSelected = selectedCardId === card.instanceId
           const canPlay = combat.phase === 'planning'
 
-          // Check heat condition
-          const heatMet = !def.heatCondition || (() => {
-            const order = ['Cool', 'Warm', 'Hot', 'Overheat']
-            const current = combat.heat >= 10 ? 'Overheat' : combat.heat >= 7 ? 'Hot' : combat.heat >= 4 ? 'Warm' : 'Cool'
-            return order.indexOf(current) >= order.indexOf(def.heatCondition!)
-          })()
+          const affordable = combat.currentEnergy >= def.energyCost
 
           return (
             <div
               key={card.instanceId}
               onClick={() => {
-                if (!canPlay || !heatMet) return
+                if (!canPlay || !affordable) return
                 if (isSlot) {
                   onSelectCard(isSelected ? null : card.instanceId)
                 } else if (isSystem) {
@@ -77,10 +72,10 @@ export default function HandPanel({ combat, selectedCardId, onSelectCard, onPlay
                 width: 140,
                 padding: 10,
                 background: isSelected ? 'var(--accent)' : 'var(--bg-surface)',
-                border: `2px solid ${isSelected ? 'var(--accent)' : !heatMet ? 'var(--danger)' : 'var(--border)'}`,
+                border: `2px solid ${isSelected ? 'var(--accent)' : !affordable ? 'var(--danger)' : 'var(--border)'}`,
                 borderRadius: 8,
-                cursor: canPlay && heatMet ? 'pointer' : 'default',
-                opacity: canPlay && heatMet ? 1 : 0.5,
+                cursor: canPlay && affordable ? 'pointer' : 'default',
+                opacity: canPlay && affordable ? 1 : 0.5,
                 transition: 'all 0.15s',
               }}
             >
@@ -97,9 +92,9 @@ export default function HandPanel({ combat, selectedCardId, onSelectCard, onPlay
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11 }}>
                 <span style={{
-                  color: def.heatCost > 0 ? 'var(--danger)' : def.heatCost < 0 ? 'var(--health)' : 'var(--muted)',
+                  color: def.energyCost > 0 ? '#e67e22' : 'var(--muted)',
                 }}>
-                  {def.heatCost >= 0 ? '+' : ''}{def.heatCost}H
+                  {def.energyCost}E
                 </span>
                 <span style={{
                   padding: '0 4px',
@@ -114,15 +109,6 @@ export default function HandPanel({ combat, selectedCardId, onSelectCard, onPlay
               {def.keywords.length > 0 && (
                 <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 2 }}>
                   {def.keywords.join(', ')}
-                </div>
-              )}
-              {def.heatCondition && (
-                <div style={{
-                  fontSize: 10,
-                  color: heatMet ? 'var(--health)' : 'var(--danger)',
-                  marginTop: 2,
-                }}>
-                  Req: {def.heatCondition}+
                 </div>
               )}
             </div>

@@ -17,10 +17,6 @@ function getGlowColor(part: BehavioralPartDefinition): string {
     case 'blockPerUnplayedCard':
     case 'halveLargeDamage':
       return '#3498db'
-    case 'reduceHeat':
-    case 'reduceCardHeatCosts':
-    case 'preventOverheat':
-      return '#27ae60'
     case 'damageRandomEnemy':
     case 'bonusDamage':
       return '#e74c3c'

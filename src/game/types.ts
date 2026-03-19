@@ -1,22 +1,6 @@
-// ─── Heat System ────────────────────────────────────────────────────────────
+// ─── Energy System ──────────────────────────────────────────────────────────
 
-export type HeatThreshold = 'Cool' | 'Warm' | 'Hot' | 'Overheat'
-
-export const HOT_DAMAGE = 3
-export const OVERHEAT_THRESHOLD = 10
-export const OVERHEAT_DAMAGE_PER_POINT = 2
-
-export function getHeatThreshold(heat: number): HeatThreshold {
-  if (heat >= 10) return 'Overheat'
-  if (heat >= 7) return 'Hot'
-  if (heat >= 4) return 'Warm'
-  return 'Cool'
-}
-
-export function isCool(heat: number): boolean { return heat <= 3 }
-export function isWarm(heat: number): boolean { return heat >= 4 && heat <= 6 }
-export function isHot(heat: number): boolean { return heat >= 7 && heat <= 9 }
-export function isOverheat(heat: number): boolean { return heat >= 10 }
+export const DEFAULT_MAX_ENERGY = 8
 
 // ─── Body System ────────────────────────────────────────────────────────────
 
@@ -24,7 +8,7 @@ export type BodySlot = 'Head' | 'Torso' | 'Arms' | 'Legs'
 
 export const BODY_SLOTS: BodySlot[] = ['Head', 'Torso', 'Arms', 'Legs']
 
-export type BodyActionType = 'damage' | 'block' | 'heal' | 'draw' | 'coolHeat' | 'foresight'
+export type BodyActionType = 'damage' | 'block' | 'heal' | 'draw' | 'foresight'
 export type TargetMode = 'single_enemy' | 'all_enemies' | 'self'
 
 export interface BodyAction {
@@ -40,16 +24,9 @@ export interface EquipmentDefinition {
   slot: BodySlot
   action: BodyAction
   rarity: 'common' | 'uncommon' | 'rare'
-  heatBonusThreshold?: HeatThreshold
-  heatBonusValue?: number // extra value added to action when at threshold
-  extraHeatGenerated?: number // extra heat produced when this equipment fires
-  bonusBlockPerHeatLost?: number // block gained per point of heat actually cooled
   bonusHeal?: number // bonus healing applied alongside the main action
-  heatConditionOnly?: HeatThreshold // only fires when in this heat zone; produces nothing outside
-  multiFire?: { threshold: HeatThreshold; extraFirings: number } // fires extra times while in zone
   blockCost?: number // lose this much Block when the slot fires
   bonusForesight?: number // reveal extra enemy intents alongside primary action
-  heatBonusBlock?: number // bonus block gained when at heatBonusThreshold (Cryo Lock)
 }
 
 // ─── Modifier Cards ─────────────────────────────────────────────────────────
@@ -57,7 +34,7 @@ export interface EquipmentDefinition {
 export type Keyword = 'Exhaust' | 'Innate' | 'Retain'
 
 export type ModifierCategory = 'Amplify' | 'Redirect' | 'Repeat' | 'Override'
-export type SystemCategory = 'Cooling' | 'Draw' | 'Conditional'
+export type SystemCategory = 'Draw' | 'Utility' | 'Conditional'
 
 export type SlotModifierEffect =
   | { type: 'amplify'; multiplier: number }
@@ -77,20 +54,13 @@ export type ModifierCardType =
   | { type: 'slot'; modifier: ModifierCategory; effect: SlotModifierEffect }
   | { type: 'system'; modifier: SystemCategory; effects: SystemEffect[]; homeSlot: BodySlot }
 
-export interface HeatBonus {
-  threshold: HeatThreshold
-  effects: SystemEffect[]
-}
-
 export interface ModifierCardDefinition {
   id: string
   name: string
   description: string
-  heatCost: number
+  energyCost: number
   category: ModifierCardType
   keywords: Keyword[]
-  heatCondition?: HeatThreshold // minimum threshold required to play
-  heatBonus?: HeatBonus // bonus effects when at threshold
   upgraded?: ModifierCardDefinition
 }
 
@@ -114,14 +84,10 @@ export interface StatusEffect {
 export type PartTrigger =
   | { type: 'onSlotFire'; slot: BodySlot }
   | { type: 'onModifierPlay'; modifier: ModifierCategory }
-  | { type: 'onHeatThreshold'; threshold: HeatThreshold }
-  | { type: 'onThresholdCross' }
   | { type: 'onTurnStart' }
   | { type: 'onCombatStart' }
   | { type: 'onCardPlay' }
   | { type: 'onCardExhaust' }
-
-  | { type: 'onWouldOverheat' }
   | { type: 'onPlanningEnd' }
   | { type: 'onDamageTaken' }
   | { type: 'onDrawPileEmpty' }
@@ -129,23 +95,18 @@ export type PartTrigger =
 export type PartEffect =
   | { type: 'bonusBlock'; value: number }
   | { type: 'bonusDamage'; value: number }
-  | { type: 'reduceHeat'; value: number }
   | { type: 'extraFiring'; slot: BodySlot }
   | { type: 'drawCards'; count: number }
-  | { type: 'reduceModifierHeat'; value: number }
   | { type: 'bonusHealing'; value: number }
   | { type: 'blockPerCard'; value: number }
   | { type: 'damageRandomEnemy'; value: number }
-  | { type: 'reduceCardHeatCosts'; value: number }
-  | { type: 'preventOverheat'; setHeat: number; damage: number }
   | { type: 'amplifyModifiers'; multiplier: number }
   | { type: 'blockForDisabledSlots'; value: number }
   | { type: 'blockPerExhausted' }
   | { type: 'halveLargeDamage'; threshold: number }
   | { type: 'blockPerUnplayedCard'; value: number }
   | { type: 'dualLoader' }
-  | { type: 'heatLock'; turns: number }
-  | { type: 'overheatReactor'; heatReset: number; maxHpCost: number }
+  | { type: 'bonusEnergy'; value: number }
   | { type: 'reshuffleDiscard' }
 
 export interface BehavioralPartDefinition {
@@ -155,12 +116,11 @@ export interface BehavioralPartDefinition {
   trigger: PartTrigger
   effect: PartEffect
   rarity: 'common' | 'uncommon' | 'rare'
-  heatCondition?: HeatThreshold
 }
 
 // ─── Enemies ─────────────────────────────────────────────────────────────────
 
-export type IntentType = 'Attack' | 'Block' | 'Buff' | 'Debuff' | 'AttackDebuff' | 'DisableSlot' | 'Absorb' | 'Scan' | 'HeatReactive'
+export type IntentType = 'Attack' | 'Block' | 'Buff' | 'Debuff' | 'AttackDebuff' | 'DisableSlot' | 'Absorb' | 'Scan'
 
 export interface Intent {
   type: IntentType
@@ -169,10 +129,6 @@ export interface Intent {
   status?: StatusEffectType
   statusStacks?: number
   targetSlot?: BodySlot // for DisableSlot: which slot to disable
-  // HeatReactive sub-intents: resolved at enemy execution based on Still's heat zone
-  coolIntent?: Intent
-  warmIntent?: Intent
-  hotIntent?: Intent
 }
 
 export interface IntentPattern {
@@ -248,8 +204,6 @@ export type CombatPhase = 'planning' | 'executing' | 'enemyTurn' | 'reward' | 'f
 export type CombatEvent =
   | { type: 'slotFire'; slot: BodySlot; damages?: Array<{ enemyId: string; amount: number }>; block?: number; heal?: number; targetMode: TargetMode }
   | { type: 'enemyAction'; enemyId: string; enemyName: string; intentType: IntentType; damage?: number; blocked?: number; block?: number; statusApplied?: StatusEffectType }
-  | { type: 'hotPenalty'; damage: number }
-  | { type: 'overheatDamage'; damage: number }
   | { type: 'partTrigger'; partId: string }
 
 export interface CombatState {
@@ -259,22 +213,16 @@ export interface CombatState {
   drawPile: CardInstance[]
   discardPile: CardInstance[]
   exhaustPile: CardInstance[]
-  heat: number
+  maxEnergy: number
+  currentEnergy: number
   block: number
   statusEffects: StatusEffect[]
   roundNumber: number
   slotModifiers: Record<BodySlot, string | null> // instanceId of assigned modifier card
   slotModifiers2: Record<BodySlot, string | null> // second modifier (Dual Loader only)
   disabledSlots: BodySlot[]
-  heatChangeThisTurn: number // cumulative absolute heat change this turn
-  thresholdCrossedThisTurn: boolean // whether a threshold boundary was crossed
   combatLog: CombatEvent[] // events from last execution for animation replay
-  heatCostReduction: number // per-turn card heat cost reduction (Zero Point Field)
   ablativeShellUsed: boolean // once-per-combat flag for Ablative Shell
-  heatLocked: boolean // Thermal Damper: heat costs go to debt
-  heatDebt: number // accumulated heat debt during lock
-  heatLockTurnsLeft: number // turns remaining on heat lock
-  overheatReactorFired: boolean // Overheat Reactor: 2x damage this turn
 }
 
 export interface RunState {

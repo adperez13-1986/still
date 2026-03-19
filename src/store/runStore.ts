@@ -20,7 +20,6 @@ import {
   executeEnemyTurn,
   endTurn,
   startTurn,
-  projectHeat,
   allEnemiesDefeated,
   isStillDefeated,
   type CombatContext,
@@ -167,15 +166,8 @@ export const useRunStore = create<RunState & RunActions>()(
       }),
 
     getProjectedHeat: () => {
-      const state = get()
-      if (!state.combat) return 0
-      return projectHeat(
-        state.combat.heat,
-        state.equipment,
-        state.combat.slotModifiers,
-        ALL_CARDS,
-        state.combat
-      )
+      // Energy resets each turn — no projection needed
+      return 0
     },
 
     equipItem: (item) => {
@@ -259,11 +251,6 @@ export const useRunStore = create<RunState & RunActions>()(
         const result = playModifierCard(ctx, cardDef, instanceId, targetSlot)
         Object.assign(state.combat, result.combat)
         state.health = result.stillHealth
-        // Apply Overheat Reactor max HP reduction
-        if (result._maxHpReduction) {
-          state.maxHealth = Math.max(1, state.maxHealth - result._maxHpReduction)
-          if (state.health > state.maxHealth) state.health = state.maxHealth
-        }
         // System card killed last enemy — skip to reward
         if (allEnemiesDefeated(state.combat)) {
           state.combat.phase = 'reward'
@@ -334,11 +321,6 @@ export const useRunStore = create<RunState & RunActions>()(
         state.combat.phase = 'executing'
         const bodyResult = executeBodyActions(baseCtx)
         state.health = bodyResult.stillHealth
-        // Apply Overheat Reactor max HP reduction
-        if (bodyResult._maxHpReduction) {
-          state.maxHealth = Math.max(1, state.maxHealth - bodyResult._maxHpReduction)
-          if (state.health > state.maxHealth) state.health = state.maxHealth
-        }
         allEvents.push(...bodyResult.combat.combatLog)
         bodyResult.combat.combatLog = []
 
@@ -377,15 +359,10 @@ export const useRunStore = create<RunState & RunActions>()(
         }
         const endResult = endTurn(endCtx)
         state.health = endResult.stillHealth
-        // Apply Overheat Reactor max HP reduction from endTurn (Thermal Damper debt can trigger overheat)
-        if (endResult._maxHpReduction) {
-          state.maxHealth = Math.max(1, state.maxHealth - endResult._maxHpReduction)
-          if (state.health > state.maxHealth) state.health = state.maxHealth
-        }
         allEvents.push(...endResult.combat.combatLog)
         endResult.combat.combatLog = []
 
-        // Check loss after hot penalty
+        // Check loss after end of turn
         if (isStillDefeated(endResult.stillHealth)) {
           Object.assign(state.combat, endResult.combat)
           state.combat.combatLog = allEvents

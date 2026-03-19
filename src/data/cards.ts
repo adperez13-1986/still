@@ -6,7 +6,7 @@ const boost: ModifierCardDefinition = {
   id: 'boost',
   name: 'Boost',
   description: '+50% to one slot\'s output.',
-  heatCost: 2,
+  energyCost: 2,
   category: {
     type: 'slot',
     modifier: 'Amplify',
@@ -17,7 +17,7 @@ const boost: ModifierCardDefinition = {
     id: 'boost',
     name: 'Boost+',
     description: '+100% to one slot\'s output.',
-    heatCost: 1,
+    energyCost: 1,
     category: {
       type: 'slot',
       modifier: 'Amplify',
@@ -30,56 +30,56 @@ const boost: ModifierCardDefinition = {
 const emergencyStrike: ModifierCardDefinition = {
   id: 'emergency-strike',
   name: 'Emergency Strike',
-  description: 'Override: deal 5 damage to ALL enemies.',
-  heatCost: 2,
+  description: 'Override: deal 8 damage to ALL enemies.',
+  energyCost: 2,
   category: {
     type: 'slot',
     modifier: 'Override',
     effect: {
       type: 'override',
-      action: { type: 'damage', baseValue: 5, targetMode: 'all_enemies' },
+      action: { type: 'damage', baseValue: 8, targetMode: 'all_enemies' },
     },
   },
   keywords: [],
   upgraded: {
     id: 'emergency-strike',
     name: 'Emergency Strike+',
-    description: 'Override: deal 7 damage to ALL enemies.',
-    heatCost: 1,
+    description: 'Override: deal 10 damage to ALL enemies.',
+    energyCost: 1,
     category: {
       type: 'slot',
       modifier: 'Override',
       effect: {
         type: 'override',
-        action: { type: 'damage', baseValue: 7, targetMode: 'all_enemies' },
+        action: { type: 'damage', baseValue: 10, targetMode: 'all_enemies' },
       },
     },
     keywords: [],
   },
 }
 
-const coolantFlush: ModifierCardDefinition = {
-  id: 'coolant-flush',
-  name: 'Coolant Flush',
-  description: 'Reduce Heat by 4.',
-  heatCost: -4,
+const vent: ModifierCardDefinition = {
+  id: 'vent',
+  name: 'Vent',
+  description: 'Draw 2 cards.',
+  energyCost: 2,
   category: {
     type: 'system',
-    modifier: 'Cooling',
-    effects: [],
+    modifier: 'Draw',
+    effects: [{ type: 'draw', count: 2 }],
     homeSlot: 'Legs',
   },
   keywords: [],
   upgraded: {
-    id: 'coolant-flush',
-    name: 'Coolant Flush+',
-    description: 'Reduce Heat by 5.',
-    heatCost: -5,
+    id: 'vent',
+    name: 'Vent+',
+    description: 'Draw 2 cards.',
+    energyCost: 1,
     category: {
       type: 'system',
-      modifier: 'Cooling',
-      effects: [],
-    homeSlot: 'Legs',
+      modifier: 'Draw',
+      effects: [{ type: 'draw', count: 2 }],
+      homeSlot: 'Legs',
     },
     keywords: [],
   },
@@ -89,7 +89,7 @@ const diagnostics: ModifierCardDefinition = {
   id: 'diagnostics',
   name: 'Diagnostics',
   description: 'Draw 2 modifier cards.',
-  heatCost: 2,
+  energyCost: 2,
   category: {
     type: 'system',
     modifier: 'Draw',
@@ -101,12 +101,12 @@ const diagnostics: ModifierCardDefinition = {
     id: 'diagnostics',
     name: 'Diagnostics+',
     description: 'Draw 3 modifier cards.',
-    heatCost: 1,
+    energyCost: 1,
     category: {
       type: 'system',
       modifier: 'Draw',
       effects: [{ type: 'draw', count: 3 }],
-    homeSlot: 'Head',
+      homeSlot: 'Head',
     },
     keywords: [],
   },
@@ -118,7 +118,7 @@ const overcharge: ModifierCardDefinition = {
   id: 'overcharge',
   name: 'Overcharge',
   description: '+100% to one slot\'s output.',
-  heatCost: 3,
+  energyCost: 3,
   category: {
     type: 'slot',
     modifier: 'Amplify',
@@ -129,7 +129,7 @@ const overcharge: ModifierCardDefinition = {
     id: 'overcharge',
     name: 'Overcharge+',
     description: '+150% to one slot\'s output.',
-    heatCost: 2,
+    energyCost: 2,
     category: {
       type: 'slot',
       modifier: 'Amplify',
@@ -143,7 +143,7 @@ const spreadShot: ModifierCardDefinition = {
   id: 'spread-shot',
   name: 'Spread Shot',
   description: 'Redirect: slot targets ALL enemies.',
-  heatCost: 2,
+  energyCost: 2,
   category: {
     type: 'slot',
     modifier: 'Redirect',
@@ -154,7 +154,7 @@ const spreadShot: ModifierCardDefinition = {
     id: 'spread-shot',
     name: 'Spread Shot+',
     description: 'Redirect: slot targets ALL enemies.',
-    heatCost: 1,
+    energyCost: 1,
     category: {
       type: 'slot',
       modifier: 'Redirect',
@@ -168,7 +168,7 @@ const echoProtocol: ModifierCardDefinition = {
   id: 'echo-protocol',
   name: 'Echo Protocol',
   description: 'Repeat: slot action fires twice.',
-  heatCost: 2,
+  energyCost: 2,
   category: {
     type: 'slot',
     modifier: 'Repeat',
@@ -179,7 +179,7 @@ const echoProtocol: ModifierCardDefinition = {
     id: 'echo-protocol',
     name: 'Echo Protocol+',
     description: 'Repeat: slot action fires three times.',
-    heatCost: 1,
+    energyCost: 1,
     category: {
       type: 'slot',
       modifier: 'Repeat',
@@ -193,7 +193,7 @@ const shieldBash: ModifierCardDefinition = {
   id: 'shield-bash',
   name: 'Shield Bash',
   description: 'Override: deal 10 damage to one enemy.',
-  heatCost: 2,
+  energyCost: 2,
   category: {
     type: 'slot',
     modifier: 'Override',
@@ -207,7 +207,7 @@ const shieldBash: ModifierCardDefinition = {
     id: 'shield-bash',
     name: 'Shield Bash+',
     description: 'Override: deal 14 damage to one enemy.',
-    heatCost: 1,
+    energyCost: 1,
     category: {
       type: 'slot',
       modifier: 'Override',
@@ -224,7 +224,7 @@ const emergencyShield: ModifierCardDefinition = {
   id: 'emergency-shield',
   name: 'Emergency Shield',
   description: 'Override: gain 12 Block.',
-  heatCost: 2,
+  energyCost: 2,
   category: {
     type: 'slot',
     modifier: 'Override',
@@ -238,7 +238,7 @@ const emergencyShield: ModifierCardDefinition = {
     id: 'emergency-shield',
     name: 'Emergency Shield+',
     description: 'Override: gain 16 Block.',
-    heatCost: 1,
+    energyCost: 1,
     category: {
       type: 'slot',
       modifier: 'Override',
@@ -251,28 +251,30 @@ const emergencyShield: ModifierCardDefinition = {
   },
 }
 
+// Former cooling cards → utility
+
 const deepFreeze: ModifierCardDefinition = {
   id: 'deep-freeze',
   name: 'Deep Freeze',
-  description: 'Reduce Heat by 6.',
-  heatCost: -6,
+  description: 'Gain 10 Block.',
+  energyCost: 2,
   category: {
     type: 'system',
-    modifier: 'Cooling',
-    effects: [],
-    homeSlot: 'Legs',
+    modifier: 'Utility',
+    effects: [{ type: 'gainBlock', value: 10 }],
+    homeSlot: 'Torso',
   },
   keywords: [],
   upgraded: {
     id: 'deep-freeze',
     name: 'Deep Freeze+',
-    description: 'Reduce Heat by 7. Gain 4 Block.',
-    heatCost: -7,
+    description: 'Gain 14 Block.',
+    energyCost: 1,
     category: {
       type: 'system',
-      modifier: 'Cooling',
-      effects: [{ type: 'gainBlock', value: 4 }],
-    homeSlot: 'Legs',
+      modifier: 'Utility',
+      effects: [{ type: 'gainBlock', value: 14 }],
+      homeSlot: 'Torso',
     },
     keywords: [],
   },
@@ -281,25 +283,25 @@ const deepFreeze: ModifierCardDefinition = {
 const heatVent: ModifierCardDefinition = {
   id: 'heat-vent',
   name: 'Heat Vent',
-  description: 'Reduce Heat by 3. Deal 4 damage to all enemies.',
-  heatCost: -3,
+  description: 'Deal 6 damage to all enemies.',
+  energyCost: 2,
   category: {
     type: 'system',
-    modifier: 'Cooling',
-    effects: [{ type: 'damage', value: 4, targetMode: 'all_enemies' }],
-    homeSlot: 'Legs',
+    modifier: 'Utility',
+    effects: [{ type: 'damage', value: 6, targetMode: 'all_enemies' }],
+    homeSlot: 'Arms',
   },
   keywords: [],
   upgraded: {
     id: 'heat-vent',
     name: 'Heat Vent+',
-    description: 'Reduce Heat by 4. Deal 6 damage to all enemies.',
-    heatCost: -4,
+    description: 'Deal 8 damage to all enemies.',
+    energyCost: 1,
     category: {
       type: 'system',
-      modifier: 'Cooling',
-      effects: [{ type: 'damage', value: 6, targetMode: 'all_enemies' }],
-    homeSlot: 'Legs',
+      modifier: 'Utility',
+      effects: [{ type: 'damage', value: 8, targetMode: 'all_enemies' }],
+      homeSlot: 'Arms',
     },
     keywords: [],
   },
@@ -309,7 +311,7 @@ const quickScan: ModifierCardDefinition = {
   id: 'quick-scan',
   name: 'Quick Scan',
   description: 'Draw 3 cards.',
-  heatCost: 2,
+  energyCost: 2,
   category: {
     type: 'system',
     modifier: 'Draw',
@@ -321,83 +323,87 @@ const quickScan: ModifierCardDefinition = {
     id: 'quick-scan',
     name: 'Quick Scan+',
     description: 'Draw 4 cards.',
-    heatCost: 1,
+    energyCost: 1,
     category: {
       type: 'system',
       modifier: 'Draw',
       effects: [{ type: 'draw', count: 4 }],
-    homeSlot: 'Head',
+      homeSlot: 'Head',
     },
     keywords: [],
   },
 }
 
+// Former heat-conditional cards → unconditional utility
+
 const thermalSurge: ModifierCardDefinition = {
   id: 'thermal-surge',
   name: 'Thermal Surge',
-  description: 'Requires Warm+. Gain 2 Strength.',
-  heatCost: 3,
+  description: 'Gain 1 Strength and 1 Dexterity.',
+  energyCost: 2,
   category: {
     type: 'system',
-    modifier: 'Conditional',
-    effects: [{ type: 'applyStatus', status: 'Strength', stacks: 2, target: 'self' }],
+    modifier: 'Utility',
+    effects: [
+      { type: 'applyStatus', status: 'Strength', stacks: 1, target: 'self' },
+      { type: 'applyStatus', status: 'Dexterity', stacks: 1, target: 'self' },
+    ],
     homeSlot: 'Head',
   },
   keywords: [],
-  heatCondition: 'Warm',
   upgraded: {
     id: 'thermal-surge',
     name: 'Thermal Surge+',
-    description: 'Requires Warm+. Gain 3 Strength.',
-    heatCost: 2,
+    description: 'Gain 2 Strength and 1 Dexterity.',
+    energyCost: 1,
     category: {
       type: 'system',
-      modifier: 'Conditional',
-      effects: [{ type: 'applyStatus', status: 'Strength', stacks: 3, target: 'self' }],
-    homeSlot: 'Head',
+      modifier: 'Utility',
+      effects: [
+        { type: 'applyStatus', status: 'Strength', stacks: 2, target: 'self' },
+        { type: 'applyStatus', status: 'Dexterity', stacks: 1, target: 'self' },
+      ],
+      homeSlot: 'Head',
     },
     keywords: [],
-    heatCondition: 'Warm',
   },
 }
 
 const meltdown: ModifierCardDefinition = {
   id: 'meltdown',
   name: 'Meltdown',
-  description: 'Requires Hot. Deal 15 damage to one enemy.',
-  heatCost: 1,
+  description: 'Deal 15 damage to one enemy.',
+  energyCost: 3,
   category: {
     type: 'system',
-    modifier: 'Conditional',
+    modifier: 'Utility',
     effects: [{ type: 'damage', value: 15, targetMode: 'single_enemy' }],
     homeSlot: 'Arms',
   },
   keywords: [],
-  heatCondition: 'Hot',
   upgraded: {
     id: 'meltdown',
     name: 'Meltdown+',
-    description: 'Requires Hot. Deal 20 damage to one enemy.',
-    heatCost: 0,
+    description: 'Deal 20 damage to one enemy.',
+    energyCost: 2,
     category: {
       type: 'system',
-      modifier: 'Conditional',
+      modifier: 'Utility',
       effects: [{ type: 'damage', value: 20, targetMode: 'single_enemy' }],
-    homeSlot: 'Arms',
+      homeSlot: 'Arms',
     },
     keywords: [],
-    heatCondition: 'Hot',
   },
 }
 
 const fieldRepair: ModifierCardDefinition = {
   id: 'field-repair',
   name: 'Field Repair',
-  description: 'Heal 6 HP. Reduce Heat by 2.',
-  heatCost: -2,
+  description: 'Heal 6 HP.',
+  energyCost: 2,
   category: {
     type: 'system',
-    modifier: 'Cooling',
+    modifier: 'Utility',
     effects: [{ type: 'heal', value: 6 }],
     homeSlot: 'Torso',
   },
@@ -405,13 +411,13 @@ const fieldRepair: ModifierCardDefinition = {
   upgraded: {
     id: 'field-repair',
     name: 'Field Repair+',
-    description: 'Heal 9 HP. Reduce Heat by 3.',
-    heatCost: -3,
+    description: 'Heal 9 HP.',
+    energyCost: 1,
     category: {
       type: 'system',
-      modifier: 'Cooling',
+      modifier: 'Utility',
       effects: [{ type: 'heal', value: 9 }],
-    homeSlot: 'Torso',
+      homeSlot: 'Torso',
     },
     keywords: [],
   },
@@ -420,179 +426,143 @@ const fieldRepair: ModifierCardDefinition = {
 const targetLock: ModifierCardDefinition = {
   id: 'target-lock',
   name: 'Target Lock',
-  description: 'Requires Warm+. Apply 2 Vulnerable to all enemies.',
-  heatCost: 1,
+  description: 'Apply 2 Vulnerable to all enemies.',
+  energyCost: 2,
   category: {
     type: 'system',
-    modifier: 'Conditional',
+    modifier: 'Utility',
     effects: [{ type: 'applyStatus', status: 'Vulnerable', stacks: 2, target: 'all_enemies' }],
     homeSlot: 'Head',
   },
   keywords: [],
-  heatCondition: 'Warm',
   upgraded: {
     id: 'target-lock',
     name: 'Target Lock+',
-    description: 'Requires Warm+. Apply 3 Vulnerable to all enemies.',
-    heatCost: 0,
+    description: 'Apply 3 Vulnerable to all enemies.',
+    energyCost: 1,
     category: {
       type: 'system',
-      modifier: 'Conditional',
+      modifier: 'Utility',
       effects: [{ type: 'applyStatus', status: 'Vulnerable', stacks: 3, target: 'all_enemies' }],
-    homeSlot: 'Head',
+      homeSlot: 'Head',
     },
     keywords: [],
-    heatCondition: 'Warm',
   },
 }
 
-// ─── Archetype Cards ────────────────────────────────────────────────────────
+// ─── Former Archetype Cards (reworked to unconditional) ──────────────────────
 
-// Cool Runner
 const precisionStrike: ModifierCardDefinition = {
   id: 'precision-strike',
   name: 'Precision Strike',
-  description: 'Deal 8 damage. While Cool: deal 12.',
-  heatCost: 2,
+  description: 'Deal 10 damage to one enemy.',
+  energyCost: 2,
   category: {
     type: 'system',
-    modifier: 'Conditional',
-    effects: [{ type: 'damage', value: 8, targetMode: 'single_enemy' }],
+    modifier: 'Utility',
+    effects: [{ type: 'damage', value: 10, targetMode: 'single_enemy' }],
     homeSlot: 'Arms',
   },
   keywords: [],
-  heatBonus: {
-    threshold: 'Cool',
-    effects: [{ type: 'damage', value: 12, targetMode: 'single_enemy' }],
-  },
   upgraded: {
     id: 'precision-strike',
     name: 'Precision Strike+',
-    description: 'Deal 10 damage. While Cool: deal 15.',
-    heatCost: 1,
+    description: 'Deal 14 damage to one enemy.',
+    energyCost: 1,
     category: {
       type: 'system',
-      modifier: 'Conditional',
-      effects: [{ type: 'damage', value: 10, targetMode: 'single_enemy' }],
-    homeSlot: 'Arms',
+      modifier: 'Utility',
+      effects: [{ type: 'damage', value: 14, targetMode: 'single_enemy' }],
+      homeSlot: 'Arms',
     },
     keywords: [],
-    heatBonus: {
-      threshold: 'Cool',
-      effects: [{ type: 'damage', value: 15, targetMode: 'single_enemy' }],
-    },
   },
 }
 
 const coldEfficiency: ModifierCardDefinition = {
   id: 'cold-efficiency',
   name: 'Cold Efficiency',
-  description: 'Draw 2 cards. While Cool: draw 3.',
-  heatCost: 2,
+  description: 'Draw 1 card. Gain 3 Block.',
+  energyCost: 2,
   category: {
     type: 'system',
-    modifier: 'Draw',
-    effects: [{ type: 'draw', count: 2 }],
+    modifier: 'Utility',
+    effects: [{ type: 'draw', count: 1 }, { type: 'gainBlock', value: 3 }],
     homeSlot: 'Head',
   },
   keywords: [],
-  heatBonus: {
-    threshold: 'Cool',
-    effects: [{ type: 'draw', count: 3 }],
-  },
   upgraded: {
     id: 'cold-efficiency',
     name: 'Cold Efficiency+',
-    description: 'Draw 3 cards. While Cool: draw 4.',
-    heatCost: 1,
+    description: 'Draw 2 cards. Gain 3 Block.',
+    energyCost: 1,
     category: {
       type: 'system',
-      modifier: 'Draw',
-      effects: [{ type: 'draw', count: 3 }],
-    homeSlot: 'Head',
+      modifier: 'Utility',
+      effects: [{ type: 'draw', count: 2 }, { type: 'gainBlock', value: 3 }],
+      homeSlot: 'Head',
     },
     keywords: [],
-    heatBonus: {
-      threshold: 'Cool',
-      effects: [{ type: 'draw', count: 4 }],
-    },
   },
 }
 
-// Pyromaniac
 const fuelTheFire: ModifierCardDefinition = {
   id: 'fuel-the-fire',
   name: 'Fuel the Fire',
-  description: 'Deal 6 damage. While Hot: also gain 4 Block.',
-  heatCost: 2,
+  description: 'Deal 8 damage. Gain 4 Block.',
+  energyCost: 2,
   category: {
     type: 'system',
-    modifier: 'Conditional',
-    effects: [{ type: 'damage', value: 6, targetMode: 'single_enemy' }],
+    modifier: 'Utility',
+    effects: [
+      { type: 'damage', value: 8, targetMode: 'single_enemy' },
+      { type: 'gainBlock', value: 4 },
+    ],
     homeSlot: 'Arms',
   },
   keywords: [],
-  heatBonus: {
-    threshold: 'Hot',
-    effects: [
-      { type: 'damage', value: 6, targetMode: 'single_enemy' },
-      { type: 'gainBlock', value: 4 },
-    ],
-  },
   upgraded: {
     id: 'fuel-the-fire',
     name: 'Fuel the Fire+',
-    description: 'Deal 8 damage. While Hot: also gain 6 Block.',
-    heatCost: 1,
+    description: 'Deal 10 damage. Gain 6 Block.',
+    energyCost: 1,
     category: {
       type: 'system',
-      modifier: 'Conditional',
-      effects: [{ type: 'damage', value: 8, targetMode: 'single_enemy' }],
-    homeSlot: 'Arms',
-    },
-    keywords: [],
-    heatBonus: {
-      threshold: 'Hot',
+      modifier: 'Utility',
       effects: [
-        { type: 'damage', value: 8, targetMode: 'single_enemy' },
+        { type: 'damage', value: 10, targetMode: 'single_enemy' },
         { type: 'gainBlock', value: 6 },
       ],
+      homeSlot: 'Arms',
     },
+    keywords: [],
   },
 }
 
 const heatSurge: ModifierCardDefinition = {
   id: 'heat-surge',
   name: 'Heat Surge',
-  description: 'Draw 2 cards. While Hot: draw 3.',
-  heatCost: 2,
+  description: 'Draw 2 cards. Gain 3 Block.',
+  energyCost: 2,
   category: {
     type: 'system',
-    modifier: 'Draw',
-    effects: [{ type: 'draw', count: 2 }],
+    modifier: 'Utility',
+    effects: [{ type: 'draw', count: 2 }, { type: 'gainBlock', value: 3 }],
     homeSlot: 'Head',
   },
   keywords: [],
-  heatBonus: {
-    threshold: 'Hot',
-    effects: [{ type: 'draw', count: 3 }],
-  },
   upgraded: {
     id: 'heat-surge',
     name: 'Heat Surge+',
-    description: 'Draw 3 cards. While Hot: draw 4.',
-    heatCost: 1,
+    description: 'Draw 3 cards. Gain 4 Block.',
+    energyCost: 1,
     category: {
       type: 'system',
-      modifier: 'Draw',
-      effects: [{ type: 'draw', count: 3 }],
-    homeSlot: 'Head',
+      modifier: 'Utility',
+      effects: [{ type: 'draw', count: 3 }, { type: 'gainBlock', value: 4 }],
+      homeSlot: 'Head',
     },
     keywords: [],
-    heatBonus: {
-      threshold: 'Hot',
-      effects: [{ type: 'draw', count: 4 }],
-    },
   },
 }
 
@@ -600,10 +570,10 @@ const recklessCharge: ModifierCardDefinition = {
   id: 'reckless-charge',
   name: 'Reckless Charge',
   description: 'Deal 18 damage.',
-  heatCost: 4,
+  energyCost: 4,
   category: {
     type: 'system',
-    modifier: 'Conditional',
+    modifier: 'Utility',
     effects: [{ type: 'damage', value: 18, targetMode: 'single_enemy' }],
     homeSlot: 'Arms',
   },
@@ -612,40 +582,45 @@ const recklessCharge: ModifierCardDefinition = {
     id: 'reckless-charge',
     name: 'Reckless Charge+',
     description: 'Deal 24 damage.',
-    heatCost: 3,
+    energyCost: 3,
     category: {
       type: 'system',
-      modifier: 'Conditional',
+      modifier: 'Utility',
       effects: [{ type: 'damage', value: 24, targetMode: 'single_enemy' }],
-    homeSlot: 'Arms',
+      homeSlot: 'Arms',
     },
     keywords: [],
   },
 }
 
-// Oscillator
 const thermalFlux: ModifierCardDefinition = {
   id: 'thermal-flux',
   name: 'Thermal Flux',
-  description: 'Reduce Heat by 3. Deal damage equal to heat change this turn.',
-  heatCost: -3,
+  description: 'Deal 4 damage to all enemies. Draw 1 card.',
+  energyCost: 2,
   category: {
     type: 'system',
-    modifier: 'Cooling',
-    effects: [],
-    homeSlot: 'Legs', // damage resolved dynamically from heatChangeThisTurn
+    modifier: 'Utility',
+    effects: [
+      { type: 'damage', value: 4, targetMode: 'all_enemies' },
+      { type: 'draw', count: 1 },
+    ],
+    homeSlot: 'Legs',
   },
   keywords: [],
   upgraded: {
     id: 'thermal-flux',
     name: 'Thermal Flux+',
-    description: 'Reduce Heat by 4. Deal damage equal to heat change this turn. Gain Block equal to half.',
-    heatCost: -4,
+    description: 'Deal 6 damage to all enemies. Draw 2 cards.',
+    energyCost: 1,
     category: {
       type: 'system',
-      modifier: 'Cooling',
-      effects: [],
-    homeSlot: 'Legs', // damage + block resolved dynamically
+      modifier: 'Utility',
+      effects: [
+        { type: 'damage', value: 6, targetMode: 'all_enemies' },
+        { type: 'draw', count: 2 },
+      ],
+      homeSlot: 'Legs',
     },
     keywords: [],
   },
@@ -654,25 +629,31 @@ const thermalFlux: ModifierCardDefinition = {
 const overclock: ModifierCardDefinition = {
   id: 'overclock',
   name: 'Overclock',
-  description: 'Gain 1 Strength. If a threshold was crossed this turn: gain 2 instead.',
-  heatCost: 2,
+  description: 'Gain 2 Strength. Draw 1 card.',
+  energyCost: 3,
   category: {
     type: 'system',
-    modifier: 'Conditional',
-    effects: [{ type: 'applyStatus', status: 'Strength', stacks: 1, target: 'self' }],
+    modifier: 'Utility',
+    effects: [
+      { type: 'applyStatus', status: 'Strength', stacks: 2, target: 'self' },
+      { type: 'draw', count: 1 },
+    ],
     homeSlot: 'Head',
   },
   keywords: [],
   upgraded: {
     id: 'overclock',
     name: 'Overclock+',
-    description: 'Gain 2 Strength. If a threshold was crossed this turn: gain 3 instead.',
-    heatCost: 1,
+    description: 'Gain 3 Strength. Draw 1 card.',
+    energyCost: 2,
     category: {
       type: 'system',
-      modifier: 'Conditional',
-      effects: [{ type: 'applyStatus', status: 'Strength', stacks: 2, target: 'self' }],
-    homeSlot: 'Head',
+      modifier: 'Utility',
+      effects: [
+        { type: 'applyStatus', status: 'Strength', stacks: 3, target: 'self' },
+        { type: 'draw', count: 1 },
+      ],
+      homeSlot: 'Head',
     },
     keywords: [],
   },
@@ -680,16 +661,14 @@ const overclock: ModifierCardDefinition = {
 
 // ─── Sector 2 Modifier Card Pool ───────────────────────────────────────────────
 
-// Slot-disruption answers (system/override cards that work when slots are disabled)
-
 const failsafeProtocol: ModifierCardDefinition = {
   id: 'failsafe-protocol',
   name: 'Failsafe Protocol',
   description: 'Gain 10 Block. Draw 1 card.',
-  heatCost: 2,
+  energyCost: 2,
   category: {
     type: 'system',
-    modifier: 'Conditional',
+    modifier: 'Utility',
     effects: [{ type: 'gainBlock', value: 10 }, { type: 'draw', count: 1 }],
     homeSlot: 'Torso',
   },
@@ -698,12 +677,12 @@ const failsafeProtocol: ModifierCardDefinition = {
     id: 'failsafe-protocol',
     name: 'Failsafe Protocol+',
     description: 'Gain 14 Block. Draw 1 card.',
-    heatCost: 1,
+    energyCost: 1,
     category: {
       type: 'system',
-      modifier: 'Conditional',
+      modifier: 'Utility',
       effects: [{ type: 'gainBlock', value: 14 }, { type: 'draw', count: 1 }],
-    homeSlot: 'Torso',
+      homeSlot: 'Torso',
     },
     keywords: [],
   },
@@ -713,7 +692,7 @@ const reroute: ModifierCardDefinition = {
   id: 'reroute',
   name: 'Reroute',
   description: 'Override: deal 12 damage to one enemy.',
-  heatCost: 2,
+  energyCost: 2,
   category: {
     type: 'slot',
     modifier: 'Override',
@@ -727,7 +706,7 @@ const reroute: ModifierCardDefinition = {
     id: 'reroute',
     name: 'Reroute+',
     description: 'Override: deal 16 damage to one enemy.',
-    heatCost: 1,
+    energyCost: 1,
     category: {
       type: 'slot',
       modifier: 'Override',
@@ -740,141 +719,121 @@ const reroute: ModifierCardDefinition = {
   },
 }
 
-// Heat exploitation (deepening archetypes)
-
 const glacierLance: ModifierCardDefinition = {
   id: 'glacier-lance',
   name: 'Glacier Lance',
-  description: 'Deal 10 damage. While Cool: deal 16 + apply 1 Weak.',
-  heatCost: 2,
+  description: 'Deal 10 damage. Apply 1 Weak to all enemies.',
+  energyCost: 2,
   category: {
     type: 'system',
-    modifier: 'Conditional',
-    effects: [{ type: 'damage', value: 10, targetMode: 'single_enemy' }],
+    modifier: 'Utility',
+    effects: [
+      { type: 'damage', value: 10, targetMode: 'single_enemy' },
+      { type: 'applyStatus', status: 'Weak', stacks: 1, target: 'all_enemies' },
+    ],
     homeSlot: 'Arms',
   },
   keywords: [],
-  heatBonus: {
-    threshold: 'Cool',
-    effects: [
-      { type: 'damage', value: 16, targetMode: 'single_enemy' },
-      { type: 'applyStatus', status: 'Weak', stacks: 1, target: 'all_enemies' },
-    ],
-  },
   upgraded: {
     id: 'glacier-lance',
     name: 'Glacier Lance+',
-    description: 'Deal 12 damage. While Cool: deal 20 + apply 2 Weak.',
-    heatCost: 1,
+    description: 'Deal 14 damage. Apply 2 Weak to all enemies.',
+    energyCost: 1,
     category: {
       type: 'system',
-      modifier: 'Conditional',
-      effects: [{ type: 'damage', value: 12, targetMode: 'single_enemy' }],
-    homeSlot: 'Arms',
-    },
-    keywords: [],
-    heatBonus: {
-      threshold: 'Cool',
+      modifier: 'Utility',
       effects: [
-        { type: 'damage', value: 20, targetMode: 'single_enemy' },
+        { type: 'damage', value: 14, targetMode: 'single_enemy' },
         { type: 'applyStatus', status: 'Weak', stacks: 2, target: 'all_enemies' },
       ],
+      homeSlot: 'Arms',
     },
+    keywords: [],
   },
 }
 
 const controlledBurn: ModifierCardDefinition = {
   id: 'controlled-burn',
   name: 'Controlled Burn',
-  description: 'Gain 2 Strength. While Hot: also gain 2 Dexterity.',
-  heatCost: 3,
+  description: 'Gain 2 Strength and 2 Dexterity.',
+  energyCost: 3,
   category: {
     type: 'system',
-    modifier: 'Conditional',
-    effects: [{ type: 'applyStatus', status: 'Strength', stacks: 2, target: 'self' }],
-    homeSlot: 'Arms',
-  },
-  keywords: [],
-  heatBonus: {
-    threshold: 'Hot',
+    modifier: 'Utility',
     effects: [
       { type: 'applyStatus', status: 'Strength', stacks: 2, target: 'self' },
       { type: 'applyStatus', status: 'Dexterity', stacks: 2, target: 'self' },
     ],
+    homeSlot: 'Arms',
   },
+  keywords: [],
   upgraded: {
     id: 'controlled-burn',
     name: 'Controlled Burn+',
-    description: 'Gain 3 Strength. While Hot: also gain 3 Dexterity.',
-    heatCost: 2,
+    description: 'Gain 3 Strength and 3 Dexterity.',
+    energyCost: 2,
     category: {
       type: 'system',
-      modifier: 'Conditional',
-      effects: [{ type: 'applyStatus', status: 'Strength', stacks: 3, target: 'self' }],
-    homeSlot: 'Arms',
-    },
-    keywords: [],
-    heatBonus: {
-      threshold: 'Hot',
+      modifier: 'Utility',
       effects: [
         { type: 'applyStatus', status: 'Strength', stacks: 3, target: 'self' },
         { type: 'applyStatus', status: 'Dexterity', stacks: 3, target: 'self' },
       ],
+      homeSlot: 'Arms',
     },
+    keywords: [],
   },
 }
 
 const fluxSpike: ModifierCardDefinition = {
   id: 'flux-spike',
   name: 'Flux Spike',
-  description: 'Requires Warm+. Deal 14 damage to all enemies.',
-  heatCost: 1,
+  description: 'Deal 14 damage to all enemies.',
+  energyCost: 3,
   category: {
     type: 'system',
-    modifier: 'Conditional',
+    modifier: 'Utility',
     effects: [{ type: 'damage', value: 14, targetMode: 'all_enemies' }],
     homeSlot: 'Arms',
   },
   keywords: [],
-  heatCondition: 'Warm',
   upgraded: {
     id: 'flux-spike',
     name: 'Flux Spike+',
-    description: 'Requires Warm+. Deal 20 damage to all enemies.',
-    heatCost: 0,
+    description: 'Deal 20 damage to all enemies.',
+    energyCost: 2,
     category: {
       type: 'system',
-      modifier: 'Conditional',
+      modifier: 'Utility',
       effects: [{ type: 'damage', value: 20, targetMode: 'all_enemies' }],
-    homeSlot: 'Arms',
+      homeSlot: 'Arms',
     },
     keywords: [],
-    heatCondition: 'Warm',
   },
 }
 
 const thermalEquilibrium: ModifierCardDefinition = {
   id: 'thermal-equilibrium',
   name: 'Thermal Equilibrium',
-  description: 'Reduce Heat by 4. Gain 6 Block.',
-  heatCost: -4,
+  description: 'Gain 8 Block. Draw 1 card.',
+  energyCost: 2,
   category: {
     type: 'system',
-    modifier: 'Cooling',
-    effects: [{ type: 'gainBlock', value: 6 }],
+    modifier: 'Utility',
+    effects: [{ type: 'gainBlock', value: 8 }, { type: 'draw', count: 1 }],
     homeSlot: 'Legs',
   },
   keywords: [],
   upgraded: {
     id: 'thermal-equilibrium',
     name: 'Thermal Equilibrium+',
-    description: 'Reduce Heat by 5. Gain 8 Block.',
-    heatCost: -5,
+    description: 'Gain 10 Block. Draw 1 card.',
+    energyCost: 1,
     category: {
       type: 'system',
-      modifier: 'Cooling',
-      effects: [{ type: 'gainBlock', value: 8 }],
-    homeSlot: 'Legs',
+      modifier: 'Utility',
+      effects: [{ type: 'gainBlock', value: 10 }, { type: 'draw', count: 1 }],
+      homeSlot: 'Legs',
     },
     keywords: [],
   },
@@ -886,10 +845,10 @@ const armorProtocol: ModifierCardDefinition = {
   id: 'armor-protocol',
   name: 'Armor Protocol',
   description: 'Gain 2 Dexterity.',
-  heatCost: 2,
+  energyCost: 2,
   category: {
     type: 'system',
-    modifier: 'Conditional',
+    modifier: 'Utility',
     effects: [{ type: 'applyStatus', status: 'Dexterity', stacks: 2, target: 'self' }],
     homeSlot: 'Torso',
   },
@@ -898,12 +857,12 @@ const armorProtocol: ModifierCardDefinition = {
     id: 'armor-protocol',
     name: 'Armor Protocol+',
     description: 'Gain 3 Dexterity.',
-    heatCost: 1,
+    energyCost: 1,
     category: {
       type: 'system',
-      modifier: 'Conditional',
+      modifier: 'Utility',
       effects: [{ type: 'applyStatus', status: 'Dexterity', stacks: 3, target: 'self' }],
-    homeSlot: 'Torso',
+      homeSlot: 'Torso',
     },
     keywords: [],
   },
@@ -913,10 +872,10 @@ const powerSurge: ModifierCardDefinition = {
   id: 'power-surge',
   name: 'Power Surge',
   description: 'Gain 2 Strength.',
-  heatCost: 2,
+  energyCost: 2,
   category: {
     type: 'system',
-    modifier: 'Conditional',
+    modifier: 'Utility',
     effects: [{ type: 'applyStatus', status: 'Strength', stacks: 2, target: 'self' }],
     homeSlot: 'Arms',
   },
@@ -925,12 +884,12 @@ const powerSurge: ModifierCardDefinition = {
     id: 'power-surge',
     name: 'Power Surge+',
     description: 'Gain 3 Strength.',
-    heatCost: 1,
+    energyCost: 1,
     category: {
       type: 'system',
-      modifier: 'Conditional',
+      modifier: 'Utility',
       effects: [{ type: 'applyStatus', status: 'Strength', stacks: 3, target: 'self' }],
-    homeSlot: 'Arms',
+      homeSlot: 'Arms',
     },
     keywords: [],
   },
@@ -939,8 +898,8 @@ const powerSurge: ModifierCardDefinition = {
 const salvageBurst: ModifierCardDefinition = {
   id: 'salvage-burst',
   name: 'Salvage Burst',
-  description: 'Draw 3 cards. Reduce Heat by 2.',
-  heatCost: -2,
+  description: 'Draw 3 cards.',
+  energyCost: 2,
   category: {
     type: 'system',
     modifier: 'Draw',
@@ -951,13 +910,13 @@ const salvageBurst: ModifierCardDefinition = {
   upgraded: {
     id: 'salvage-burst',
     name: 'Salvage Burst+',
-    description: 'Draw 4 cards. Reduce Heat by 3.',
-    heatCost: -3,
+    description: 'Draw 4 cards.',
+    energyCost: 1,
     category: {
       type: 'system',
       modifier: 'Draw',
       effects: [{ type: 'draw', count: 4 }],
-    homeSlot: 'Legs',
+      homeSlot: 'Legs',
     },
     keywords: [],
   },
@@ -967,7 +926,7 @@ const cascade: ModifierCardDefinition = {
   id: 'cascade',
   name: 'Cascade',
   description: 'Repeat: slot fires 3 times.',
-  heatCost: 5,
+  energyCost: 5,
   category: {
     type: 'slot',
     modifier: 'Repeat',
@@ -978,7 +937,7 @@ const cascade: ModifierCardDefinition = {
     id: 'cascade',
     name: 'Cascade+',
     description: 'Repeat: slot fires 3 times.',
-    heatCost: 4,
+    energyCost: 4,
     category: {
       type: 'slot',
       modifier: 'Repeat',
@@ -992,7 +951,7 @@ const resonance: ModifierCardDefinition = {
   id: 'resonance',
   name: 'Resonance',
   description: '+200% to one slot\'s output. Exhaust.',
-  heatCost: 4,
+  energyCost: 4,
   category: {
     type: 'slot',
     modifier: 'Amplify',
@@ -1003,7 +962,7 @@ const resonance: ModifierCardDefinition = {
     id: 'resonance',
     name: 'Resonance+',
     description: '+250% to one slot\'s output. Exhaust.',
-    heatCost: 3,
+    energyCost: 3,
     category: {
       type: 'slot',
       modifier: 'Amplify',
@@ -1013,100 +972,80 @@ const resonance: ModifierCardDefinition = {
   },
 }
 
-// ─── Companion Cards (Task 3.11) ────────────────────────────────────────────
+// ─── Companion Cards ────────────────────────────────────────────────────────
 
 export const yanah: ModifierCardDefinition = {
   id: 'yanah',
   name: 'Yanah',
-  description: 'Gain 4 Block. While Cool: gain 8 Block instead.',
-  heatCost: 1,
+  description: 'Heal 6 HP. Remove 1 debuff.',
+  energyCost: 0,
   category: {
     type: 'system',
-    modifier: 'Cooling',
+    modifier: 'Utility',
     effects: [
-      { type: 'gainBlock', value: 4 },
+      { type: 'heal', value: 6 },
+      { type: 'removeDebuff', count: 1 },
     ],
     homeSlot: 'Torso',
   },
   keywords: [],
-  heatBonus: {
-    threshold: 'Cool',
-    effects: [
-      { type: 'gainBlock', value: 8 },
-    ],
-  },
   upgraded: {
     id: 'yanah',
     name: 'Yanah+',
-    description: 'Gain 6 Block. While Cool: gain 12 Block instead.',
-    heatCost: 0,
+    description: 'Heal 9 HP. Remove 1 debuff.',
+    energyCost: 0,
     category: {
       type: 'system',
-      modifier: 'Cooling',
+      modifier: 'Utility',
       effects: [
-        { type: 'gainBlock', value: 6 },
+        { type: 'heal', value: 9 },
+        { type: 'removeDebuff', count: 1 },
       ],
-    homeSlot: 'Torso',
+      homeSlot: 'Torso',
     },
     keywords: [],
-    heatBonus: {
-      threshold: 'Cool',
-      effects: [
-        { type: 'gainBlock', value: 12 },
-      ],
-    },
   },
 }
 
 export const yuri: ModifierCardDefinition = {
   id: 'yuri',
   name: 'Yuri',
-  description: 'Deal 8 damage. While Hot: deal 14 instead.',
-  heatCost: 2,
+  description: 'Gain 1 Strength and 1 Inspired.',
+  energyCost: 1,
   category: {
     type: 'system',
-    modifier: 'Conditional',
+    modifier: 'Utility',
     effects: [
-      { type: 'damage', value: 8, targetMode: 'single_enemy' },
+      { type: 'applyStatus', status: 'Strength', stacks: 1, target: 'self' },
+      { type: 'applyStatus', status: 'Inspired', stacks: 1, target: 'self' },
     ],
     homeSlot: 'Head',
   },
   keywords: [],
-  heatBonus: {
-    threshold: 'Hot',
-    effects: [
-      { type: 'damage', value: 14, targetMode: 'single_enemy' },
-    ],
-  },
   upgraded: {
     id: 'yuri',
     name: 'Yuri+',
-    description: 'Deal 10 damage. While Hot: deal 18 instead.',
-    heatCost: 1,
+    description: 'Gain 2 Strength and 1 Inspired.',
+    energyCost: 0,
     category: {
       type: 'system',
-      modifier: 'Conditional',
+      modifier: 'Utility',
       effects: [
-        { type: 'damage', value: 10, targetMode: 'single_enemy' },
+        { type: 'applyStatus', status: 'Strength', stacks: 2, target: 'self' },
+        { type: 'applyStatus', status: 'Inspired', stacks: 1, target: 'self' },
       ],
-    homeSlot: 'Head',
+      homeSlot: 'Head',
     },
     keywords: [],
-    heatBonus: {
-      threshold: 'Hot',
-      effects: [
-        { type: 'damage', value: 18, targetMode: 'single_enemy' },
-      ],
-    },
   },
 }
 
 // ─── Exports ────────────────────────────────────────────────────────────────
 
 export const STARTING_CARDS: ModifierCardDefinition[] = [
-  boost, boost, echoProtocol,
+  boost, boost, boost,
   emergencyStrike, emergencyShield,
-  coolantFlush, coolantFlush,
+  vent, vent,
   diagnostics,
 ]
 
@@ -1125,7 +1064,7 @@ export const SECTOR2_CARD_POOL: ModifierCardDefinition[] = [
 ]
 
 const allCardList: ModifierCardDefinition[] = [
-  boost, emergencyStrike, coolantFlush, diagnostics,
+  boost, emergencyStrike, vent, diagnostics,
   overcharge, spreadShot, echoProtocol, shieldBash, emergencyShield,
   deepFreeze, heatVent, quickScan, thermalSurge, meltdown,
   fieldRepair, targetLock, powerSurge,

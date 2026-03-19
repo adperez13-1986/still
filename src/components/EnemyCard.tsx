@@ -1,7 +1,5 @@
 import type { EnemyInstance, EnemyDefinition, Intent } from '../game/types'
-import { getHeatThreshold } from '../game/types'
 import { getStatus } from '../game/combat'
-import { useRunStore } from '../store/runStore'
 import Sprite from './Sprite'
 import { getEnemySprite } from '../data/sprites'
 
@@ -24,7 +22,6 @@ const INTENT_ICONS: Record<string, string> = {
   DisableSlot: 'lock',
   Absorb: 'drain',
   Scan: 'eye',
-  HeatReactive: '?',
 }
 
 const INTENT_COLORS: Record<string, string> = {
@@ -36,7 +33,6 @@ const INTENT_COLORS: Record<string, string> = {
   DisableSlot: '#636e72',
   Absorb: '#00cec9',
   Scan: '#a29bfe',
-  HeatReactive: '#f39c12',
 }
 
 function getEffectiveDamage(intent: Intent, enemy: EnemyInstance, isBoss: boolean, combatsCleared: number): number {
@@ -79,22 +75,12 @@ function IntentDisplay({ intent, effectiveDamage }: { intent: Intent; effectiveD
 
 export default function EnemyCard({ instance, definition, selected, recentDamage, onClick, compact, combatsCleared = 0 }: Props) {
   const healthPct = Math.max(0, (instance.currentHealth / instance.maxHealth) * 100)
-  const heat = useRunStore((s) => s.combat?.heat ?? 0)
   const rawIntent = definition.intentPattern[
     instance.intentIndex % definition.intentPattern.length
   ]
 
-  // Resolve HeatReactive to the matching sub-intent for display
-  let currentIntent = rawIntent
-  let isScan = false
-  if (rawIntent?.type === 'Scan') {
-    isScan = true
-  } else if (rawIntent?.type === 'HeatReactive') {
-    const zone = getHeatThreshold(heat)
-    const resolved = zone === 'Cool' ? rawIntent.coolIntent
-      : (zone === 'Warm' ? rawIntent.warmIntent : rawIntent.hotIntent)
-    if (resolved) currentIntent = resolved
-  }
+  const currentIntent = rawIntent
+  const isScan = rawIntent?.type === 'Scan'
 
   const isAttackIntent = currentIntent && (currentIntent.type === 'Attack' || currentIntent.type === 'AttackDebuff')
   const effectiveDmg = currentIntent && isAttackIntent
@@ -182,7 +168,6 @@ export default function EnemyCard({ instance, definition, selected, recentDamage
                 <span style={{ color: intentColor, fontWeight: 'bold', fontSize: '10px' }}>
                   {intentIcon} {currentIntent.type === 'DisableSlot' ? currentIntent.targetSlot ?? '?' : (isAttackIntent && effectiveDmg != null ? effectiveDmg : currentIntent.value)}{currentIntent.hits && currentIntent.hits > 1 ? `×${currentIntent.hits}` : ''}
                   {currentIntent.status && <span style={{ color: '#aaa', fontWeight: 'normal' }}> +{currentIntent.status[0]}{currentIntent.statusStacks ?? 1}</span>}
-                  {rawIntent?.type === 'HeatReactive' && <span style={{ color: '#f39c12', fontWeight: 'normal', fontStyle: 'italic' }}> ⚡</span>}
                 </span>
               )
             )}
@@ -291,14 +276,7 @@ export default function EnemyCard({ instance, definition, selected, recentDamage
               Scanning...
             </div>
           ) : (
-            <>
-              <IntentDisplay intent={currentIntent} effectiveDamage={effectiveDmg} />
-              {rawIntent?.type === 'HeatReactive' && (
-                <div style={{ fontSize: '9px', color: '#f39c12', marginTop: '2px', fontStyle: 'italic' }}>
-                  Reacts to heat zone ⚡
-                </div>
-              )}
-            </>
+            <IntentDisplay intent={currentIntent} effectiveDamage={effectiveDmg} />
           )}
         </div>
       )}

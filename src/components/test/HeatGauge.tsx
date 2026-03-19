@@ -1,21 +1,10 @@
-import { getHeatThreshold, OVERHEAT_THRESHOLD } from '../../game/types'
-
-interface HeatGaugeProps {
-  heat: number
-  onSetHeat: (heat: number) => void
+interface EnergyGaugeProps {
+  currentEnergy: number
+  maxEnergy: number
+  onSetEnergy: (energy: number) => void
 }
 
-const thresholdColor = (heat: number): string => {
-  const t = getHeatThreshold(heat)
-  if (t === 'Overheat') return '#e74c3c'
-  if (t === 'Hot') return '#e67e22'
-  if (t === 'Warm') return '#f1c40f'
-  return '#27ae60'
-}
-
-export default function HeatGauge({ heat, onSetHeat }: HeatGaugeProps) {
-  const threshold = getHeatThreshold(heat)
-
+export default function EnergyGauge({ currentEnergy, maxEnergy, onSetEnergy }: EnergyGaugeProps) {
   return (
     <div style={{
       background: 'var(--bg-raised)',
@@ -24,9 +13,9 @@ export default function HeatGauge({ heat, onSetHeat }: HeatGaugeProps) {
       padding: 16,
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-        <span style={{ fontWeight: 'bold' }}>Heat</span>
-        <span style={{ color: thresholdColor(heat), fontWeight: 'bold' }}>
-          {heat}/{OVERHEAT_THRESHOLD} — {threshold}
+        <span style={{ fontWeight: 'bold' }}>Energy</span>
+        <span style={{ fontWeight: 'bold' }}>
+          {currentEnergy}/{maxEnergy}
         </span>
       </div>
 
@@ -36,16 +25,16 @@ export default function HeatGauge({ heat, onSetHeat }: HeatGaugeProps) {
         gap: 2,
         marginBottom: 12,
       }}>
-        {Array.from({ length: OVERHEAT_THRESHOLD }, (_, i) => (
+        {Array.from({ length: maxEnergy }, (_, i) => (
           <div
             key={i}
-            onClick={() => onSetHeat(i + 1)}
+            onClick={() => onSetEnergy(i + 1)}
             style={{
               flex: 1,
               height: 24,
               borderRadius: 3,
               cursor: 'pointer',
-              background: i < heat ? thresholdColor(i + 1) : 'var(--bg-surface)',
+              background: i < currentEnergy ? '#e67e22' : 'var(--bg-surface)',
               border: '1px solid var(--border)',
               transition: 'background 0.15s',
             }}
@@ -55,14 +44,14 @@ export default function HeatGauge({ heat, onSetHeat }: HeatGaugeProps) {
 
       {/* Quick set buttons */}
       <div style={{ display: 'flex', gap: 4, marginBottom: 12, flexWrap: 'wrap' }}>
-        {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((v) => (
+        {Array.from({ length: maxEnergy + 1 }, (_, v) => (
           <button
             key={v}
-            onClick={() => onSetHeat(v)}
+            onClick={() => onSetEnergy(v)}
             style={{
               padding: '2px 8px',
-              background: heat === v ? 'var(--accent)' : 'var(--bg-surface)',
-              color: heat === v ? '#fff' : 'var(--text)',
+              background: currentEnergy === v ? 'var(--accent)' : 'var(--bg-surface)',
+              color: currentEnergy === v ? '#fff' : 'var(--text)',
               border: '1px solid var(--border)',
               borderRadius: 4,
               cursor: 'pointer',
@@ -76,7 +65,7 @@ export default function HeatGauge({ heat, onSetHeat }: HeatGaugeProps) {
 
       {/* Info */}
       <div style={{ fontSize: 13, color: 'var(--muted)' }}>
-        No passive cooling — heat persists between turns (LEGS equipment only)
+        Energy resets to max each turn. Cards cost energy to play.
       </div>
     </div>
   )
