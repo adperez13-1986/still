@@ -79,8 +79,8 @@ const glitchNode: EnemyDefinition = {
   name: 'Glitch Node',
   maxHealth: 24,
   intentPattern: [
+    { type: 'Attack', value: 6 },
     { type: 'Buff', value: 1, status: 'Strength' },
-    { type: 'Attack', value: 8 },
     { type: 'Attack', value: 10 },
   ],
   dropPool: [
@@ -93,8 +93,8 @@ const sentinelShard: EnemyDefinition = {
   name: 'Sentinel Shard',
   maxHealth: 42,
   intentPattern: [
+    { type: 'Attack', value: 8 },
     { type: 'Block', value: 8 },
-    { type: 'Attack', value: 10 },
     { type: 'Attack', value: 14 },
   ],
   dropPool: [
@@ -108,9 +108,9 @@ const hollowRepeater: EnemyDefinition = {
   name: 'Hollow Repeater',
   maxHealth: 38,
   intentPattern: [
+    { type: 'Attack', value: 3, hits: 2 },
     { type: 'Buff', value: 1, status: 'Strength' },
     { type: 'Attack', value: 3, hits: 3 },
-    { type: 'Attack', value: 5 },
   ],
   dropPool: [
     { type: 'shards', amount: 8, weight: 1 },
@@ -162,6 +162,21 @@ const thermalScanner: EnemyDefinition = {
   ],
   dropPool: [
     { type: 'shards', amount: 10, weight: 2 },
+    { type: 'equipment', ids: ['worn-actuators', 'basic-scanner'], weight: 1 },
+  ],
+}
+
+const signalJammer: EnemyDefinition = {
+  id: 'signal-jammer',
+  name: 'Signal Jammer',
+  maxHealth: 30,
+  intentPattern: [
+    { type: 'DisableSlot', value: 0, targetSlot: 'Arms' },
+    { type: 'Attack', value: 8 },
+    { type: 'Attack', value: 10 },
+  ],
+  dropPool: [
+    { type: 'shards', amount: 9, weight: 2 },
     { type: 'equipment', ids: ['worn-actuators', 'basic-scanner'], weight: 1 },
   ],
 }
@@ -469,6 +484,10 @@ export const SECTOR1_ENCOUNTERS: Encounter[] = [
   { enemies: ['rust-guard', 'glitch-node'] },
   { enemies: ['thermal-scanner'] },
   { enemies: ['thermal-scanner', 'fracture-mite'] },
+  { enemies: ['signal-jammer', 'fracture-mite'] },
+  { enemies: ['signal-jammer', 'glitch-node'] },
+  { enemies: ['iron-crawler', 'fracture-mite', 'fracture-mite'] },
+  { enemies: ['corroded-sentry', 'glitch-node'] },
 ]
 
 export const SECTOR1_ELITE_ENCOUNTERS: Encounter[] = [
@@ -501,7 +520,7 @@ export const SECTOR2_ELITE_ENCOUNTERS: Encounter[] = [
 export const SECTOR1_ENEMIES: EnemyDefinition[] = [
   wanderingDrone, rustGuard, corrodedSentry, fractureMite, ironCrawler,
   glitchNode, sentinelShard, hollowRepeater, driftingFrame, echoConstruct,
-  thermalScanner,
+  thermalScanner, signalJammer,
 ]
 
 export const SECTOR1_ELITES: EnemyDefinition[] = [
