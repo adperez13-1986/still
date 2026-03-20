@@ -68,7 +68,7 @@ During the planning phase, the player SHALL be able to assign modifier cards to 
 - **THEN** the assignment is rejected — there is no base action to modify
 
 ### Requirement: Status effects interact with body actions
-Existing status effects SHALL apply to body actions as follows: Strength adds to ARMS damage output, Dexterity adds to TORSO Block output, Weak reduces ARMS damage, Vulnerable increases damage taken, and Inspired grants extra modifier card draws.
+Existing status effects SHALL apply to body actions as follows: Strength adds to ARMS damage output, Dexterity adds to TORSO Block output, Weak reduces ARMS damage, Vulnerable increases damage taken, and Inspired grants extra modifier card draws. Strength and Dexterity SHALL decay by 1 at end of each turn (minimum 0).
 
 #### Scenario: Strength increases ARMS damage
 - **WHEN** Still has Strength stacks and an ARMS body action fires
@@ -93,6 +93,18 @@ Existing status effects SHALL apply to body actions as follows: Strength adds to
 #### Scenario: Status effects do not apply to Override actions
 - **WHEN** a slot has an Override modifier replacing its action
 - **THEN** Strength/Dexterity bonuses do not apply to the override action (the override has its own fixed values)
+
+#### Scenario: Strength decays at end of turn
+- **WHEN** the end-of-turn phase resolves after enemy actions
+- **THEN** Strength is reduced by 1 (minimum 0)
+
+#### Scenario: Dexterity decays at end of turn
+- **WHEN** the end-of-turn phase resolves after enemy actions
+- **THEN** Dexterity is reduced by 1 (minimum 0)
+
+#### Scenario: Stat decay does not apply to enemy stats
+- **WHEN** an enemy has Strength stacks from Buff intents
+- **THEN** enemy Strength does NOT decay — only player Strength and Dexterity decay
 
 ### Requirement: Equipment items can have heat-conditional effects
 Some equipment items SHALL have bonus effects that activate based on Still's heat threshold at the moment of execution.

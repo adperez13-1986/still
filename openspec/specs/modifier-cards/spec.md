@@ -27,7 +27,7 @@ Slot modifier cards SHALL target a specific body slot, altering that slot's acti
 - **THEN** they may unassign the current modifier (returning it to hand, refunding its Heat) and assign a different one
 
 ### Requirement: Slot modifier categories
-Slot modifiers SHALL fall into four categories, each altering the body action differently.
+Slot modifiers SHALL fall into five categories, each altering the body action differently.
 
 #### Scenario: Amplify modifier increases output
 - **WHEN** an Amplify modifier is assigned to a slot
@@ -39,11 +39,15 @@ Slot modifiers SHALL fall into four categories, each altering the body action di
 
 #### Scenario: Repeat modifier triggers the action again
 - **WHEN** a Repeat modifier is assigned to a slot
-- **THEN** the slot's action fires an additional time during execution; the Repeat card's printed Heat cost is paid when assigned during the planning phase (slots do not generate additional heat during execution)
+- **THEN** the slot's action fires an additional time during execution; the Repeat card's energy cost is paid when assigned during the planning phase
 
 #### Scenario: Override modifier replaces the action
 - **WHEN** an Override modifier is assigned to a slot
 - **THEN** the slot's normal action is replaced entirely with the override's action for this turn
+
+#### Scenario: Feedback modifier applies slot-dependent effect
+- **WHEN** a Feedback modifier is assigned to a slot
+- **THEN** the slot's action gains a secondary effect determined by which slot it occupies (HEAD: draw→Arms damage, TORSO: block→reflected damage, ARMS: damage→healing, LEGS: block persists)
 
 ### Requirement: System cards provide global effects
 System cards SHALL affect combat state globally without targeting a specific body slot. They have no slot limit — any number of system cards may be played per turn.
