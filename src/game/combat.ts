@@ -120,6 +120,7 @@ export interface ActionResult {
   cardsDrawn: number
   foresight: number
   feedbackType?: 'head' | 'torso' | 'arms' | 'legs'
+  feedbackHeadBonus?: number // HEAD feedback: bonus damage for Arms this execution
   feedbackReflectDamage?: number // TORSO feedback: damage to deal to random enemy
   feedbackLifestealRatio?: number // ARMS feedback: ratio of damage to heal
   feedbackPersistBlock?: boolean // LEGS feedback: block should persist
@@ -368,9 +369,10 @@ export function resolveBodyAction(
   }
 
   // Feedback secondary effects (computed after main action resolves)
+  // NOTE: do NOT mutate combat here — resolveBodyAction is also called by projectSlotActions (pure/read-only)
   if (result.feedbackType === 'head') {
-    // HEAD: cards drawn add +2 Arms damage per card
-    combat.feedbackArmsBonus += result.cardsDrawn * 2
+    // HEAD: cards drawn add +2 Arms damage per card (caller applies to combat.feedbackArmsBonus)
+    result.feedbackHeadBonus = result.cardsDrawn * 2
   } else if (result.feedbackType === 'torso') {
     // TORSO: 75% of block gained dealt as damage to random enemy
     result.feedbackReflectDamage = Math.floor(result.blockGained * 0.75)
@@ -383,11 +385,11 @@ export function resolveBodyAction(
   }
 
   // Apply feedbackArmsBonus to Arms damage (from HEAD feedback earlier this execution)
+  // Read-only: combat.feedbackArmsBonus is set by the caller (executeBodyActions), not here
   if (slot === 'Arms' && combat.feedbackArmsBonus > 0) {
     for (const d of result.damage) {
       d.amount += combat.feedbackArmsBonus
     }
-    combat.feedbackArmsBonus = 0
   }
 
   return result
@@ -462,6 +464,12 @@ export function executeBodyActions(ctx: CombatContext): CombatResult {
       modInstanceId2
     )
 
+    // HEAD Feedback: apply bonus to combat state for Arms to read later
+    if (actionResult.feedbackHeadBonus && actionResult.feedbackHeadBonus > 0) {
+      result.combat.feedbackArmsBonus += actionResult.feedbackHeadBonus
+      result.log.push(`Head Feedback: +${actionResult.feedbackHeadBonus} bonus damage for Arms`)
+    }
+
     // Apply block
     if (actionResult.blockGained > 0) {
       result.combat.block += actionResult.blockGained
@@ -524,6 +532,11 @@ export function executeBodyActions(ctx: CombatContext): CombatResult {
     if (actionResult.feedbackPersistBlock) {
       // LEGS feedback: mark block from this slot as persistent (handled at turn end)
       result.combat._legsFeedbackBlock = (result.combat._legsFeedbackBlock ?? 0) + actionResult.blockGained
+    }
+
+    // Reset feedbackArmsBonus after Arms has consumed it
+    if (slot === 'Arms') {
+      result.combat.feedbackArmsBonus = 0
     }
 
     // Apply card draw from body actions (skip HEAD — HEAD draw happens at turn start)
