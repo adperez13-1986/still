@@ -186,7 +186,7 @@ const signalJammer: EnemyDefinition = {
 const vaultKeeper: EnemyDefinition = {
   id: 'vault-keeper',
   name: 'Vault Keeper',
-  maxHealth: 85,
+  maxHealth: 76,
   intentPattern: [
     { type: 'Block', value: 12 },
     { type: 'Attack', value: 14 },
@@ -204,7 +204,7 @@ const vaultKeeper: EnemyDefinition = {
 const corruptedOverseer: EnemyDefinition = {
   id: 'corrupted-overseer',
   name: 'Corrupted Overseer',
-  maxHealth: 90,
+  maxHealth: 81,
   intentPattern: [
     { type: 'Buff', value: 2, status: 'Strength' },
     { type: 'Attack', value: 16 },
@@ -221,7 +221,7 @@ const corruptedOverseer: EnemyDefinition = {
 const fractureTitan: EnemyDefinition = {
   id: 'fracture-titan',
   name: 'Fracture Titan',
-  maxHealth: 95,
+  maxHealth: 85,
   intentPattern: [
     { type: 'Block', value: 15 },
     { type: 'Attack', value: 20 },
