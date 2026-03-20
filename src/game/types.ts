@@ -33,7 +33,7 @@ export interface EquipmentDefinition {
 
 export type Keyword = 'Exhaust' | 'Innate' | 'Retain'
 
-export type ModifierCategory = 'Amplify' | 'Redirect' | 'Repeat' | 'Override'
+export type ModifierCategory = 'Amplify' | 'Redirect' | 'Repeat' | 'Override' | 'Feedback'
 export type SystemCategory = 'Draw' | 'Utility' | 'Conditional'
 
 export type SlotModifierEffect =
@@ -41,6 +41,7 @@ export type SlotModifierEffect =
   | { type: 'redirect'; targetMode: TargetMode }
   | { type: 'repeat'; extraFirings: number }
   | { type: 'override'; action: BodyAction }
+  | { type: 'feedback' }
 
 export type SystemEffect =
   | { type: 'draw'; count: number }
@@ -224,6 +225,9 @@ export interface CombatState {
   disabledSlots: BodySlot[]
   combatLog: CombatEvent[] // events from last execution for animation replay
   ablativeShellUsed: boolean // once-per-combat flag for Ablative Shell
+  feedbackArmsBonus: number // bonus damage for Arms from HEAD Feedback (resets each execution)
+  persistentBlock: number // carried block from LEGS Feedback (decays 25% per turn)
+  _legsFeedbackBlock?: number // temp: block from LEGS this turn to add to persistentBlock at end of turn
 }
 
 export interface RunState {

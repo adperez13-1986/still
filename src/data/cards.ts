@@ -189,6 +189,31 @@ const echoProtocol: ModifierCardDefinition = {
   },
 }
 
+const feedback: ModifierCardDefinition = {
+  id: 'feedback',
+  name: 'Feedback',
+  description: 'Feedback: slot gains a secondary effect based on placement.',
+  energyCost: 2,
+  category: {
+    type: 'slot',
+    modifier: 'Feedback',
+    effect: { type: 'feedback' },
+  },
+  keywords: [],
+  upgraded: {
+    id: 'feedback',
+    name: 'Feedback+',
+    description: 'Feedback: slot gains a secondary effect based on placement.',
+    energyCost: 1,
+    category: {
+      type: 'slot',
+      modifier: 'Feedback',
+      effect: { type: 'feedback' },
+    },
+    keywords: [],
+  },
+}
+
 const shieldBash: ModifierCardDefinition = {
   id: 'shield-bash',
   name: 'Shield Bash',
@@ -1054,7 +1079,7 @@ export const STARTING_CARDS: ModifierCardDefinition[] = [
 ]
 
 export const SECTOR1_CARD_POOL: ModifierCardDefinition[] = [
-  overcharge, spreadShot, echoProtocol, shieldBash, emergencyShield,
+  overcharge, spreadShot, echoProtocol, feedback, shieldBash, emergencyShield,
   deepFreeze, heatVent, quickScan, thermalSurge, meltdown,
   fieldRepair, targetLock, armorProtocol, powerSurge,
   precisionStrike, coldEfficiency, fuelTheFire, heatSurge, recklessCharge,
@@ -1069,7 +1094,7 @@ export const SECTOR2_CARD_POOL: ModifierCardDefinition[] = [
 
 const allCardList: ModifierCardDefinition[] = [
   boost, emergencyStrike, vent, diagnostics,
-  overcharge, spreadShot, echoProtocol, shieldBash, emergencyShield,
+  overcharge, spreadShot, echoProtocol, feedback, shieldBash, emergencyShield,
   deepFreeze, heatVent, quickScan, thermalSurge, meltdown,
   fieldRepair, targetLock, powerSurge,
   precisionStrike, coldEfficiency, fuelTheFire, heatSurge, recklessCharge,

@@ -90,6 +90,7 @@ export function getAllowedSlots(card: ModifierCardDefinition): BodySlot[] | null
     case 'amplify':  return ['Arms', 'Torso']
     case 'redirect': return ['Arms']
     case 'repeat':   return null // universal
+    case 'feedback': return null // universal — slot determines behavior
     case 'override':
       if (effect.action.type === 'damage') return ['Arms']
       if (effect.action.type === 'block')  return ['Torso']
@@ -118,6 +119,10 @@ export interface ActionResult {
   healAmount: number
   cardsDrawn: number
   foresight: number
+  feedbackType?: 'head' | 'torso' | 'arms' | 'legs'
+  feedbackReflectDamage?: number // TORSO feedback: damage to deal to random enemy
+  feedbackLifestealRatio?: number // ARMS feedback: ratio of damage to heal
+  feedbackPersistBlock?: boolean // LEGS feedback: block should persist
 }
 
 export interface CombatResult {
@@ -178,6 +183,8 @@ export function initCombat(
     disabledSlots: [],
     combatLog: [],
     ablativeShellUsed: false,
+    feedbackArmsBonus: 0,
+    persistentBlock: 0,
   }
 }
 
@@ -290,6 +297,12 @@ export function resolveBodyAction(
       case 'repeat':
         repeatCount += effect.extraFirings
         break
+      case 'feedback':
+        if (slot === 'Head') result.feedbackType = 'head'
+        else if (slot === 'Torso') result.feedbackType = 'torso'
+        else if (slot === 'Arms') result.feedbackType = 'arms'
+        else if (slot === 'Legs') result.feedbackType = 'legs'
+        break
     }
   }
 
@@ -354,6 +367,29 @@ export function resolveBodyAction(
     }
   }
 
+  // Feedback secondary effects (computed after main action resolves)
+  if (result.feedbackType === 'head') {
+    // HEAD: cards drawn add +2 Arms damage per card
+    combat.feedbackArmsBonus += result.cardsDrawn * 2
+  } else if (result.feedbackType === 'torso') {
+    // TORSO: 75% of block gained dealt as damage to random enemy
+    result.feedbackReflectDamage = Math.floor(result.blockGained * 0.75)
+  } else if (result.feedbackType === 'arms') {
+    // ARMS: 33% of damage dealt heals player (applied in execution loop after damage resolves)
+    result.feedbackLifestealRatio = 0.33
+  } else if (result.feedbackType === 'legs') {
+    // LEGS: block persists to next turn
+    result.feedbackPersistBlock = true
+  }
+
+  // Apply feedbackArmsBonus to Arms damage (from HEAD feedback earlier this execution)
+  if (slot === 'Arms' && combat.feedbackArmsBonus > 0) {
+    for (const d of result.damage) {
+      d.amount += combat.feedbackArmsBonus
+    }
+    combat.feedbackArmsBonus = 0
+  }
+
   return result
 }
 
@@ -375,6 +411,10 @@ export function executeBodyActions(ctx: CombatContext): CombatResult {
     stillHealth: ctx.stillHealth,
     log: [],
   }
+
+  // Reset feedback state for this execution
+  result.combat.feedbackArmsBonus = 0
+  result.combat._legsFeedbackBlock = 0
 
   // Fire onPlanningEnd part triggers (Empty Chamber: block per unplayed card)
   for (const part of ctx.parts) {
@@ -454,6 +494,36 @@ export function executeBodyActions(ctx: CombatContext): CombatResult {
         if (actual > 0) perEnemyDamage.push({ enemyId: enemy.instanceId, amount: actual })
         result.log.push(`${slot}: dealt ${actual} damage to ${enemy.definitionId}${absorbed > 0 ? ` (${absorbed} blocked)` : ''}`)
       }
+    }
+
+    // Feedback secondary effects
+    if (actionResult.feedbackReflectDamage && actionResult.feedbackReflectDamage > 0) {
+      // TORSO feedback: deal reflected damage to random alive enemy
+      const alive = result.combat.enemies.filter(e => !e.isDefeated)
+      if (alive.length > 0) {
+        const target = alive[Math.floor(Math.random() * alive.length)]
+        const reflected = actionResult.feedbackReflectDamage
+        const absorbedRef = Math.min(target.block, reflected)
+        target.block -= absorbedRef
+        const actualRef = reflected - absorbedRef
+        target.currentHealth = Math.max(0, target.currentHealth - actualRef)
+        if (target.currentHealth === 0) target.isDefeated = true
+        if (actualRef > 0) perEnemyDamage.push({ enemyId: target.instanceId, amount: actualRef })
+        result.log.push(`${slot} Feedback: reflected ${actualRef} damage to ${target.definitionId}`)
+      }
+    }
+    if (actionResult.feedbackLifestealRatio && actionResult.feedbackLifestealRatio > 0) {
+      // ARMS feedback: heal based on total damage dealt
+      const totalDealt = perEnemyDamage.reduce((sum, d) => sum + d.amount, 0)
+      const healFromLifesteal = Math.floor(totalDealt * actionResult.feedbackLifestealRatio)
+      if (healFromLifesteal > 0) {
+        result.stillHealth = Math.min(ctx.maxHealth, result.stillHealth + healFromLifesteal)
+        result.log.push(`${slot} Feedback: healed ${healFromLifesteal} from lifesteal`)
+      }
+    }
+    if (actionResult.feedbackPersistBlock) {
+      // LEGS feedback: mark block from this slot as persistent (handled at turn end)
+      result.combat._legsFeedbackBlock = (result.combat._legsFeedbackBlock ?? 0) + actionResult.blockGained
     }
 
     // Apply card draw from body actions (skip HEAD — HEAD draw happens at turn start)
@@ -927,7 +997,28 @@ export function endTurn(ctx: CombatContext): CombatResult {
   }
   result.combat.hand = []
 
-  // No shutdown mechanic — overheat damage is applied during execution/planning via applyHeatChange
+  // LEGS Feedback: add legs block to persistentBlock
+  if (result.combat._legsFeedbackBlock && result.combat._legsFeedbackBlock > 0) {
+    result.combat.persistentBlock += result.combat._legsFeedbackBlock
+    result.log.push(`Legs Feedback: ${result.combat._legsFeedbackBlock} block persists`)
+  }
+  result.combat._legsFeedbackBlock = 0
+
+  // Stat decay: Strength and Dexterity decay by 1 at end of turn (player only)
+  const strIdx = result.combat.statusEffects.findIndex(s => s.type === 'Strength')
+  if (strIdx !== -1) {
+    result.combat.statusEffects[strIdx].stacks = Math.max(0, result.combat.statusEffects[strIdx].stacks - 1)
+    if (result.combat.statusEffects[strIdx].stacks === 0) {
+      result.combat.statusEffects.splice(strIdx, 1)
+    }
+  }
+  const dexIdx = result.combat.statusEffects.findIndex(s => s.type === 'Dexterity')
+  if (dexIdx !== -1) {
+    result.combat.statusEffects[dexIdx].stacks = Math.max(0, result.combat.statusEffects[dexIdx].stacks - 1)
+    if (result.combat.statusEffects[dexIdx].stacks === 0) {
+      result.combat.statusEffects.splice(dexIdx, 1)
+    }
+  }
 
   // Store inspired bonus for next turn draw
   // (will be used by startTurn)
@@ -947,8 +1038,17 @@ export function startTurn(ctx: CombatContext, inspiredBonus = 0): CombatResult {
   // Reset energy budget
   result.combat.currentEnergy = result.combat.maxEnergy
 
-  // Block resets to 0
-  result.combat.block = 0
+  // Persistent block: decay by 25%, then add to block pool
+  if (result.combat.persistentBlock > 0) {
+    result.combat.persistentBlock = Math.floor(result.combat.persistentBlock * 0.75)
+    result.combat.block = result.combat.persistentBlock
+    if (result.combat.persistentBlock > 0) {
+      result.log.push(`Persistent block: ${result.combat.persistentBlock} carried over`)
+    }
+  } else {
+    // Block resets to 0
+    result.combat.block = 0
+  }
 
   // HEAD draw bonus
   let headDrawBonus = 0

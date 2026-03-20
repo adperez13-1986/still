@@ -13,6 +13,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   Redirect: '#74b9ff',
   Repeat: '#fd79a8',
   Override: '#e17055',
+  Feedback: '#55efc4',
   Utility: '#00cec9',
   Draw: '#ffeaa7',
   Conditional: '#fab1a0',
