@@ -105,11 +105,12 @@ export default function BodySlotPanel({ combat, equipment, parts, selectedCardId
     if (cardInst) {
       const def = ALL_CARDS[cardInst.definitionId]
       if (def?.category.type === 'system') {
-        // System card: only home slot, must be unoccupied
+        // System card: only home slot, must be unoccupied (Feedback in secondary doesn't block)
         const homeSlot = def.category.homeSlot
         validSlots = new Set<BodySlot>()
-        if (!combat.disabledSlots.includes(homeSlot) && combat.slotModifiers[homeSlot] === null) {
-          validSlots.add(homeSlot)
+        if (!combat.disabledSlots.includes(homeSlot) && (combat.slotModifiers[homeSlot] === null || combat.slotModifiers[homeSlot] === '__system__')) {
+          // Allow if primary is empty OR already has a system card (re-check handled by playModifierCard)
+          if (combat.slotModifiers[homeSlot] === null) validSlots.add(homeSlot)
         }
       } else if (def?.category.type === 'slot') {
         const isOverride = def.category.effect.type === 'override'
@@ -120,10 +121,10 @@ export default function BodySlotPanel({ combat, equipment, parts, selectedCardId
           if (combat.disabledSlots.includes(slot)) continue
           // Slot restriction: skip slots not in allowed set
           if (allowed && !allowed.includes(slot)) continue
-          // Skip slots occupied by system cards
-          if (combat.slotModifiers[slot] === '__system__') continue
+          // Feedback can go on __system__ slots (uses secondary, doesn't conflict)
+          if (combat.slotModifiers[slot] === '__system__' && !isFeedback) continue
           // Feedback stacks with any modifier (uses secondary slot)
-          if (combat.slotModifiers[slot] !== null) {
+          if (combat.slotModifiers[slot] !== null && combat.slotModifiers[slot] !== '__system__') {
             if ((!hasDualLoader && !isFeedback) || combat.slotModifiers2[slot] !== null) continue
           }
           if (!isOverride && !equipment[slot]) continue
