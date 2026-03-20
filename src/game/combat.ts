@@ -538,14 +538,19 @@ export function executeBodyActions(ctx: CombatContext): CombatResult {
       if (cost > 0) result.log.push(`${slot}: lost ${cost} Block (block cost)`)
     }
 
-    // Emit combat event
+    // Emit combat event (include lifesteal heal in the heal total)
+    let totalHeal = actionResult.healAmount
+    if (actionResult.feedbackLifestealRatio && actionResult.feedbackLifestealRatio > 0) {
+      const totalDealtForEvent = perEnemyDamage.reduce((sum, d) => sum + d.amount, 0)
+      totalHeal += Math.floor(totalDealtForEvent * actionResult.feedbackLifestealRatio)
+    }
     const targetMode = equip?.action.targetMode ?? 'single_enemy' as const
     const slotEvent: CombatEvent = {
       type: 'slotFire',
       slot,
       damages: perEnemyDamage.length > 0 ? perEnemyDamage : undefined,
       block: actionResult.blockGained > 0 ? actionResult.blockGained : undefined,
-      heal: actionResult.healAmount > 0 ? actionResult.healAmount : undefined,
+      heal: totalHeal > 0 ? totalHeal : undefined,
       targetMode,
     }
     result.combat.combatLog.push(slotEvent)
