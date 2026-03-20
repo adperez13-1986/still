@@ -12,7 +12,10 @@ export default function HandPanel({ combat, selectedCardId, onSelectCard, onPlay
   // Filter out cards assigned to slots — they stay in hand array for tracking
   // but shouldn't be displayed or playable
   const assignedIds = new Set(
-    combat ? Object.values(combat.slotModifiers).filter((id): id is string => id !== null) : []
+    combat ? [
+      ...Object.values(combat.slotModifiers).filter((id): id is string => id !== null),
+      ...Object.values(combat.slotModifiers2).filter((id): id is string => id !== null),
+    ] : []
   )
   const visibleHand = combat?.hand.filter(c => !assignedIds.has(c.instanceId)) ?? []
 

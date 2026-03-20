@@ -11,10 +11,11 @@ interface Props {
 }
 
 export default function Hand({ combat, selectedCardId, onSelectSlotCard, compact }: Props) {
-  // Filter out cards assigned to slots
-  const assignedIds = new Set(
-    Object.values(combat.slotModifiers).filter((id): id is string => id !== null)
-  )
+  // Filter out cards assigned to slots (primary + secondary)
+  const assignedIds = new Set([
+    ...Object.values(combat.slotModifiers).filter((id): id is string => id !== null),
+    ...Object.values(combat.slotModifiers2).filter((id): id is string => id !== null),
+  ])
   const visibleHand = combat.hand.filter(c => !assignedIds.has(c.instanceId))
 
   const canPlay = combat.phase === 'planning'
