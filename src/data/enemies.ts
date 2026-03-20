@@ -267,9 +267,9 @@ const thermalLeech: EnemyDefinition = {
   name: 'Thermal Leech',
   maxHealth: 55,
   intentPattern: [
-    { type: 'Absorb', value: 50 },
     { type: 'Attack', value: 10 },
     { type: 'Attack', value: 10 },
+    { type: 'Block', value: 8 },
   ],
   dropPool: [
     { type: 'shards', amount: 18, weight: 1 },
@@ -281,9 +281,9 @@ const wireJammer: EnemyDefinition = {
   name: 'Wire Jammer',
   maxHealth: 45,
   intentPattern: [
+    { type: 'Attack', value: 12 },
     { type: 'DisableSlot', value: 0, targetSlot: 'Arms' },
     { type: 'Attack', value: 12 },
-    { type: 'Block', value: 8 },
   ],
   dropPool: [
     { type: 'shards', amount: 16, weight: 1 },
@@ -295,7 +295,7 @@ const slagHeap: EnemyDefinition = {
   name: 'Slag Heap',
   maxHealth: 75,
   intentPattern: [
-    { type: 'Block', value: 12 },
+    { type: 'Attack', value: 14 },
     { type: 'Block', value: 12 },
     { type: 'Buff', value: 2, status: 'Strength' },
     { type: 'Attack', value: 14 },
@@ -312,7 +312,7 @@ const feedbackLoop: EnemyDefinition = {
   name: 'Feedback Loop',
   maxHealth: 38,
   intentPattern: [
-    { type: 'Debuff', value: 2, status: 'Vulnerable' },
+    { type: 'AttackDebuff', value: 10, status: 'Vulnerable', statusStacks: 2 },
     { type: 'Attack', value: 16 },
     { type: 'Attack', value: 16 },
   ],
@@ -326,8 +326,8 @@ const phaseDrone: EnemyDefinition = {
   name: 'Phase Drone',
   maxHealth: 50,
   intentPattern: [
-    { type: 'DisableSlot', value: 0, targetSlot: 'Head' },
     { type: 'Attack', value: 9 },
+    { type: 'DisableSlot', value: 0, targetSlot: 'Head' },
     { type: 'Attack', value: 9 },
   ],
   dropPool: [
@@ -341,9 +341,9 @@ const furnaceTick: EnemyDefinition = {
   name: 'Furnace Tick',
   maxHealth: 22,
   intentPattern: [
-    { type: 'Absorb', value: 30 },
     { type: 'Attack', value: 6 },
     { type: 'Attack', value: 6 },
+    { type: 'Block', value: 5 },
   ],
   dropPool: [
     { type: 'shards', amount: 8, weight: 1 },
@@ -370,8 +370,8 @@ const conduitSpider: EnemyDefinition = {
   name: 'Conduit Spider',
   maxHealth: 48,
   intentPattern: [
-    { type: 'DisableSlot', value: 0, targetSlot: 'Legs' },
     { type: 'Attack', value: 10 },
+    { type: 'DisableSlot', value: 0, targetSlot: 'Legs' },
     { type: 'Debuff', value: 2, status: 'Vulnerable' },
   ],
   dropPool: [
@@ -387,9 +387,9 @@ const overchargeSentinel: EnemyDefinition = {
   name: 'Overcharge Sentinel',
   maxHealth: 110,
   intentPattern: [
-    { type: 'Absorb', value: 60 },
-    { type: 'Block', value: 15 },
     { type: 'Attack', value: 18 },
+    { type: 'Block', value: 15 },
+    { type: 'Buff', value: 2, status: 'Strength' },
     { type: 'Attack', value: 22 },
   ],
   dropPool: [
@@ -405,10 +405,10 @@ const lockdownWarden: EnemyDefinition = {
   name: 'Lockdown Warden',
   maxHealth: 100,
   intentPattern: [
+    { type: 'Attack', value: 20 },
     { type: 'DisableSlot', value: 0, targetSlot: 'Arms' },
+    { type: 'Attack', value: 20 },
     { type: 'DisableSlot', value: 0, targetSlot: 'Head' },
-    { type: 'Attack', value: 20 },
-    { type: 'Attack', value: 20 },
     { type: 'Buff', value: 2, status: 'Strength' },
   ],
   dropPool: [
@@ -423,11 +423,11 @@ const meltdownCore: EnemyDefinition = {
   name: 'Meltdown Core',
   maxHealth: 120,
   intentPattern: [
-    { type: 'Debuff', value: 2, status: 'Vulnerable' },
-    { type: 'Absorb', value: 80 },
     { type: 'Attack', value: 25 },
-    { type: 'Block', value: 10 },
+    { type: 'Debuff', value: 2, status: 'Vulnerable' },
     { type: 'Attack', value: 18 },
+    { type: 'Block', value: 14 },
+    { type: 'Attack', value: 25 },
   ],
   dropPool: [
     { type: 'shards', amount: 55, weight: 1 },
@@ -444,13 +444,13 @@ const theThermalArbiter: EnemyDefinition = {
   name: 'The Thermal Arbiter',
   maxHealth: 200,
   intentPattern: [
-    { type: 'Absorb', value: 70 },
-    { type: 'DisableSlot', value: 0, targetSlot: 'Legs' },
     { type: 'Attack', value: 18 },
-    { type: 'Attack', value: 18 },
+    { type: 'AttackDebuff', value: 14, status: 'Weak', statusStacks: 1 },
+    { type: 'DisableSlot', value: 0, targetSlot: 'Arms' },
+    { type: 'Attack', value: 22 },
     { type: 'Buff', value: 2, status: 'Strength' },
+    { type: 'DisableSlot', value: 0, targetSlot: 'Legs' },
     { type: 'AttackDebuff', value: 22, status: 'Vulnerable', statusStacks: 2 },
-    { type: 'Absorb', value: 70 },
     { type: 'Attack', value: 26 },
   ],
   dropPool: [

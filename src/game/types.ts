@@ -121,7 +121,7 @@ export interface BehavioralPartDefinition {
 
 // ─── Enemies ─────────────────────────────────────────────────────────────────
 
-export type IntentType = 'Attack' | 'Block' | 'Buff' | 'Debuff' | 'AttackDebuff' | 'DisableSlot' | 'Absorb' | 'Scan'
+export type IntentType = 'Attack' | 'Block' | 'Buff' | 'Debuff' | 'AttackDebuff' | 'DisableSlot' | 'Scan'
 
 export interface Intent {
   type: IntentType

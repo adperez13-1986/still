@@ -1,7 +1,7 @@
-## Requirements
+## MODIFIED Requirements
 
-### Requirement: S2 standard enemies use DisableSlot and debuffs
-S2 standard enemies SHALL attack on their first turn. S2 enemies SHALL use DisableSlot and debuff intents to interact with Still's body slots, creating combat puzzles beyond simple attack/block.
+### Requirement: S2 standard enemies use DisableSlot and Absorb
+S2 standard enemies SHALL attack on their first turn. S2 enemies SHALL use DisableSlot and debuff intents to interact with Still's body slots, creating combat puzzles beyond simple attack/block. Absorb intents are removed from standard enemies.
 
 #### Scenario: S2 standard enemy opens with attack
 - **WHEN** a S2 standard enemy takes its first turn

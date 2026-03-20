@@ -34,9 +34,9 @@
 
 ## 7. Playtest
 
-- [ ] 7.1 Verify system cards can only be assigned to home slot
-- [ ] 7.2 Verify system card effects fire instantly on assignment
-- [ ] 7.3 Verify equipment skipped for slots with system cards during execution
-- [ ] 7.4 Verify slot modifiers can't go on system-card-occupied slots and vice versa
-- [ ] 7.5 Verify all 4 slots feel relevant — real decisions each turn
-- [ ] 7.6 Verify starting deck turn 1: Coolant Flush→LEGS, Diagnostics→HEAD, modifier→ARMS, modifier→TORSO
+- [x] 7.1 Verify system cards can only be assigned to home slot
+- [x] 7.2 Verify system card effects fire instantly on assignment
+- [x] 7.3 Verify equipment skipped for slots with system cards during execution
+- [x] 7.4 Verify slot modifiers can't go on system-card-occupied slots and vice versa
+- [x] 7.5 Verify all 4 slots feel relevant — real decisions each turn
+- [x] 7.6 Verify starting deck turn 1: Coolant Flush→LEGS, Diagnostics→HEAD, modifier→ARMS, modifier→TORSO

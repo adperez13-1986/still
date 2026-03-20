@@ -864,15 +864,6 @@ export function executeEnemyTurn(ctx: CombatContext): CombatResult {
         }
         break
       }
-      case 'Absorb': {
-        // Absorb: gains block based on energy spent this turn
-        const energySpent = result.combat.maxEnergy - result.combat.currentEnergy
-        const blockGain = Math.floor(energySpent * (intent.value / 100))
-        enemy.block += blockGain
-        eventBlock = blockGain
-        result.log.push(`${def.name} absorbs ${blockGain} Block from Still's energy use`)
-        break
-      }
     }
 
     result.combat.combatLog.push({

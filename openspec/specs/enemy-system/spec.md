@@ -19,15 +19,15 @@ Some enemies SHALL have abilities that temporarily disable one of Still's equipm
 - **THEN** it recovers automatically at the start of the following turn (one turn of downtime)
 
 ### Requirement: Enemy intent types expanded for body-driven combat
-The enemy intent system SHALL include new intent types that interact with the body-action systems. The drop resolution function SHALL accept an optional pity parameter to modify equipment drop weights. The HeatAttack intent type is removed — enemies SHALL NOT add Heat to Still.
+The enemy intent system SHALL include intent types that interact with the body-action systems. The drop resolution function SHALL accept an optional pity parameter to modify equipment drop weights. The HeatAttack and Absorb intent types are removed — enemies SHALL use Block and Buff intents instead of Absorb.
 
 #### Scenario: DisableSlot intent
 - **WHEN** an enemy has a DisableSlot intent
 - **THEN** it targets a specific slot (HEAD, TORSO, ARMS, or LEGS) and disables it for one turn
 
-#### Scenario: Absorb intent
-- **WHEN** an enemy has an Absorb intent
-- **THEN** it gains Block equal to a portion of Still's current Heat (rewarding the player for cooling before the enemy acts)
+#### Scenario: Absorb intent type removed
+- **WHEN** defining enemy intent patterns
+- **THEN** the Absorb intent type SHALL NOT be used; enemies SHALL use Block or Buff intents to gain defensive value
 
 #### Scenario: Drop resolution accepts pity parameter
 - **WHEN** `resolveDrops` is called with a pity value
@@ -41,7 +41,7 @@ Enemy intents SHALL be resolved during the enemy turn phase. Attack intents deal
 - **THEN** damage is calculated as: base intent value × scaling multiplier, then + Strength, then × Weak modifier, then × Vulnerable modifier
 
 #### Scenario: Non-damage intents are not scaled
-- **WHEN** an enemy executes a Block, Buff, Debuff, DisableSlot, or Absorb intent
+- **WHEN** an enemy executes a Block, Buff, Debuff, or DisableSlot intent
 - **THEN** no scaling multiplier is applied
 
 ## MODIFIED Requirements
@@ -66,7 +66,7 @@ Enemy types and difficulty SHALL scale across sectors, reflecting both the narra
 
 #### Scenario: Sector 2 enemy Heat interaction
 - **WHEN** Still encounters a Sector 2 enemy
-- **THEN** the enemy may have slot-disabling abilities, conditional behaviors based on Still's Heat state, or Absorb intents
+- **THEN** the enemy may have slot-disabling abilities, debuffs, and offensive pressure with attack-first patterns
 
 #### Scenario: Sector 3 enemy complexity
 - **WHEN** Still encounters a Sector 3 enemy

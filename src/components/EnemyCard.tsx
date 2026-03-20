@@ -20,7 +20,6 @@ const INTENT_ICONS: Record<string, string> = {
   Debuff: 'down',
   AttackDebuff: 'sword+',
   DisableSlot: 'lock',
-  Absorb: 'drain',
   Scan: 'eye',
 }
 
@@ -31,7 +30,6 @@ const INTENT_COLORS: Record<string, string> = {
   Debuff: '#e67e22',
   AttackDebuff: '#c0392b',
   DisableSlot: '#636e72',
-  Absorb: '#00cec9',
   Scan: '#a29bfe',
 }
 

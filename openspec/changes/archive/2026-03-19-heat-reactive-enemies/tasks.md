@@ -21,7 +21,7 @@
 
 ## 5. Playtest
 
-- [ ] 5.1 Verify Scan turn shows "Scanning..." with no enemy action
-- [ ] 5.2 Verify HeatReactive resolves correctly: Cool → 12 attack, Warm → 7 attack, Hot → Str buff
-- [ ] 5.3 Verify intent display updates when player changes heat zone during planning
-- [ ] 5.4 Verify Thermal Scanner appears in S1 encounters
+- [x] 5.1 Verify Scan turn shows "Scanning..." with no enemy action
+- [x] 5.2 Verify HeatReactive resolves correctly: Cool → 12 attack, Warm → 7 attack, Hot → Str buff
+- [x] 5.3 Verify intent display updates when player changes heat zone during planning
+- [x] 5.4 Verify Thermal Scanner appears in S1 encounters
