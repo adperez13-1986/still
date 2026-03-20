@@ -54,3 +54,10 @@ Enemy Strength (from Buff intents) does not decay. Enemies already have fixed pa
 - **[Risk] Stat decay may feel punitive to new players** → Mitigated by Feedback giving them something productive to do with slots instead of stats. The "aha" moment of Feedback should offset the "my stats shrink" frustration.
 - **[Risk] Persistent block on Legs may be hard to communicate in UI** → Show carried block as a separate number or subtle indicator on the Legs slot. Not designing UI this change, but flag for future.
 - **[Risk] feedbackArmsBonus state may be confusing if HEAD is disabled** → If HEAD is disabled, it doesn't fire, so feedbackArmsBonus stays 0. Arms fires normally. No special case needed.
+
+### Decision 8: Feedback stacks with other modifiers (uses secondary slot)
+Playtesting revealed that Feedback competing for the modifier slot makes it strictly worse than Amplify/Repeat in every case. Feedback on Arms with Plasma Cutter: 10 damage + 3 heal vs Overcharge: 25 damage + 0 heal. The lifesteal can never compensate for losing ×2.5 damage.
+
+Fix: Feedback always goes to `slotModifiers2` (the secondary slot), regardless of whether Dual Loader is present. This means you can assign Overcharge + Feedback to the same slot. Now Overcharge + Feedback on Arms = 25 damage + 8 heal. Feedback layers on top of other modifiers, like FFVII support materia linking TO another materia rather than replacing it.
+
+**Alternative considered**: Increase Feedback ratios (e.g., 75% lifesteal). Rejected because it doesn't solve the fundamental problem — Feedback taking the modifier slot means you lose multiplicative damage, which no ratio can compensate for.

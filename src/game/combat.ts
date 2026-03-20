@@ -624,9 +624,12 @@ export function playModifierCard(
       return result
     }
 
+    const isFeedback = card.category.effect.type === 'feedback'
+
     if (result.combat.slotModifiers[targetSlot] !== null) {
+      // Feedback always goes to secondary slot (stacks with any modifier)
       const hasDualLoader = ctx.parts.some(p => p.effect.type === 'dualLoader')
-      if (!hasDualLoader || result.combat.slotModifiers2[targetSlot] !== null) {
+      if ((!hasDualLoader && !isFeedback) || result.combat.slotModifiers2[targetSlot] !== null) {
         result.log.push(`${targetSlot} already has a modifier assigned`)
         return result
       }
@@ -637,7 +640,10 @@ export function playModifierCard(
       return result
     }
 
-    if (result.combat.slotModifiers[targetSlot] !== null) {
+    // Feedback always uses secondary slot so it stacks with primary modifiers
+    if (isFeedback && result.combat.slotModifiers[targetSlot] !== null) {
+      result.combat.slotModifiers2[targetSlot] = instanceId
+    } else if (result.combat.slotModifiers[targetSlot] !== null) {
       result.combat.slotModifiers2[targetSlot] = instanceId
     } else {
       result.combat.slotModifiers[targetSlot] = instanceId

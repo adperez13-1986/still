@@ -113,6 +113,7 @@ export default function BodySlotPanel({ combat, equipment, parts, selectedCardId
         }
       } else if (def?.category.type === 'slot') {
         const isOverride = def.category.effect.type === 'override'
+        const isFeedback = def.category.effect.type === 'feedback'
         const allowed = getAllowedSlots(def)
         validSlots = new Set<BodySlot>()
         for (const slot of BODY_SLOTS) {
@@ -121,9 +122,9 @@ export default function BodySlotPanel({ combat, equipment, parts, selectedCardId
           if (allowed && !allowed.includes(slot)) continue
           // Skip slots occupied by system cards
           if (combat.slotModifiers[slot] === '__system__') continue
-          // Dual Loader: allow if primary filled but secondary empty
+          // Feedback stacks with any modifier (uses secondary slot)
           if (combat.slotModifiers[slot] !== null) {
-            if (!hasDualLoader || combat.slotModifiers2[slot] !== null) continue
+            if ((!hasDualLoader && !isFeedback) || combat.slotModifiers2[slot] !== null) continue
           }
           if (!isOverride && !equipment[slot]) continue
           validSlots.add(slot)
