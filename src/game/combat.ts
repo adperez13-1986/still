@@ -640,8 +640,8 @@ export function playModifierCard(
       return result
     }
 
-    // Feedback always uses secondary slot so it stacks with primary modifiers
-    if (isFeedback && result.combat.slotModifiers[targetSlot] !== null) {
+    // Feedback always uses secondary slot so it never blocks primary modifiers
+    if (isFeedback) {
       result.combat.slotModifiers2[targetSlot] = instanceId
     } else if (result.combat.slotModifiers[targetSlot] !== null) {
       result.combat.slotModifiers2[targetSlot] = instanceId
