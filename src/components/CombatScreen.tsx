@@ -903,7 +903,7 @@ export default function CombatScreen() {
                   {sorted.map((card, i) => {
                     const cat = card.category.type === 'slot' ? card.category.modifier : 'System'
                     const catColor = card.category.type === 'slot'
-                      ? { Amplify: '#a29bfe', Redirect: '#74b9ff', Repeat: '#fd79a8', Override: '#e17055' }[card.category.modifier] ?? '#888'
+                      ? { Amplify: '#a29bfe', Redirect: '#74b9ff', Repeat: '#fd79a8', Override: '#e17055', Feedback: '#55efc4' }[card.category.modifier] ?? '#888'
                       : '#f1c40f'
                     return (
                       <div key={i} style={{
