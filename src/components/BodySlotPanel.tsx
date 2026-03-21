@@ -103,8 +103,15 @@ export default function BodySlotPanel({ combat, equipment, parts, selectedCardId
   if (selectedCardId) {
     const cardInst = combat.hand.find(c => c.instanceId === selectedCardId)
     if (cardInst) {
-      const def = ALL_CARDS[cardInst.definitionId]
-      if (def?.category.type === 'system') {
+      const baseDef = ALL_CARDS[cardInst.definitionId]
+      const def = cardInst.isUpgraded && baseDef?.upgraded ? baseDef.upgraded : baseDef
+      if (def?.freePlay && def.category.type === 'system' && def.category.effects.some(e => e.type === 'applyFeedback')) {
+        // Feedback system card: any slot with equipment is valid
+        validSlots = new Set<BodySlot>()
+        for (const slot of BODY_SLOTS) {
+          if (equipment[slot]) validSlots.add(slot)
+        }
+      } else if (def?.category.type === 'system') {
         // System card: only home slot, must be unoccupied (Feedback in secondary doesn't block)
         const homeSlot = def.category.homeSlot
         validSlots = new Set<BodySlot>()
@@ -173,6 +180,7 @@ export default function BodySlotPanel({ combat, equipment, parts, selectedCardId
             if (inst) modName2 = ALL_CARDS[inst.definitionId]?.name ?? null
           }
 
+          const hasPersistentFeedback = combat.persistentFeedback[slot]
           const proj = projections.find(p => p.slot === slot)
 
           if (compact) {
@@ -219,6 +227,7 @@ export default function BodySlotPanel({ combat, equipment, parts, selectedCardId
                 <span style={{ fontWeight: 'bold', minWidth: '48px', fontSize: '11px' }}>
                   {slot}
                   {isDisabled && <span style={{ color: '#e74c3c', marginLeft: '3px', fontSize: '9px' }}>OFF</span>}
+                  {hasPersistentFeedback && <span style={{ color: '#f39c12', marginLeft: '3px', fontSize: '9px' }}>FB</span>}
                 </span>
                 <span style={{ color: '#888', fontSize: '11px' }}>
                   {equip ? equip.name : '(empty)'}
@@ -310,6 +319,7 @@ export default function BodySlotPanel({ combat, equipment, parts, selectedCardId
                 <span style={{ fontWeight: 'bold', fontSize: '12px', color: '#e8e8e8' }}>
                   {slot}
                   {isDisabled && <span style={{ color: '#e74c3c', marginLeft: '4px', fontSize: '10px' }}>DISABLED</span>}
+                  {hasPersistentFeedback && <span style={{ color: '#f39c12', marginLeft: '4px', fontSize: '10px' }}>FEEDBACK</span>}
                 </span>
               </div>
 

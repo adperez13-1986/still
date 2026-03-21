@@ -21,12 +21,12 @@ import {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-export function makeEnemyInstance(def: EnemyDefinition, combatsCleared = 0): EnemyInstance {
+export function makeEnemyInstance(def: EnemyDefinition, combatsCleared = 0, rng: () => number = Math.random): EnemyInstance {
   // HP scaling: bosses stay at base HP, regular enemies scale +10% per combat cleared
   const hpMultiplier = def.isBoss ? 1.0 : 1 + combatsCleared * 0.10
   const scaledHealth = Math.floor(def.maxHealth * hpMultiplier)
   return {
-    instanceId: `${def.id}-${Math.random().toString(36).slice(2)}`,
+    instanceId: `${def.id}-${rng().toString(36).slice(2)}`,
     definitionId: def.id,
     currentHealth: scaledHealth,
     maxHealth: scaledHealth,
@@ -37,18 +37,18 @@ export function makeEnemyInstance(def: EnemyDefinition, combatsCleared = 0): Ene
   }
 }
 
-export function makeCardInstance(defId: string): CardInstance {
+export function makeCardInstance(defId: string, rng: () => number = Math.random): CardInstance {
   return {
-    instanceId: `${defId}-${Math.random().toString(36).slice(2)}`,
+    instanceId: `${defId}-${rng().toString(36).slice(2)}`,
     definitionId: defId,
     isUpgraded: false,
   }
 }
 
-function shuffle<T>(arr: T[]): T[] {
+function shuffle<T>(arr: T[], rng: () => number = Math.random): T[] {
   const a = [...arr]
   for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
+    const j = Math.floor(rng() * (i + 1))
     ;[a[i], a[j]] = [a[j], a[i]]
   }
   return a
@@ -111,6 +111,7 @@ export interface CombatContext {
   enemyDefs: Record<string, EnemyDefinition>
   targetEnemyId?: string
   combatsCleared: number
+  rng?: () => number
 }
 
 export interface ActionResult {
@@ -149,9 +150,10 @@ export function initCombat(
   drawCount: number,
   enemies: EnemyInstance[],
   startingStatuses: StatusEffect[] = [],
-  parts: BehavioralPartDefinition[] = []
+  parts: BehavioralPartDefinition[] = [],
+  rng: () => number = Math.random
 ): CombatState {
-  const drawPile = shuffle(deck)
+  const drawPile = shuffle(deck, rng)
   const hand: CardInstance[] = []
 
   const initialDraw = Math.min(drawCount, drawPile.length, 10)
@@ -186,6 +188,7 @@ export function initCombat(
     ablativeShellUsed: false,
     feedbackArmsBonus: 0,
     persistentBlock: 0,
+    persistentFeedback: { Head: false, Torso: false, Arms: false, Legs: false },
   }
 }
 
@@ -305,6 +308,14 @@ export function resolveBodyAction(
         else if (slot === 'Legs') result.feedbackType = 'legs'
         break
     }
+  }
+
+  // Persistent Feedback (from system card) — apply if not already set by a slot modifier
+  if (!result.feedbackType && combat.persistentFeedback[slot]) {
+    if (slot === 'Head') result.feedbackType = 'head'
+    else if (slot === 'Torso') result.feedbackType = 'torso'
+    else if (slot === 'Arms') result.feedbackType = 'arms'
+    else if (slot === 'Legs') result.feedbackType = 'legs'
   }
 
   // Amplify modifiers part bonus
@@ -509,7 +520,7 @@ export function executeBodyActions(ctx: CombatContext): CombatResult {
       // TORSO feedback: deal reflected damage to random alive enemy
       const alive = result.combat.enemies.filter(e => !e.isDefeated)
       if (alive.length > 0) {
-        const target = alive[Math.floor(Math.random() * alive.length)]
+        const target = alive[Math.floor((ctx.rng ?? Math.random)() * alive.length)]
         const reflected = actionResult.feedbackReflectDamage
         const absorbedRef = Math.min(target.block, reflected)
         target.block -= absorbedRef
@@ -541,7 +552,7 @@ export function executeBodyActions(ctx: CombatContext): CombatResult {
 
     // Apply card draw from body actions (skip HEAD — HEAD draw happens at turn start)
     if (actionResult.cardsDrawn > 0 && slot !== 'Head') {
-      drawCards(result.combat, actionResult.cardsDrawn)
+      drawCards(result.combat, actionResult.cardsDrawn, ctx.rng)
     }
 
     // Apply blockCost
@@ -652,7 +663,41 @@ export function playModifierCard(
     result.log.push(`Assigned ${card.name} to ${targetSlot}`)
   } else if (card.freePlay) {
     // Free-play system card — fires instantly without occupying a slot (e.g., companions)
-    result.log.push(`${card.name} played freely`)
+
+    // Handle applyFeedback: set persistent Feedback on the target slot
+    if (card.category.type === 'system' && card.category.effects.some(e => e.type === 'applyFeedback')) {
+      if (targetSlot) {
+        if (!ctx.equipment[targetSlot]) {
+          result.log.push(`Cannot apply Feedback to empty ${targetSlot} slot`)
+          result.combat.currentEnergy += card.energyCost // refund
+          return result
+        }
+        result.combat.persistentFeedback[targetSlot] = true
+        result.log.push(`${card.name}: ${targetSlot} gains permanent Feedback`)
+      } else {
+        result.log.push(`${card.name} requires a target slot`)
+        result.combat.currentEnergy += card.energyCost // refund
+        return result
+      }
+    } else {
+      result.log.push(`${card.name} played freely`)
+    }
+
+    // Remove freePlay card from hand and exhaust/discard
+    const fpHandIdx = result.combat.hand.findIndex(c => c.instanceId === instanceId)
+    if (fpHandIdx !== -1) {
+      const fpCardInst = result.combat.hand.splice(fpHandIdx, 1)[0]
+      if (card.keywords.includes('Exhaust')) {
+        result.combat.exhaustPile.push(fpCardInst)
+        for (const part of ctx.parts) {
+          if (part.trigger.type === 'onCardExhaust') {
+            applyPartEffect(part, result, ctx)
+          }
+        }
+      } else {
+        result.combat.discardPile.push(fpCardInst)
+      }
+    }
   } else {
     // System card — assigned to home slot, fires instantly during planning
     if (!targetSlot) {
@@ -687,7 +732,7 @@ export function playModifierCard(
     for (const effect of card.category.effects) {
       switch (effect.type) {
         case 'draw': {
-          const actualDrawn = drawCards(result.combat, effect.count)
+          const actualDrawn = drawCards(result.combat, effect.count, ctx.rng)
           result.log.push(`Drew ${actualDrawn}/${effect.count} card(s)`)
           break
         }
@@ -1062,9 +1107,9 @@ export function startTurn(ctx: CombatContext, inspiredBonus = 0): CombatResult {
   // Reset energy budget
   result.combat.currentEnergy = result.combat.maxEnergy
 
-  // Persistent block: decay by 25%, then add to block pool
+  // Persistent block: decay by 50%, then add to block pool
   if (result.combat.persistentBlock > 0) {
-    result.combat.persistentBlock = Math.floor(result.combat.persistentBlock * 0.75)
+    result.combat.persistentBlock = Math.floor(result.combat.persistentBlock * 0.50)
     result.combat.block = result.combat.persistentBlock
     if (result.combat.persistentBlock > 0) {
       result.log.push(`Persistent block: ${result.combat.persistentBlock} carried over`)
@@ -1084,10 +1129,10 @@ export function startTurn(ctx: CombatContext, inspiredBonus = 0): CombatResult {
   // Step 3: Reshuffle discard into draw pile if needed, then draw
   const drawCount = ctx.drawCount + inspiredBonus + headDrawBonus
   if (result.combat.drawPile.length < drawCount && result.combat.discardPile.length > 0) {
-    result.combat.drawPile = shuffle([...result.combat.drawPile, ...result.combat.discardPile])
+    result.combat.drawPile = shuffle([...result.combat.drawPile, ...result.combat.discardPile], ctx.rng)
     result.combat.discardPile = []
   }
-  const actualDrawn = drawCards(result.combat, drawCount)
+  const actualDrawn = drawCards(result.combat, drawCount, ctx.rng)
   result.log.push(`Drew ${actualDrawn}/${drawCount} cards`)
 
   // Set phase
@@ -1180,12 +1225,12 @@ export function projectSlotActions(
 
 // ─── Draw Cards Helper ──────────────────────────────────────────────────────
 
-function drawCards(combat: CombatState, count: number): number {
+function drawCards(combat: CombatState, count: number, rng?: () => number): number {
   let drawn = 0
   for (let i = 0; i < count; i++) {
     if (combat.drawPile.length === 0) {
       if (combat.discardPile.length === 0) break
-      combat.drawPile = shuffle(combat.discardPile)
+      combat.drawPile = shuffle(combat.discardPile, rng)
       combat.discardPile = []
     }
     if (combat.hand.length >= 10) break
@@ -1200,7 +1245,7 @@ function drawCards(combat: CombatState, count: number): number {
 function applyPartEffect(
   part: BehavioralPartDefinition,
   result: CombatResult,
-  _ctx: CombatContext
+  ctx: CombatContext
 ): void {
   // Emit animation event for part trigger
   result.combat.combatLog.push({ type: 'partTrigger', partId: part.id })
@@ -1214,7 +1259,7 @@ function applyPartEffect(
       // Applied during resolveBodyAction, not here
       break
     case 'drawCards': {
-      const actualDrawn = drawCards(result.combat, part.effect.count)
+      const actualDrawn = drawCards(result.combat, part.effect.count, ctx.rng)
       result.log.push(`${part.name}: drew ${actualDrawn}/${part.effect.count} card(s)`)
       break
     }
@@ -1231,7 +1276,7 @@ function applyPartEffect(
     case 'damageRandomEnemy': {
       const alive = result.combat.enemies.filter(e => !e.isDefeated)
       if (alive.length > 0) {
-        const target = alive[Math.floor(Math.random() * alive.length)]
+        const target = alive[Math.floor((ctx.rng ?? Math.random)() * alive.length)]
         const absorbed = Math.min(target.block, part.effect.value)
         target.block -= absorbed
         const actual = part.effect.value - absorbed

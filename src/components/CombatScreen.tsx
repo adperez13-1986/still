@@ -188,9 +188,14 @@ export default function CombatScreen() {
         const baseDef = ALL_CARDS[cardInst.definitionId]
         const def = cardInst.isUpgraded && baseDef?.upgraded ? baseDef.upgraded : baseDef
         if (def?.freePlay) {
-          const homeSlot = def.category.type === 'system' ? def.category.homeSlot : undefined
-          run.playCard(instanceId, homeSlot ?? 'Head', targetEnemyId ?? undefined)
-          return
+          // Feedback needs slot targeting — go through slot selection flow
+          const needsSlotTarget = def.category.type === 'system' &&
+            def.category.effects.some(e => e.type === 'applyFeedback')
+          if (!needsSlotTarget) {
+            const homeSlot = def.category.type === 'system' ? def.category.homeSlot : undefined
+            run.playCard(instanceId, homeSlot ?? 'Head', targetEnemyId ?? undefined)
+            return
+          }
         }
       }
     }

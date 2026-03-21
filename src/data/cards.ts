@@ -192,25 +192,29 @@ const echoProtocol: ModifierCardDefinition = {
 const feedback: ModifierCardDefinition = {
   id: 'feedback',
   name: 'Feedback',
-  description: 'Feedback: slot gains a secondary effect based on placement.',
-  energyCost: 2,
+  description: 'Choose a slot. It permanently gains a Feedback effect for this combat.',
+  energyCost: 3,
+  freePlay: true,
   category: {
-    type: 'slot',
-    modifier: 'Feedback',
-    effect: { type: 'feedback' },
+    type: 'system',
+    modifier: 'Utility',
+    effects: [{ type: 'applyFeedback' }],
+    homeSlot: 'Head', // unused — freePlay targets any slot
   },
-  keywords: [],
+  keywords: ['Exhaust'],
   upgraded: {
     id: 'feedback',
     name: 'Feedback+',
-    description: 'Feedback: slot gains a secondary effect based on placement.',
-    energyCost: 1,
+    description: 'Choose a slot. It permanently gains a Feedback effect for this combat.',
+    energyCost: 2,
+    freePlay: true,
     category: {
-      type: 'slot',
-      modifier: 'Feedback',
-      effect: { type: 'feedback' },
+      type: 'system',
+      modifier: 'Utility',
+      effects: [{ type: 'applyFeedback' }],
+      homeSlot: 'Head',
     },
-    keywords: [],
+    keywords: ['Exhaust'],
   },
 }
 

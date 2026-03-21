@@ -1,3 +1,5 @@
+## MODIFIED Requirements
+
 ### Requirement: Feedback card definition
 Feedback SHALL be a freePlay system card available in the S1 card pool. When played, it permanently applies the Feedback effect to the chosen slot for the rest of combat.
 

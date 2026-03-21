@@ -50,6 +50,7 @@ export type SystemEffect =
   | { type: 'removeDebuff'; count: number }
   | { type: 'gainBlock'; value: number }
   | { type: 'damage'; value: number; targetMode: TargetMode }
+  | { type: 'applyFeedback' }
 
 export type ModifierCardType =
   | { type: 'slot'; modifier: ModifierCategory; effect: SlotModifierEffect }
@@ -226,8 +227,9 @@ export interface CombatState {
   combatLog: CombatEvent[] // events from last execution for animation replay
   ablativeShellUsed: boolean // once-per-combat flag for Ablative Shell
   feedbackArmsBonus: number // bonus damage for Arms from HEAD Feedback (resets each execution)
-  persistentBlock: number // carried block from LEGS Feedback (decays 25% per turn)
+  persistentBlock: number // carried block from LEGS Feedback (decays 50% per turn)
   _legsFeedbackBlock?: number // temp: block from LEGS this turn to add to persistentBlock at end of turn
+  persistentFeedback: Record<BodySlot, boolean> // permanent Feedback effects applied via system card
 }
 
 export interface RunState {
