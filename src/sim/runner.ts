@@ -20,7 +20,6 @@ import {
   startTurn,
   allEnemiesDefeated,
   isStillDefeated,
-  getStatus,
   type CombatContext,
   type CombatResult,
 } from '../game/combat'

@@ -155,7 +155,7 @@ function reducer(state: HarnessState, action: HarnessAction): HarnessState {
 
     case 'START_COMBAT': {
       const deck = buildDeck(state.scenario.cardQuantities)
-      const enemies = state.scenario.enemies.map(makeEnemyInstance)
+      const enemies = state.scenario.enemies.map(e => makeEnemyInstance(e))
       const combat = initCombat(deck, state.scenario.drawCount, enemies)
       return {
         ...state,
@@ -341,7 +341,7 @@ function reducer(state: HarnessState, action: HarnessAction): HarnessState {
 
     case 'RESET_COMBAT': {
       const deck = buildDeck(state.scenario.cardQuantities)
-      const enemies = state.scenario.enemies.map(makeEnemyInstance)
+      const enemies = state.scenario.enemies.map(e => makeEnemyInstance(e))
       const combat = initCombat(deck, state.scenario.drawCount, enemies)
       return {
         ...state,

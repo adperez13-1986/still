@@ -36,7 +36,7 @@ function parseArgs(argv: string[]) {
 
 type Preset = 's1' | 's1-elite' | 's1-boss' | 's2' | 's2-elite' | 's2-boss'
 
-function resolveEncounterPreset(preset: string, rng: () => number): EnemyDefinition[][] {
+function resolveEncounterPreset(preset: string, _rng: () => number): EnemyDefinition[][] {
   const encounters = (() => {
     switch (preset as Preset) {
       case 's1':       return SECTOR1_ENCOUNTERS
@@ -114,7 +114,7 @@ function resolveDeck(spec: string | undefined): string[] {
 // ─── Main ────────────────────────────────────────────────────────────────────
 
 function main() {
-  const opts = parseArgs(process.argv)
+  const opts = parseArgs((globalThis as any).process.argv)
 
   const runs = parseInt(opts['runs'] ?? '1000', 10)
   const seed = opts['seed'] ? parseInt(opts['seed'], 10) : Math.floor(Math.random() * 1_000_000)

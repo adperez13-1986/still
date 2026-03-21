@@ -112,7 +112,7 @@ function scoreSlotCard(
   def: ModifierCardDefinition,
   slot: BodySlot,
   ctx: CombatContext,
-  threat: number,
+  _threat: number,
   isDefensive: boolean,
   killOrDie: boolean,
 ): number {
@@ -182,7 +182,7 @@ function scoreSlotCard(
 function scoreSystemCard(
   def: ModifierCardDefinition,
   ctx: CombatContext,
-  threat: number,
+  _threat: number,
   isDefensive: boolean,
   shouldDig: boolean,
   killOrDie: boolean,
