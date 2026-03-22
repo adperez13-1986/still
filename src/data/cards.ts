@@ -221,7 +221,7 @@ const feedback: ModifierCardDefinition = {
 const retaliate: ModifierCardDefinition = {
   id: 'retaliate',
   name: 'Retaliate',
-  description: 'This turn, damage absorbed by block is dealt back to the attacker.',
+  description: 'This turn, all damage you receive is dealt back to the attacker.',
   energyCost: 2,
   category: {
     type: 'slot',
@@ -232,7 +232,7 @@ const retaliate: ModifierCardDefinition = {
   upgraded: {
     id: 'retaliate',
     name: 'Retaliate+',
-    description: 'This turn, damage absorbed by block is dealt back to the attacker.',
+    description: 'This turn, all damage you receive is dealt back to the attacker.',
     energyCost: 1,
     category: {
       type: 'slot',

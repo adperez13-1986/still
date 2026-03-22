@@ -3,13 +3,13 @@
 ### Requirement: Retaliate reflects absorbed block damage during enemy turn
 When Retaliate is active (Torso has Retaliate modifier assigned), damage absorbed by the player's block during enemy attacks SHALL be dealt back to the attacking enemy.
 
-#### Scenario: Enemy attacks into block with Retaliate active
-- **WHEN** an enemy attacks and the player's block absorbs some damage, and Retaliate is active
-- **THEN** the absorbed amount SHALL be dealt as damage to the attacking enemy (reduced by enemy block if any)
+#### Scenario: Enemy attacks with Retaliate active
+- **WHEN** an enemy attacks and Retaliate is active
+- **THEN** the FULL incoming damage (blocked + unblocked) SHALL be dealt as damage to the attacking enemy
 
-#### Scenario: Retaliate with no block
-- **WHEN** an enemy attacks and the player has 0 block, and Retaliate is active
-- **THEN** no retaliation damage is dealt (nothing was absorbed)
+#### Scenario: Retaliate with no damage
+- **WHEN** an enemy attacks for 0 damage and Retaliate is active
+- **THEN** no retaliation damage is dealt
 
 #### Scenario: Retaliate resets each execution phase
 - **WHEN** a new execution phase begins

@@ -356,6 +356,15 @@ const reactiveFrame: BehavioralPartDefinition = {
   rarity: 'rare',
 }
 
+const voltageCore: BehavioralPartDefinition = {
+  id: 'voltage-core',
+  name: 'Voltage Core',
+  description: 'When you take damage, deal damage equal to block consumed back to the attacker.',
+  trigger: { type: 'onDamageTaken' },
+  effect: { type: 'voltageCounter' },
+  rarity: 'rare',
+}
+
 const salvageProtocol: BehavioralPartDefinition = {
   id: 'salvage-protocol',
   name: 'Salvage Protocol',
@@ -452,6 +461,7 @@ export const SECTOR2_PART_POOL: BehavioralPartDefinition[] = [
   reactiveFrame,
   salvageProtocol, emptyChamber,
   failsafeArmor, cryoEngine, gyroStabilizer, meltdownCorePart,
+  voltageCore,
 ]
 
 export const RUN_WARPING_PARTS: BehavioralPartDefinition[] = [

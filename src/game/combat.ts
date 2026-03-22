@@ -982,28 +982,40 @@ export function executeEnemyTurn(ctx: CombatContext): CombatResult {
         const hitsLabel = hitCount > 1 ? ` (${hitCount} hits)` : ''
         result.log.push(`${def.name} attacks for ${totalDamage} (${totalBlocked} blocked)${hitsLabel}`)
 
-        // Retaliate: deal absorbed damage back to attacker
-        if (result.combat.retaliateActive && totalBlocked > 0) {
-          const retAbsorbed = Math.min(enemy.block, totalBlocked)
+        // Retaliate: reflect ALL incoming damage back to attacker
+        const totalIncoming = totalDamage + totalBlocked
+        if (result.combat.retaliateActive && totalIncoming > 0) {
+          const retAbsorbed = Math.min(enemy.block, totalIncoming)
           enemy.block -= retAbsorbed
-          const retActual = totalBlocked - retAbsorbed
+          const retActual = totalIncoming - retAbsorbed
           enemy.currentHealth = Math.max(0, enemy.currentHealth - retActual)
           if (enemy.currentHealth === 0) enemy.isDefeated = true
           result.log.push(`Retaliate: dealt ${retActual} damage back to ${def.name}`)
         }
 
-        // Thorns: deal flat damage to attacker when player takes damage
-        if (totalDamage > 0) {
-          for (const part of ctx.parts) {
-            if (part.trigger.type === 'onDamageTaken' && part.effect.type === 'thorns') {
-              const thornsDmg = part.effect.value
-              const thornsAbsorbed = Math.min(enemy.block, thornsDmg)
-              enemy.block -= thornsAbsorbed
-              const thornsActual = thornsDmg - thornsAbsorbed
-              enemy.currentHealth = Math.max(0, enemy.currentHealth - thornsActual)
-              if (enemy.currentHealth === 0) enemy.isDefeated = true
-              result.log.push(`${part.name}: dealt ${thornsActual} thorns to ${def.name}`)
-            }
+        // Counter parts: trigger on damage taken
+        for (const part of ctx.parts) {
+          if (part.trigger.type !== 'onDamageTaken') continue
+
+          if (part.effect.type === 'thorns' && totalDamage > 0) {
+            // Thorns: deal flat damage to attacker when player takes HP damage
+            const thornsDmg = part.effect.value
+            const thornsAbsorbed = Math.min(enemy.block, thornsDmg)
+            enemy.block -= thornsAbsorbed
+            const thornsActual = thornsDmg - thornsAbsorbed
+            enemy.currentHealth = Math.max(0, enemy.currentHealth - thornsActual)
+            if (enemy.currentHealth === 0) enemy.isDefeated = true
+            result.log.push(`${part.name}: dealt ${thornsActual} thorns to ${def.name}`)
+          }
+
+          if (part.effect.type === 'voltageCounter' && totalBlocked > 0) {
+            // Voltage Core: deal block consumed as damage to attacker
+            const vcAbsorbed = Math.min(enemy.block, totalBlocked)
+            enemy.block -= vcAbsorbed
+            const vcActual = totalBlocked - vcAbsorbed
+            enemy.currentHealth = Math.max(0, enemy.currentHealth - vcActual)
+            if (enemy.currentHealth === 0) enemy.isDefeated = true
+            result.log.push(`${part.name}: dealt ${vcActual} voltage damage to ${def.name}`)
           }
         }
 

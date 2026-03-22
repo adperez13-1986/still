@@ -113,6 +113,7 @@ export type PartEffect =
   | { type: 'bonusEnergy'; value: number }
   | { type: 'reshuffleDiscard' }
   | { type: 'thorns'; value: number }
+  | { type: 'voltageCounter' }
 
 export interface BehavioralPartDefinition {
   id: string
