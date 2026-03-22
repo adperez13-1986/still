@@ -336,6 +336,15 @@ const ablativeShell: BehavioralPartDefinition = {
 // Pressure Valve removed — onWouldOverheat trigger no longer exists
 // Flux Capacitor removed — onThresholdCross trigger no longer exists
 
+const thornsCore: BehavioralPartDefinition = {
+  id: 'thorns-core',
+  name: 'Thorns Core',
+  description: 'When you take damage, deal 3 damage to the attacker.',
+  trigger: { type: 'onDamageTaken' },
+  effect: { type: 'thorns', value: 3 },
+  rarity: 'uncommon',
+}
+
 // ─── Sector 2 Behavioral Parts ──────────────────────────────────────────────
 
 const reactiveFrame: BehavioralPartDefinition = {
@@ -436,7 +445,7 @@ export const EQUIPMENT: EquipmentDefinition[] = [
 ]
 
 export const SECTOR1_PART_POOL: BehavioralPartDefinition[] = [
-  frostCore, scrapRecycler, ablativeShell,
+  frostCore, scrapRecycler, ablativeShell, thornsCore,
 ]
 
 export const SECTOR2_PART_POOL: BehavioralPartDefinition[] = [

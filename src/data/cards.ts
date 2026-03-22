@@ -218,6 +218,64 @@ const feedback: ModifierCardDefinition = {
   },
 }
 
+const retaliate: ModifierCardDefinition = {
+  id: 'retaliate',
+  name: 'Retaliate',
+  description: 'This turn, damage absorbed by block is dealt back to the attacker.',
+  energyCost: 2,
+  category: {
+    type: 'slot',
+    modifier: 'Retaliate',
+    effect: { type: 'retaliate' },
+  },
+  keywords: [],
+  upgraded: {
+    id: 'retaliate',
+    name: 'Retaliate+',
+    description: 'This turn, damage absorbed by block is dealt back to the attacker.',
+    energyCost: 1,
+    category: {
+      type: 'slot',
+      modifier: 'Retaliate',
+      effect: { type: 'retaliate' },
+    },
+    keywords: [],
+  },
+}
+
+const fortify: ModifierCardDefinition = {
+  id: 'fortify',
+  name: 'Fortify',
+  description: 'Gain 6 Block. Deal 6 damage to all enemies.',
+  energyCost: 2,
+  category: {
+    type: 'system',
+    modifier: 'Utility',
+    effects: [
+      { type: 'gainBlock', value: 6 },
+      { type: 'damage', value: 6, targetMode: 'all_enemies' },
+    ],
+    homeSlot: 'Torso',
+  },
+  keywords: [],
+  upgraded: {
+    id: 'fortify',
+    name: 'Fortify+',
+    description: 'Gain 8 Block. Deal 8 damage to all enemies.',
+    energyCost: 2,
+    category: {
+      type: 'system',
+      modifier: 'Utility',
+      effects: [
+        { type: 'gainBlock', value: 8 },
+        { type: 'damage', value: 8, targetMode: 'all_enemies' },
+      ],
+      homeSlot: 'Torso',
+    },
+    keywords: [],
+  },
+}
+
 const shieldBash: ModifierCardDefinition = {
   id: 'shield-bash',
   name: 'Shield Bash',
@@ -1087,13 +1145,13 @@ export const SECTOR1_CARD_POOL: ModifierCardDefinition[] = [
   deepFreeze, heatVent, quickScan, thermalSurge, meltdown,
   fieldRepair, targetLock, armorProtocol, powerSurge,
   precisionStrike, coldEfficiency, fuelTheFire, heatSurge, recklessCharge,
-  thermalFlux, overclock,
+  thermalFlux, overclock, retaliate,
 ]
 
 export const SECTOR2_CARD_POOL: ModifierCardDefinition[] = [
   failsafeProtocol, reroute,
   glacierLance, controlledBurn, fluxSpike, thermalEquilibrium,
-  salvageBurst, cascade, resonance,
+  salvageBurst, cascade, resonance, fortify,
 ]
 
 const allCardList: ModifierCardDefinition[] = [
@@ -1106,6 +1164,7 @@ const allCardList: ModifierCardDefinition[] = [
   failsafeProtocol, reroute,
   glacierLance, controlledBurn, fluxSpike, thermalEquilibrium,
   armorProtocol, salvageBurst, cascade, resonance,
+  retaliate, fortify,
   yanah, yuri,
 ]
 

@@ -175,6 +175,12 @@ function scoreSlotCard(
       if (slot === 'Legs') return isDefensive ? 6 : 2         // persistent block
       return 2
     }
+    case 'retaliate': {
+      // High value when expecting lots of incoming damage (defensive mode)
+      // Score based on expected block that will absorb: Torso base block value
+      const torsoBlock = ctx.equipment.Torso?.action.type === 'block' ? ctx.equipment.Torso.action.baseValue : 0
+      return isDefensive ? torsoBlock * 2.5 : torsoBlock * 1.0
+    }
   }
 }
 

@@ -33,7 +33,7 @@ export interface EquipmentDefinition {
 
 export type Keyword = 'Exhaust' | 'Innate' | 'Retain'
 
-export type ModifierCategory = 'Amplify' | 'Redirect' | 'Repeat' | 'Override' | 'Feedback'
+export type ModifierCategory = 'Amplify' | 'Redirect' | 'Repeat' | 'Override' | 'Feedback' | 'Retaliate'
 export type SystemCategory = 'Draw' | 'Utility' | 'Conditional'
 
 export type SlotModifierEffect =
@@ -42,6 +42,7 @@ export type SlotModifierEffect =
   | { type: 'repeat'; extraFirings: number }
   | { type: 'override'; action: BodyAction }
   | { type: 'feedback' }
+  | { type: 'retaliate' }
 
 export type SystemEffect =
   | { type: 'draw'; count: number }
@@ -111,6 +112,7 @@ export type PartEffect =
   | { type: 'dualLoader' }
   | { type: 'bonusEnergy'; value: number }
   | { type: 'reshuffleDiscard' }
+  | { type: 'thorns'; value: number }
 
 export interface BehavioralPartDefinition {
   id: string
@@ -230,6 +232,7 @@ export interface CombatState {
   persistentBlock: number // carried block from LEGS Feedback (decays 50% per turn)
   _legsFeedbackBlock?: number // temp: block from LEGS this turn to add to persistentBlock at end of turn
   persistentFeedback: Record<BodySlot, boolean> // permanent Feedback effects applied via system card
+  retaliateActive: boolean // whether Retaliate modifier is active this turn
 }
 
 export interface RunState {

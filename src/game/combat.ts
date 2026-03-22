@@ -91,6 +91,7 @@ export function getAllowedSlots(card: ModifierCardDefinition): BodySlot[] | null
     case 'redirect': return ['Arms']
     case 'repeat':   return null // universal
     case 'feedback': return null // universal — slot determines behavior
+    case 'retaliate': return ['Torso'] // counter build: Torso only
     case 'override':
       if (effect.action.type === 'damage') return ['Arms']
       if (effect.action.type === 'block')  return ['Torso']
@@ -189,6 +190,7 @@ export function initCombat(
     feedbackArmsBonus: 0,
     persistentBlock: 0,
     persistentFeedback: { Head: false, Torso: false, Arms: false, Legs: false },
+    retaliateActive: false,
   }
 }
 
@@ -306,6 +308,9 @@ export function resolveBodyAction(
         else if (slot === 'Torso') result.feedbackType = 'torso'
         else if (slot === 'Arms') result.feedbackType = 'arms'
         else if (slot === 'Legs') result.feedbackType = 'legs'
+        break
+      case 'retaliate':
+        // Flag is set on combat state during executeBodyActions
         break
     }
   }
@@ -425,9 +430,10 @@ export function executeBodyActions(ctx: CombatContext): CombatResult {
     log: [],
   }
 
-  // Reset feedback state for this execution
+  // Reset feedback and retaliate state for this execution
   result.combat.feedbackArmsBonus = 0
   result.combat._legsFeedbackBlock = 0
+  result.combat.retaliateActive = false
 
   // Fire onPlanningEnd part triggers (Empty Chamber: block per unplayed card)
   for (const part of ctx.parts) {
@@ -474,6 +480,21 @@ export function executeBodyActions(ctx: CombatContext): CombatResult {
       ctx.parts,
       modInstanceId2
     )
+
+    // Retaliate: mark active when Torso fires with retaliate modifier
+    if (slot === 'Torso') {
+      const mods = [modInstanceId, modInstanceId2].filter(Boolean)
+      for (const mId of mods) {
+        const card = findAssignedCard(result.combat, mId!)
+        if (card) {
+          const def = ctx.cardDefs[card.definitionId]
+          if (def?.category.type === 'slot' && def.category.effect.type === 'retaliate') {
+            result.combat.retaliateActive = true
+            result.log.push('Retaliate: damage absorbed by block will be dealt back')
+          }
+        }
+      }
+    }
 
     // HEAD Feedback: apply bonus to combat state for Arms to read later
     if (actionResult.feedbackHeadBonus && actionResult.feedbackHeadBonus > 0) {
@@ -960,6 +981,31 @@ export function executeEnemyTurn(ctx: CombatContext): CombatResult {
         eventBlocked = totalBlocked
         const hitsLabel = hitCount > 1 ? ` (${hitCount} hits)` : ''
         result.log.push(`${def.name} attacks for ${totalDamage} (${totalBlocked} blocked)${hitsLabel}`)
+
+        // Retaliate: deal absorbed damage back to attacker
+        if (result.combat.retaliateActive && totalBlocked > 0) {
+          const retAbsorbed = Math.min(enemy.block, totalBlocked)
+          enemy.block -= retAbsorbed
+          const retActual = totalBlocked - retAbsorbed
+          enemy.currentHealth = Math.max(0, enemy.currentHealth - retActual)
+          if (enemy.currentHealth === 0) enemy.isDefeated = true
+          result.log.push(`Retaliate: dealt ${retActual} damage back to ${def.name}`)
+        }
+
+        // Thorns: deal flat damage to attacker when player takes damage
+        if (totalDamage > 0) {
+          for (const part of ctx.parts) {
+            if (part.trigger.type === 'onDamageTaken' && part.effect.type === 'thorns') {
+              const thornsDmg = part.effect.value
+              const thornsAbsorbed = Math.min(enemy.block, thornsDmg)
+              enemy.block -= thornsAbsorbed
+              const thornsActual = thornsDmg - thornsAbsorbed
+              enemy.currentHealth = Math.max(0, enemy.currentHealth - thornsActual)
+              if (enemy.currentHealth === 0) enemy.isDefeated = true
+              result.log.push(`${part.name}: dealt ${thornsActual} thorns to ${def.name}`)
+            }
+          }
+        }
 
         if (intent.type === 'AttackDebuff' && intent.status) {
           result.combat.statusEffects = addStatus(
