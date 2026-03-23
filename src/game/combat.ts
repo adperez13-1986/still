@@ -304,10 +304,12 @@ export function resolveBodyAction(
         repeatCount += effect.extraFirings
         break
       case 'feedback':
-        if (slot === 'Head') result.feedbackType = 'head'
-        else if (slot === 'Torso') result.feedbackType = 'torso'
-        else if (slot === 'Arms') result.feedbackType = 'arms'
-        else if (slot === 'Legs') result.feedbackType = 'legs'
+        if (!isOverride) {
+          if (slot === 'Head') result.feedbackType = 'head'
+          else if (slot === 'Torso') result.feedbackType = 'torso'
+          else if (slot === 'Arms') result.feedbackType = 'arms'
+          else if (slot === 'Legs') result.feedbackType = 'legs'
+        }
         break
       case 'retaliate':
         // Flag is set on combat state during executeBodyActions
@@ -316,7 +318,8 @@ export function resolveBodyAction(
   }
 
   // Persistent Feedback (from system card) — apply if not already set by a slot modifier
-  if (!result.feedbackType && combat.persistentFeedback[slot]) {
+  // Feedback does NOT trigger on Override actions (Override replaces the equipment, Feedback is equipment-based)
+  if (!result.feedbackType && !isOverride && combat.persistentFeedback[slot]) {
     if (slot === 'Head') result.feedbackType = 'head'
     else if (slot === 'Torso') result.feedbackType = 'torso'
     else if (slot === 'Arms') result.feedbackType = 'arms'
