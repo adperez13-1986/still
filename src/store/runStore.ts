@@ -11,6 +11,7 @@ import type {
   CombatState,
   GridMaze,
 } from '../game/types'
+import { MAX_PARTS } from '../game/types'
 
 import {
   initCombat,
@@ -54,6 +55,7 @@ interface RunActions {
   // Parts
   addPart: (part: BehavioralPartDefinition) => void
   removePart: (partId: string) => void
+  replacePart: (oldPartId: string, newPart: BehavioralPartDefinition) => void
 
   // Shards
   addShards: (amount: number) => void
@@ -182,6 +184,7 @@ export const useRunStore = create<RunState & RunActions>()(
     addPart: (part) =>
       set((state) => {
         if (state.parts.some(p => p.id === part.id)) return
+        if (state.parts.length >= MAX_PARTS) return
         state.parts.push(part)
       }),
 
@@ -189,6 +192,14 @@ export const useRunStore = create<RunState & RunActions>()(
       set((state) => {
         const idx = state.parts.findIndex((p) => p.id === partId)
         if (idx !== -1) state.parts.splice(idx, 1)
+      }),
+
+    replacePart: (oldPartId, newPart) =>
+      set((state) => {
+        const idx = state.parts.findIndex((p) => p.id === oldPartId)
+        if (idx !== -1) {
+          state.parts[idx] = newPart
+        }
       }),
 
     addShards: (amount) =>

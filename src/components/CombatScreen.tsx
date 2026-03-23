@@ -8,7 +8,8 @@ import { collapseRandomRoom } from '../game/mapGen'
 import { makeCardInstance, projectSlotActions } from '../game/combat'
 import { ALL_PARTS, ALL_EQUIPMENT, getPartSector } from '../data/parts'
 import { ALL_CARDS, SECTOR1_CARD_POOL, SECTOR2_CARD_POOL } from '../data/cards'
-import type { BodySlot, EquipmentDefinition, CombatEvent } from '../game/types'
+import type { BodySlot, EquipmentDefinition, BehavioralPartDefinition, CombatEvent } from '../game/types'
+import { MAX_PARTS } from '../game/types'
 
 import useIsMobile from '../hooks/useIsMobile'
 import StillPanel from './StillPanel'
@@ -32,6 +33,7 @@ export default function CombatScreen() {
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
   const [targetEnemyId, setTargetEnemyId] = useState<string | null>(null)
   const [equipConflicts, setEquipConflicts] = useState<EquipmentDefinition[]>([])
+  const [partReplacements, setPartReplacements] = useState<BehavioralPartDefinition[]>([])
   const [pendingPostReward, setPendingPostReward] = useState<(() => void) | null>(null)
   const [infoTab, setInfoTab] = useState<'deck' | 'equips' | null>(null)
   const [pileView, setPileView] = useState<'draw' | 'discard' | 'exhaust' | null>(null)
@@ -233,6 +235,74 @@ export default function CombatScreen() {
     run.executeTurn(aliveTarget ?? undefined)
   }, [run, combat, targetEnemyId, animating])
 
+  // ─── Part replacement resolution ────────────────────────────────
+  if (partReplacements.length > 0 && pendingPostReward) {
+    const incoming = partReplacements[0]
+
+    const resolvePartChoice = (replacePartId: string | null) => {
+      if (replacePartId) {
+        run.replacePart(replacePartId, incoming)
+      }
+      const remaining = partReplacements.slice(1)
+      if (remaining.length > 0) {
+        setPartReplacements(remaining)
+      } else {
+        setPartReplacements([])
+        pendingPostReward()
+        setPendingPostReward(null)
+      }
+    }
+
+    return (
+      <div style={{
+        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+        zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        backgroundColor: 'rgba(0,0,0,0.7)',
+      }}>
+        <div style={{
+          backgroundColor: '#1e1e2e', border: '2px solid #4a4a6a', borderRadius: '12px',
+          padding: '20px', maxWidth: '340px', width: '90%', color: '#e8e8e8',
+        }}>
+          <div style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '12px', color: '#f39c12' }}>
+            Parts Full (4/4)
+          </div>
+          <div style={{ fontSize: '12px', marginBottom: '8px', color: '#aaa' }}>New part found:</div>
+          <div style={{
+            padding: '8px', backgroundColor: 'rgba(243,156,18,0.15)', border: '1px solid #f39c12',
+            borderRadius: '6px', marginBottom: '12px',
+          }}>
+            <div style={{ fontWeight: 'bold', fontSize: '13px' }}>{incoming.name}</div>
+            <div style={{ fontSize: '11px', color: '#aaa', marginTop: '2px' }}>{incoming.description}</div>
+          </div>
+          <div style={{ fontSize: '12px', marginBottom: '8px', color: '#aaa' }}>Replace one:</div>
+          {run.parts.map(part => (
+            <div
+              key={part.id}
+              onClick={() => resolvePartChoice(part.id)}
+              style={{
+                padding: '8px', marginBottom: '4px', backgroundColor: '#16213e',
+                border: '1px solid #2c3e50', borderRadius: '6px', cursor: 'pointer',
+              }}
+            >
+              <div style={{ fontWeight: 'bold', fontSize: '12px' }}>{part.name}</div>
+              <div style={{ fontSize: '10px', color: '#888', marginTop: '2px' }}>{part.description}</div>
+            </div>
+          ))}
+          <div
+            onClick={() => resolvePartChoice(null)}
+            style={{
+              padding: '8px', marginTop: '8px', textAlign: 'center',
+              backgroundColor: '#2c3e50', borderRadius: '6px', cursor: 'pointer',
+              fontSize: '12px', color: '#aaa',
+            }}
+          >
+            Skip
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   // ─── Equipment conflict resolution ──────────────────────────────
   if (equipConflicts.length > 0 && pendingPostReward) {
     const incoming = equipConflicts[0]
@@ -328,11 +398,17 @@ export default function CombatScreen() {
             const shardBonus = permanent.workshopUpgrades['sharp-eye'] ? Math.floor(totalShards * 0.2) : 0
             if (shardBonus > 0) run.addShards(shardBonus)
           }
-          // Auto-add part drops (unless skipped)
+          // Add part drops — auto-add if under limit, queue replacements if at capacity
+          const pendingParts: BehavioralPartDefinition[] = []
           for (const drop of partDrops) {
             if (drop.type === 'part' && !skippedPartSet.has(drop.partId)) {
               const partDef = ALL_PARTS[drop.partId]
-              if (partDef) run.addPart(partDef)
+              if (!partDef) continue
+              if (run.parts.length < MAX_PARTS) {
+                run.addPart(partDef)
+              } else {
+                pendingParts.push(partDef)
+              }
             }
           }
           // Split equipment drops: auto-equip empty slots, collect conflicts (unless skipped)
@@ -434,8 +510,20 @@ export default function CombatScreen() {
             useRunStore.getState().saveRun()
           }
 
-          // If there are equipment conflicts, show comparison overlay(s) before finishing
-          if (conflicts.length > 0) {
+          // Chain: part replacements → equipment conflicts → finishReward
+          const afterPartReplacements = () => {
+            if (conflicts.length > 0) {
+              setEquipConflicts(conflicts)
+              setPendingPostReward(() => finishReward)
+            } else {
+              finishReward()
+            }
+          }
+
+          if (pendingParts.length > 0) {
+            setPartReplacements(pendingParts)
+            setPendingPostReward(() => afterPartReplacements)
+          } else if (conflicts.length > 0) {
             setEquipConflicts(conflicts)
             setPendingPostReward(() => finishReward)
           } else {

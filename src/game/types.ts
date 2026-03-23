@@ -1,6 +1,7 @@
 // ─── Energy System ──────────────────────────────────────────────────────────
 
 export const DEFAULT_MAX_ENERGY = 8
+export const MAX_PARTS = 4
 
 // ─── Body System ────────────────────────────────────────────────────────────
 
