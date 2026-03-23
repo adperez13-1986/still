@@ -267,9 +267,9 @@ const thermalLeech: EnemyDefinition = {
   name: 'Thermal Leech',
   maxHealth: 55,
   intentPattern: [
-    { type: 'Attack', value: 10 },
-    { type: 'Attack', value: 10 },
-    { type: 'Block', value: 8 },
+    { type: 'Attack', value: 12 },
+    { type: 'AttackDebuff', value: 10, status: 'Weak', statusStacks: 1 },
+    { type: 'Attack', value: 14 },
   ],
   dropPool: [
     { type: 'shards', amount: 18, weight: 1 },
@@ -293,12 +293,11 @@ const wireJammer: EnemyDefinition = {
 const slagHeap: EnemyDefinition = {
   id: 'slag-heap',
   name: 'Slag Heap',
-  maxHealth: 75,
+  maxHealth: 80,
   intentPattern: [
-    { type: 'Attack', value: 14 },
-    { type: 'Block', value: 12 },
-    { type: 'Buff', value: 2, status: 'Strength' },
-    { type: 'Attack', value: 14 },
+    { type: 'Attack', value: 16 },
+    { type: 'AttackDebuff', value: 12, status: 'Vulnerable', statusStacks: 1 },
+    { type: 'Attack', value: 18 },
   ],
   dropPool: [
     { type: 'shards', amount: 22, weight: 2 },
@@ -326,9 +325,9 @@ const phaseDrone: EnemyDefinition = {
   name: 'Phase Drone',
   maxHealth: 50,
   intentPattern: [
-    { type: 'Attack', value: 9 },
-    { type: 'DisableSlot', value: 0, targetSlot: 'Head' },
-    { type: 'Attack', value: 9 },
+    { type: 'Attack', value: 13 },
+    { type: 'DisableSlot', value: 0, targetSlot: 'Arms' },
+    { type: 'Attack', value: 15 },
   ],
   dropPool: [
     { type: 'shards', amount: 17, weight: 1 },
@@ -341,9 +340,9 @@ const furnaceTick: EnemyDefinition = {
   name: 'Furnace Tick',
   maxHealth: 22,
   intentPattern: [
-    { type: 'Attack', value: 6 },
-    { type: 'Attack', value: 6 },
-    { type: 'Block', value: 5 },
+    { type: 'Attack', value: 8 },
+    { type: 'Attack', value: 8 },
+    { type: 'Attack', value: 5, hits: 2 },
   ],
   dropPool: [
     { type: 'shards', amount: 8, weight: 1 },
@@ -353,11 +352,11 @@ const furnaceTick: EnemyDefinition = {
 const staticFrame: EnemyDefinition = {
   id: 'static-frame',
   name: 'Static Frame',
-  maxHealth: 65,
+  maxHealth: 55,
   intentPattern: [
-    { type: 'Attack', value: 11 },
-    { type: 'Block', value: 10 },
-    { type: 'AttackDebuff', value: 9, status: 'Weak', statusStacks: 1 },
+    { type: 'Attack', value: 14 },
+    { type: 'AttackDebuff', value: 11, status: 'Weak', statusStacks: 2 },
+    { type: 'Attack', value: 16 },
   ],
   dropPool: [
     { type: 'shards', amount: 20, weight: 1 },
@@ -370,9 +369,9 @@ const conduitSpider: EnemyDefinition = {
   name: 'Conduit Spider',
   maxHealth: 48,
   intentPattern: [
-    { type: 'Attack', value: 10 },
-    { type: 'DisableSlot', value: 0, targetSlot: 'Legs' },
-    { type: 'Debuff', value: 2, status: 'Vulnerable' },
+    { type: 'Attack', value: 12 },
+    { type: 'DisableSlot', value: 0, targetSlot: 'Arms' },
+    { type: 'AttackDebuff', value: 10, status: 'Vulnerable', statusStacks: 2 },
   ],
   dropPool: [
     { type: 'shards', amount: 17, weight: 1 },
