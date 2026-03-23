@@ -68,27 +68,27 @@ export default function RunScreen() {
         equipment: Record<string, string>
       }> = {
         s2: {
-          // Generic S2: mixed system cards across all slots
-          deck: ['overcharge', 'spread-shot', 'quick-scan', 'thermal-flux', 'glacier-lance', 'failsafe-protocol', 'salvage-burst'],
-          parts: ['thermal-oscillator', 'scrap-recycler'],
-          equipment: { Head: 'calibrated-optics', Torso: 'reactive-plating', Arms: 'overclocked-pistons', Legs: 'coolant-injector' },
+          // Generic S2: mixed offense/defense
+          deck: ['overcharge', 'spread-shot', 'echo-protocol', 'feedback', 'shield-bash', 'heat-vent'],
+          parts: ['frost-core', 'scrap-recycler'],
+          equipment: { Head: 'calibrated-optics', Torso: 'thermal-plating', Arms: 'overclocked-pistons', Legs: 'adaptive-treads' },
         },
         cool: {
-          // Cool Runner: HEAD draw (cold-efficiency), LEGS cooling (thermal-equilibrium, deep-freeze), ARMS damage (glacier-lance)
-          deck: ['cold-efficiency', 'deep-freeze', 'thermal-equilibrium', 'glacier-lance', 'precision-strike', 'armor-protocol'],
-          parts: ['zero-point-field', 'cryo-engine'],
+          // Defensive / block-focused build
+          deck: ['echo-protocol', 'armor-protocol', 'feedback', 'emergency-shield', 'deep-freeze', 'shield-bash'],
+          parts: ['frost-core', 'cryo-engine'],
           equipment: { Head: 'predictive-array', Torso: 'cryo-shell', Arms: 'cryo-cannon', Legs: 'cryo-lock' },
         },
         hot: {
-          // Pyromaniac: HEAD buff (thermal-surge), LEGS venting (heat-vent, salvage-burst), ARMS burst (meltdown, controlled-burn)
-          deck: ['thermal-surge', 'heat-vent', 'salvage-burst', 'meltdown', 'controlled-burn', 'spread-shot'],
-          parts: ['reactive-frame', 'pressure-valve'],
+          // Aggressive / damage-focused build
+          deck: ['overcharge', 'spread-shot', 'meltdown', 'thermal-surge', 'reckless-charge', 'heat-vent'],
+          parts: ['reactive-frame', 'thorns-core'],
           equipment: { Head: 'pyroclast-scanner', Torso: 'heat-shield', Arms: 'meltdown-cannon', Legs: 'thermal-exhaust' },
         },
         warm: {
-          // Warm Surfer: balanced across all slots
-          deck: ['overcharge', 'spread-shot', 'quick-scan', 'thermal-flux', 'failsafe-protocol', 'target-lock', 'salvage-burst'],
-          parts: ['frost-core', 'ablative-shell'],
+          // Counter build: retaliate + block investment
+          deck: ['retaliate', 'fortify', 'echo-protocol', 'feedback', 'overcharge', 'spread-shot'],
+          parts: ['thorns-core', 'ablative-shell'],
           equipment: { Head: 'tactical-visor', Torso: 'ablative-plates', Arms: 'arc-welder', Legs: 'stabilizer-treads' },
         },
       }
