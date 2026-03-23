@@ -240,9 +240,9 @@ export default function BodySlotPanel({ combat, equipment, parts, selectedCardId
                         →{proj.damage}dmg{proj.targetMode === 'all' ? ' ALL' : ''}
                       </span>
                     )}
-                    {proj.block > 0 && (
+                    {(proj.block > 0 || proj.bonusBlock > 0) && (
                       <span style={{ color: '#3498db', fontWeight: 'bold', fontSize: '10px' }}>
-                        →{proj.block}blk
+                        →{proj.block}{proj.bonusBlock > 0 ? `+${proj.bonusBlock}` : ''}blk
                       </span>
                     )}
                     {proj.heal > 0 && (
@@ -367,9 +367,9 @@ export default function BodySlotPanel({ combat, equipment, parts, selectedCardId
                         →{proj.damage} dmg{proj.targetMode === 'all' ? ' ALL' : ''}
                       </span>
                     )}
-                    {proj.block > 0 && (
+                    {(proj.block > 0 || proj.bonusBlock > 0) && (
                       <span style={{ color: '#3498db', fontWeight: 'bold' }}>
-                        →{proj.block} block
+                        →{proj.block}{proj.bonusBlock > 0 ? `+${proj.bonusBlock}` : ''} block
                       </span>
                     )}
                     {proj.heal > 0 && (

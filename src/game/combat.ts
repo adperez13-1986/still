@@ -1220,6 +1220,7 @@ export interface SlotProjection {
   targetMode: 'single' | 'all'
   isOverride: boolean
   isDisabled: boolean
+  bonusBlock: number // from onPlanningEnd parts (e.g. Empty Chamber)
 }
 
 export function projectSlotActions(
@@ -1229,6 +1230,18 @@ export function projectSlotActions(
   parts: BehavioralPartDefinition[]
 ): SlotProjection[] {
   const projections: SlotProjection[] = []
+
+  // Calculate onPlanningEnd bonus block (Empty Chamber: block per unplayed card)
+  let planningEndBlock = 0
+  const assignedSlotIds = new Set(
+    Object.values(combat.slotModifiers).filter((id): id is string => id !== null)
+  )
+  for (const part of parts) {
+    if (part.trigger.type === 'onPlanningEnd' && part.effect.type === 'blockPerUnplayedCard') {
+      const unplayed = combat.hand.filter(c => !assignedSlotIds.has(c.instanceId)).length
+      planningEndBlock += unplayed * part.effect.value
+    }
+  }
 
   for (const slot of BODY_SLOTS) {
     const isDisabled = combat.disabledSlots.includes(slot)
@@ -1248,6 +1261,7 @@ export function projectSlotActions(
         targetMode: 'single',
         isOverride: false,
         isDisabled,
+        bonusBlock: 0,
       })
       continue
     }
@@ -1275,6 +1289,7 @@ export function projectSlotActions(
       targetMode: isAoe ? 'all' : 'single',
       isOverride: hasOverride,
       isDisabled: false,
+      bonusBlock: slot === 'Head' ? planningEndBlock : 0, // show once on first slot
     })
   }
 
