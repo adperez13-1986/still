@@ -93,9 +93,7 @@ export function getAllowedSlots(card: ModifierCardDefinition): BodySlot[] | null
     case 'feedback': return null // universal — slot determines behavior
     case 'retaliate': return ['Torso'] // counter build: Torso only
     case 'override':
-      if (effect.action.type === 'damage') return ['Arms']
-      if (effect.action.type === 'block')  return ['Torso']
-      return null
+      return null // universal — Override replaces any slot's action
   }
 }
 
