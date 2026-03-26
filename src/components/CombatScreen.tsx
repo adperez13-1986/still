@@ -118,6 +118,19 @@ export default function CombatScreen() {
           const id = ++dmgIdRef.current
           setDamageNumbers(prev => [...prev, { id, value: event.blocked!, color: '#3498db', target: 'still' }])
         }
+        // Counter damage (retaliate, thorns, voltage) — show on the attacking enemy
+        if (event.counterDamage && event.counterDamage > 0) {
+          setDisplayEnemyHealth(prev => {
+            if (!prev) return prev
+            const next = { ...prev }
+            if (next[event.enemyId] !== undefined) {
+              next[event.enemyId] = Math.max(0, next[event.enemyId] - event.counterDamage!)
+            }
+            return next
+          })
+          const id = ++dmgIdRef.current
+          setDamageNumbers(prev => [...prev, { id, value: -event.counterDamage!, color: '#e74c3c', target: event.enemyId }])
+        }
       }
     }
 

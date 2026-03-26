@@ -1020,6 +1020,7 @@ export function executeEnemyTurn(ctx: CombatContext): CombatResult {
     let eventBlocked: number | undefined
     let eventBlock: number | undefined
     let eventStatus: StatusEffectType | undefined
+    let eventCounterDamage = 0
 
     switch (intent.type) {
       case 'Attack':
@@ -1076,6 +1077,7 @@ export function executeEnemyTurn(ctx: CombatContext): CombatResult {
           const retActual = totalIncoming - retAbsorbed
           enemy.currentHealth = Math.max(0, enemy.currentHealth - retActual)
           if (enemy.currentHealth === 0) enemy.isDefeated = true
+          eventCounterDamage += retActual
           result.log.push(`Retaliate: dealt ${retActual} damage back to ${def.name}`)
         }
 
@@ -1091,6 +1093,7 @@ export function executeEnemyTurn(ctx: CombatContext): CombatResult {
             const thornsActual = thornsDmg - thornsAbsorbed
             enemy.currentHealth = Math.max(0, enemy.currentHealth - thornsActual)
             if (enemy.currentHealth === 0) enemy.isDefeated = true
+            eventCounterDamage += thornsActual
             result.log.push(`${part.name}: dealt ${thornsActual} thorns to ${def.name}`)
           }
 
@@ -1101,6 +1104,7 @@ export function executeEnemyTurn(ctx: CombatContext): CombatResult {
             const vcActual = totalBlocked - vcAbsorbed
             enemy.currentHealth = Math.max(0, enemy.currentHealth - vcActual)
             if (enemy.currentHealth === 0) enemy.isDefeated = true
+            eventCounterDamage += vcActual
             result.log.push(`${part.name}: dealt ${vcActual} voltage damage to ${def.name}`)
           }
         }
@@ -1158,6 +1162,7 @@ export function executeEnemyTurn(ctx: CombatContext): CombatResult {
       blocked: eventBlocked,
       block: eventBlock,
       statusApplied: eventStatus,
+      counterDamage: eventCounterDamage > 0 ? eventCounterDamage : undefined,
     })
 
     enemy.intentIndex++
