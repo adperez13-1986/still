@@ -572,9 +572,18 @@ export function executeBodyActions(ctx: CombatContext): CombatResult {
       result.combat.feedbackArmsBonus = 0
     }
 
-    // Apply card draw from body actions (skip HEAD — HEAD draw happens at turn start)
-    if (actionResult.cardsDrawn > 0 && slot !== 'Head') {
-      drawCards(result.combat, actionResult.cardsDrawn, ctx.rng)
+    // Apply card draw from body actions
+    // HEAD base draw happens at turn start, but extra draw from Repeat fires during execution
+    if (actionResult.cardsDrawn > 0) {
+      if (slot === 'Head') {
+        const baseDraw = equip?.action.baseValue ?? 0
+        const extraDraw = actionResult.cardsDrawn - baseDraw
+        if (extraDraw > 0) {
+          drawCards(result.combat, extraDraw, ctx.rng)
+        }
+      } else {
+        drawCards(result.combat, actionResult.cardsDrawn, ctx.rng)
+      }
     }
 
     // Apply blockCost
@@ -702,6 +711,82 @@ export function playModifierCard(
         return result
       }
     } else {
+      // Apply system card effects (heal, applyStatus, removeDebuff, etc.)
+      for (const effect of card.category.effects) {
+        switch (effect.type) {
+          case 'draw': {
+            const actualDrawn = drawCards(result.combat, effect.count, ctx.rng)
+            result.log.push(`Drew ${actualDrawn}/${effect.count} card(s)`)
+            break
+          }
+          case 'heal':
+            result.stillHealth = Math.min(ctx.maxHealth, result.stillHealth + effect.value)
+            result.log.push(`Healed ${effect.value}`)
+            break
+          case 'applyStatus':
+            if (effect.target === 'self') {
+              result.combat.statusEffects = addStatus(
+                result.combat.statusEffects,
+                effect.status,
+                effect.stacks
+              )
+              result.log.push(`Applied ${effect.stacks} ${effect.status}`)
+            } else if (effect.target === 'all_enemies') {
+              for (const enemy of result.combat.enemies) {
+                if (!enemy.isDefeated) {
+                  enemy.statusEffects = addStatus(
+                    enemy.statusEffects,
+                    effect.status,
+                    effect.stacks
+                  )
+                }
+              }
+              result.log.push(`Applied ${effect.stacks} ${effect.status} to all enemies`)
+            }
+            break
+          case 'removeDebuff': {
+            const debuffOrder: StatusEffectType[] = ['Weak', 'Vulnerable']
+            let removed = 0
+            for (const debuffType of debuffOrder) {
+              if (removed >= effect.count) break
+              const idx = result.combat.statusEffects.findIndex(s => s.type === debuffType)
+              if (idx !== -1) {
+                const s = result.combat.statusEffects[idx]
+                if (s.stacks <= 1) {
+                  result.combat.statusEffects.splice(idx, 1)
+                } else {
+                  s.stacks -= 1
+                }
+                removed++
+                result.log.push(`Removed 1 ${debuffType}`)
+              }
+            }
+            break
+          }
+          case 'gainBlock':
+            result.combat.block += effect.value
+            result.log.push(`Gained ${effect.value} Block`)
+            break
+          case 'damage': {
+            const targets = effect.targetMode === 'all_enemies'
+              ? result.combat.enemies.filter(e => !e.isDefeated)
+              : resolveSingleTarget(result.combat.enemies, ctx.targetEnemyId)
+            for (const enemy of targets) {
+              let dealt = effect.value
+              if (getStatus(enemy.statusEffects, 'Vulnerable') > 0) {
+                dealt = Math.floor(dealt * 1.5)
+              }
+              const absorbed = Math.min(enemy.block, dealt)
+              enemy.block -= absorbed
+              const actual = dealt - absorbed
+              enemy.currentHealth = Math.max(0, enemy.currentHealth - actual)
+              if (enemy.currentHealth === 0) enemy.isDefeated = true
+              result.log.push(`Dealt ${actual} damage to ${enemy.definitionId}`)
+            }
+            break
+          }
+        }
+      }
       result.log.push(`${card.name} played freely`)
     }
 
