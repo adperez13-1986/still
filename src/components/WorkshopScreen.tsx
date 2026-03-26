@@ -454,6 +454,8 @@ export default function WorkshopScreen() {
                     fontWeight: 'bold',
                   }}>
                     {run.outcome.toUpperCase()} — Sector {run.sectorReached}
+                    {run.combatsCleared != null && <span style={{ color: '#888', fontWeight: 'normal' }}> ({run.combatsCleared} combats)</span>}
+                    {run.health != null && <span style={{ color: '#888', fontWeight: 'normal' }}> — {run.health} HP</span>}
                   </span>
                   <span style={{ fontSize: '11px', color: '#555' }}>
                     {new Date(run.date).toLocaleDateString()}

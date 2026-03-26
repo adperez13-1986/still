@@ -96,13 +96,14 @@ function pctStr(pct: number): string {
   return `${(pct * 100).toFixed(1)}%`.padStart(6)
 }
 
-export function formatStats(stats: AggregateStats, seed?: number): string {
+export function formatStats(stats: AggregateStats, seed?: number, combatsCleared?: number): string {
   const lines: string[] = []
   lines.push('\u2550'.repeat(45))
   lines.push('  Combat Simulator Results')
   lines.push('\u2550'.repeat(45))
   lines.push(`  Runs:        ${stats.total.toLocaleString()}`)
   if (seed !== undefined) lines.push(`  Seed:        ${seed}`)
+  if (combatsCleared !== undefined) lines.push(`  Combats Cleared: ${combatsCleared}  (enemy HP +${combatsCleared * 10}%, dmg +${combatsCleared * 5}%)`)
   lines.push('')
   lines.push(`  Win Rate:    ${(stats.winRate * 100).toFixed(1)}%  (${stats.wins}W / ${stats.losses}L)`)
   lines.push(`  Avg Turns:   ${stats.avgTurns.toFixed(1)}  (\u03c3 ${stats.turnStdDev.toFixed(1)})`)

@@ -102,13 +102,22 @@ function resolveDeck(spec: string | undefined): string[] {
   if (spec === 's1-pool') return [...starterIds, ...SECTOR1_CARD_POOL.slice(0, 4).map(c => c.id)]
   if (spec === 's2-pool') return [...starterIds, ...SECTOR1_CARD_POOL.slice(0, 4).map(c => c.id), ...SECTOR2_CARD_POOL.slice(0, 2).map(c => c.id)]
 
-  // Starter deck + specified additional cards
-  const extra = spec.split(',').map(id => {
-    const card = ALL_CARDS[id.trim()]
-    if (!card) throw new Error(`Unknown card: ${id.trim()}. Available: ${Object.keys(ALL_CARDS).join(', ')}`)
-    return card.id
+  // "raw:" prefix = full custom deck (no starters prepended)
+  // Supports "+" suffix for upgraded cards (e.g., "overclock+")
+  const isRaw = spec.startsWith('raw:')
+  const cardSpec = isRaw ? spec.slice(4) : spec
+
+  const parsed = cardSpec.split(',').map(raw => {
+    const trimmed = raw.trim()
+    const isUpgraded = trimmed.endsWith('+')
+    const id = isUpgraded ? trimmed.slice(0, -1) : trimmed
+    const card = ALL_CARDS[id]
+    if (!card) throw new Error(`Unknown card: ${id}. Available: ${Object.keys(ALL_CARDS).join(', ')}`)
+    // Encode upgrade in the ID so the runner can parse it
+    return isUpgraded ? `${card.id}+` : card.id
   })
-  return [...starterIds, ...extra]
+
+  return isRaw ? parsed : [...starterIds, ...parsed]
 }
 
 // ─── Main ────────────────────────────────────────────────────────────────────
@@ -138,8 +147,9 @@ function main() {
     combatsCleared,
   }
 
-  // Validate deck
-  for (const id of loadout.deck) {
+  // Validate deck (strip "+" suffix for lookup)
+  for (const rawId of loadout.deck) {
+    const id = rawId.endsWith('+') ? rawId.slice(0, -1) : rawId
     if (!ALL_CARDS[id]) throw new Error(`Unknown card in deck: ${id}`)
   }
 
@@ -199,7 +209,7 @@ function main() {
   const stats = aggregateResults(results)
 
   console.log()
-  console.log(formatStats(stats, seed))
+  console.log(formatStats(stats, seed, combatsCleared))
   console.log(`  ${runs.toLocaleString()} combats in ${elapsed}ms (${(runs / (elapsed / 1000)).toFixed(0)}/sec)`)
   console.log()
 }

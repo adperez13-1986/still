@@ -57,8 +57,14 @@ export function simulateCombat(
   encounter: string = '',
   enableTrace: boolean = false,
 ): SimCombatResult {
-  // Build deck and enemies
-  const deck: CardInstance[] = loadout.deck.map(id => makeCardInstance(id, rng))
+  // Build deck and enemies (supports "id+" suffix for upgraded cards)
+  const deck: CardInstance[] = loadout.deck.map(rawId => {
+    const isUpgraded = rawId.endsWith('+')
+    const id = isUpgraded ? rawId.slice(0, -1) : rawId
+    const inst = makeCardInstance(id, rng)
+    if (isUpgraded) inst.isUpgraded = true
+    return inst
+  })
   const enemies: EnemyInstance[] = enemyDefs.map(d => makeEnemyInstance(d, loadout.combatsCleared, rng))
 
   // Init combat

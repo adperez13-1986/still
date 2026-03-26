@@ -290,6 +290,8 @@ export interface RunHistoryEntry {
   deck?: string[] // card names at end of run
   equipment?: Record<string, string | null> // slot → equipment name
   parts?: string[] // part names at end of run
+  combatsCleared?: number // combats won in this run
+  health?: number // HP at end of run
 }
 
 export interface PermanentState {

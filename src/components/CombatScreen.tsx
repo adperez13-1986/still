@@ -480,6 +480,8 @@ export default function CombatScreen() {
                     Object.entries(run.equipment).map(([slot, eq]) => [slot, eq?.name ?? null])
                   ),
                   parts: run.parts.map(p => p.name),
+                  combatsCleared: run.combatsCleared,
+                  health: run.health,
                 })
                 // Archive new parts from this run
                 for (const part of run.parts) {
@@ -633,6 +635,8 @@ export default function CombatScreen() {
                   Object.entries(run.equipment).map(([slot, eq]) => [slot, eq?.name ?? null])
                 ),
                 parts: run.parts.map(p => p.name),
+                combatsCleared: run.combatsCleared,
+                health: run.health,
               })
               // Archive new parts from this run (no cooldown on defeat)
               for (const part of run.parts) {
