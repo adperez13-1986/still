@@ -1,79 +1,105 @@
-## REMOVED Requirements
+## Card System
 
-### Requirement: Cards are Still's combat actions
-**Reason**: Cards are no longer standalone combat actions. They are modifier/subroutine cards that alter body actions. The new card system is defined in the `modifier-cards` capability.
-**Migration**: All card definitions in `data/cards.ts` are replaced with modifier card definitions. Card types (Attack/Skill/Power) and energy costs are removed. See `modifier-cards` spec for the new card system.
+### Requirement: Cards are modifier cards with energy costs
 
-### Requirement: Starting deck
-**Reason**: The starting deck of Strike/Brace/Surge is replaced by a starting modifier deck. The new starting deck is defined in the `modifier-cards` capability.
-**Migration**: Starting deck is now 8 modifier cards (3x Boost, 2x Emergency Strike, 2x Coolant Flush, 1x Diagnostics). See `modifier-cards` spec.
+All cards in the player's deck are modifier cards (software subroutines). Each card has an `energyCost` (a non-negative integer) that is deducted from the player's energy pool when played. There are no heat costs or heat thresholds.
 
-## ADDED Requirements
+#### Scenario: Playing a card deducts energy
+- **WHEN** the player plays a modifier card with `energyCost: N`
+- **THEN** `currentEnergy` is reduced by N
 
-### Requirement: Modifier cards can have heat-conditional bonus effects
-Some modifier cards SHALL have bonus effects that activate when Still is at a specific heat threshold. Unlike `heatCondition` (which gates playability), heat bonuses enhance the card's effect while remaining playable at any heat level.
+#### Scenario: Unassigning a slot modifier refunds energy
+- **WHEN** the player unassigns a slot modifier during the planning phase
+- **THEN** `currentEnergy` is increased by the card's `energyCost` (capped at `maxEnergy`)
 
-#### Scenario: Card played at matching threshold
-- **WHEN** a modifier card with a heat bonus is played while Still is at or above the bonus threshold
-- **THEN** the enhanced version of the effect activates (e.g., higher damage, extra draw)
+### Requirement: Draw count
 
-#### Scenario: Card played outside matching threshold
-- **WHEN** a modifier card with a heat bonus is played while Still is below the bonus threshold
-- **THEN** the base version of the effect activates (card is still playable)
-
-### Requirement: Sector 1 card pool includes archetype-seeding cards
-The Sector 1 modifier card pool SHALL include cards that reward specific heat zones, seeding the Cool Runner, Pyromaniac, and Oscillator archetypes.
-
-#### Scenario: Cool Runner cards in Sector 1 pool
-- **WHEN** the Sector 1 card pool is assembled
-- **THEN** it SHALL include Precision Strike (0 heat, deal 8 damage, 12 while Cool) and Cold Efficiency (0 heat, draw 2, draw 3 while Cool)
-
-#### Scenario: Pyromaniac cards in Sector 1 pool
-- **WHEN** the Sector 1 card pool is assembled
-- **THEN** it SHALL include Fuel the Fire (+1 heat, deal 6 damage, gain 4 Block while Hot) and Reckless Charge (+3 heat, deal 18 damage, Exhaust)
-
-#### Scenario: Oscillator cards in Sector 1 pool
-- **WHEN** the Sector 1 card pool is assembled
-- **THEN** it SHALL include Thermal Flux (-2 heat, deal damage equal to total heat change this turn) and Overclock (+2 heat, gain 1 Strength, gain 2 instead if a threshold was crossed this turn)
-
-## MODIFIED Requirements
-
-### Requirement: Deck, draw pile, hand, and discard pile
-The card system SHALL maintain four distinct card zones for modifier cards. Cards cycle through them during combat.
+The base draw count is 3 cards per turn. HEAD equipment adds bonus draw on top of the base.
 
 #### Scenario: Drawing cards at turn start
-- **WHEN** the player's turn begins
-- **THEN** they draw modifier cards from the draw pile up to their hand size limit (default: 4)
+- **WHEN** a new turn starts
+- **THEN** the player draws `drawCount` (base 3) + HEAD equipment draw bonus + Inspired bonus cards from the draw pile
 
-#### Scenario: Draw pile exhausted
-- **WHEN** the draw pile is empty and cards must be drawn
-- **THEN** the discard pile is shuffled and becomes the new draw pile
+#### Scenario: HEAD equipment bonus draw
+- **WHEN** the player has a HEAD equipment with a `draw` action and the Head slot is not disabled
+- **THEN** the HEAD equipment's `baseValue` is added to the turn's draw count
 
-#### Scenario: Hand limit
-- **WHEN** the player has 10 cards in hand
-- **THEN** additional drawn cards are discarded immediately (burned)
+### Requirement: Deck zones
+
+The card system maintains four distinct zones: draw pile, hand, discard pile, and exhaust pile.
+
+#### Scenario: Combat initialization
+- **WHEN** combat begins
+- **THEN** the full deck is shuffled into the draw pile, and `drawCount` cards are drawn into the hand (capped at 10)
+
+#### Scenario: Drawing when draw pile is insufficient
+- **WHEN** cards must be drawn and the draw pile has fewer cards than needed
+- **THEN** the discard pile is shuffled into the draw pile first, then drawing continues. If both piles are empty, remaining draws fizzle.
+
+#### Scenario: Mid-turn draw with empty draw pile
+- **WHEN** a draw effect fires during a turn and the draw pile is empty
+- **THEN** the discard pile is shuffled into the draw pile before drawing. If the discard pile is also empty, draws fizzle.
+
+#### Scenario: End of turn discard
+- **WHEN** the turn ends
+- **THEN** all assigned slot modifiers move to the discard pile (or exhaust pile if they have the Exhaust keyword). All remaining hand cards are discarded.
+
+### Requirement: Hand limit of 10
+
+The hand cannot exceed 10 cards.
+
+#### Scenario: Drawing beyond hand limit
+- **WHEN** a draw would bring the hand above 10 cards
+- **THEN** drawing stops at 10; excess draws are lost (not discarded)
+
+### Requirement: System cards exhaust on play
+
+All system cards (non-freePlay) are sent to the exhaust pile after being played, regardless of whether they have the Exhaust keyword.
+
+#### Scenario: System card played
+- **WHEN** a non-freePlay system card is played and resolves
+- **THEN** it is moved to the exhaust pile and does not return to the draw/discard cycle for the rest of combat
+
+#### Scenario: Slot modifier with Exhaust keyword
+- **WHEN** a slot modifier card with the Exhaust keyword is played
+- **THEN** at end of turn, it moves to the exhaust pile instead of the discard pile
+
+#### Scenario: Exhausted cards return between combats
+- **WHEN** a new combat begins
+- **THEN** all cards (including previously exhausted ones) start in the deck
+
+### Requirement: Card keywords
+
+Cards may have keywords that modify their behavior: Exhaust, Innate, Retain.
+
+#### Scenario: Exhaust keyword
+- **WHEN** a card with Exhaust is played
+- **THEN** it goes to the exhaust pile instead of the discard pile after resolution
 
 ### Requirement: Card acquisition from enemies
-After defeating enemies, the player SHALL be offered a modifier card reward from a pool relevant to the current sector.
+
+After clearing a combat encounter, the player is offered cards to add to their deck.
 
 #### Scenario: Post-combat card reward
 - **WHEN** a combat room is cleared
-- **THEN** the player is shown 3 modifier cards and may choose one to add to their deck, or skip
+- **THEN** the player is shown 3 modifier cards from the current sector's pool and may choose one to add to their deck, or skip
 
 #### Scenario: Skipping a card reward
 - **WHEN** the player skips a card reward
-- **THEN** no card is added, and a small amount of shards is awarded instead
+- **THEN** no card is added and a small amount of shards is awarded instead
 
 ### Requirement: Card upgrades
-Modifier cards in the player's deck SHALL be upgradeable at rest rooms, improving their effects.
+
+Modifier cards are upgradeable at rest rooms.
 
 #### Scenario: Upgrading a card at rest
 - **WHEN** the player chooses to upgrade at a rest room
-- **THEN** they select one modifier card from their deck; the card is permanently enhanced for the rest of the run (lower Heat cost, increased effect, or added secondary effect)
+- **THEN** they select one card from their deck. The card is permanently enhanced for the rest of the run (typically reduced energy cost, increased effect magnitude, or both)
 
-### Requirement: Exhaust keyword
-Some modifier cards SHALL have the Exhaust keyword, meaning they are removed from the cycle after being played once.
+### Requirement: Card removal
 
-#### Scenario: Exhausted card removed
-- **WHEN** a modifier card with the Exhaust keyword is played
-- **THEN** it is placed in a separate exhaust zone and does not return to the draw pile or discard pile for the rest of combat (exhausted cards return to the deck for the next combat encounter)
+Cards can be removed from the deck to thin it.
+
+#### Scenario: Removing a card
+- **WHEN** the player chooses to remove a card (e.g., at a shop or event)
+- **THEN** the card is permanently removed from the run's deck

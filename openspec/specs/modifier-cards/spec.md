@@ -1,137 +1,169 @@
-## ADDED Requirements
+## Modifier Cards
 
-### Requirement: Modifier cards are the player's hand-based combat actions
-Cards in the player's deck SHALL be modifier cards — software subroutines that alter body actions or provide global combat effects. Each modifier card has a Heat cost (positive, zero, or negative) printed on the card.
+### Requirement: Modifier cards alter body slot actions or provide global effects
 
-#### Scenario: Playing a modifier card
-- **WHEN** the player plays a modifier card during the planning phase
-- **THEN** its Heat cost is applied to Still's Heat, and the card's effect is queued or applied
+Cards in the player's deck are modifier cards with an `energyCost`. They come in two types: slot modifiers (assigned to a body slot to alter its action) and system cards (global effects that fire immediately).
 
-#### Scenario: Card moves to discard after play
-- **WHEN** a modifier card is played (unless it has the Exhaust keyword)
-- **THEN** it moves to the discard pile at end of turn
-
-### Requirement: Slot modifier cards target one body slot
-Slot modifier cards SHALL target a specific body slot, altering that slot's action for the current turn. Each slot may receive at most one slot modifier per turn.
-
-#### Scenario: Assigning a slot modifier
-- **WHEN** the player plays a slot modifier card
-- **THEN** the player selects which body slot to apply it to (Override modifiers may target empty slots; Amplify, Redirect, and Repeat modifiers require a filled slot with an existing action)
-
-#### Scenario: One modifier per slot limit
-- **WHEN** a slot already has a modifier assigned this turn
-- **THEN** the player cannot assign another slot modifier to that slot
-
-#### Scenario: Replacing an assigned modifier
-- **WHEN** the player wants to change a slot's modifier during the planning phase
-- **THEN** they may unassign the current modifier (returning it to hand, refunding its Heat) and assign a different one
-
-### Requirement: Slot modifier categories
-Slot modifiers SHALL fall into five categories, each altering the body action differently.
-
-#### Scenario: Amplify modifier increases output
-- **WHEN** an Amplify modifier is assigned to a slot
-- **THEN** the slot's action output is multiplied (e.g., +50%, double, or triple depending on the specific card)
-
-#### Scenario: Redirect modifier changes targeting
-- **WHEN** a Redirect modifier is assigned to a slot
-- **THEN** the slot's action target changes (e.g., single enemy → all enemies, or gains a focus bonus against lowest-HP enemy)
-
-#### Scenario: Repeat modifier triggers the action again
-- **WHEN** a Repeat modifier is assigned to a slot
-- **THEN** the slot's action fires an additional time during execution; the Repeat card's energy cost is paid when assigned during the planning phase
-
-#### Scenario: Override modifier replaces the action
-- **WHEN** an Override modifier is assigned to a slot
-- **THEN** the slot's normal action is replaced entirely with the override's action for this turn
-
-#### Scenario: Feedback modifier applies slot-dependent effect
-- **WHEN** a Feedback modifier is assigned to a slot
-- **THEN** the slot's action gains a secondary effect determined by which slot it occupies (HEAD: draw→Arms damage, TORSO: block→reflected damage, ARMS: damage→healing, LEGS: block persists)
-
-### Requirement: System cards provide global effects
-System cards SHALL affect combat state globally without targeting a specific body slot. They have no slot limit — any number of system cards may be played per turn.
+#### Scenario: Playing a slot modifier
+- **WHEN** the player plays a slot modifier card during planning
+- **THEN** energy is deducted, and the card is assigned to the chosen body slot. The slot's action is modified during the execution phase.
 
 #### Scenario: Playing a system card
-- **WHEN** the player plays a system card
-- **THEN** its effect applies immediately (or is queued for execution phase) without targeting a body slot
+- **WHEN** the player plays a non-freePlay system card during planning
+- **THEN** energy is deducted, the card's effects fire immediately, the card's home slot is marked `__system__` (blocking other cards from that slot), and the card is exhausted.
 
-### Requirement: Cooling system cards
-Cooling cards SHALL reduce Heat, providing the primary way to manage thermal buildup.
+#### Scenario: Playing a freePlay card
+- **WHEN** the player plays a freePlay card (e.g., companion cards, Feedback system card)
+- **THEN** energy is deducted, the card's effects fire immediately, the card does NOT occupy a slot, and the card is discarded (or exhausted if it has the Exhaust keyword).
 
-#### Scenario: Flat cooling card
-- **WHEN** a cooling card with a negative Heat cost (e.g., -3) is played
-- **THEN** Still's Heat is reduced by that amount (minimum 0)
+### Requirement: One modifier per slot (with exceptions)
 
-#### Scenario: Conditional cooling card
-- **WHEN** a cooling card requires a Heat threshold (e.g., "only playable at Hot")
-- **THEN** the card can only be played if the condition is met
+Each body slot may receive at most one slot modifier per turn, unless the player has the Dual Loader part.
 
-### Requirement: Conditional system cards
-Some system cards SHALL have effects gated by the current Heat threshold, rewarding intentional Heat management.
+#### Scenario: One modifier per slot
+- **WHEN** a slot already has a modifier assigned
+- **THEN** a second modifier cannot be assigned unless the player has the Dual Loader part
 
-#### Scenario: Warm-gated card
-- **WHEN** a conditional card requires Warm+ and Still's Heat is in the Warm, Hot, or Overheat range
-- **THEN** the card's effect activates
+#### Scenario: Dual Loader allows two modifiers
+- **WHEN** the player has the Dual Loader part and a slot has one modifier
+- **THEN** a second modifier may be assigned to that slot's secondary slot (`slotModifiers2`)
 
-#### Scenario: Condition not met
-- **WHEN** a conditional card's Heat threshold requirement is not met
-- **THEN** the card cannot be played
+#### Scenario: Feedback always uses secondary slot
+- **WHEN** a Feedback slot modifier is assigned
+- **THEN** it always goes to the secondary slot (`slotModifiers2`), so it stacks with any primary modifier without requiring Dual Loader
 
-### Requirement: Starting modifier deck
-Every run SHALL begin with a standard set of 8 basic modifier cards.
+### Requirement: Slot modifier categories
+
+Slot modifiers fall into six categories: Amplify, Redirect, Repeat, Override, Feedback, and Retaliate.
+
+#### Scenario: Amplify increases output
+- **WHEN** an Amplify modifier is assigned to a slot
+- **THEN** the slot's action value is multiplied by the card's multiplier (e.g., 1.5x for Boost, 2.0x for Overcharge)
+- **Allowed slots**: Arms, Torso
+
+#### Scenario: Redirect changes targeting
+- **WHEN** a Redirect modifier is assigned to a slot
+- **THEN** the slot's target mode changes (e.g., single_enemy to all_enemies)
+- **Allowed slots**: Arms
+
+#### Scenario: Repeat fires the action again
+- **WHEN** a Repeat modifier is assigned to a slot
+- **THEN** the slot's action fires 1 + `extraFirings` times during execution
+- **Allowed slots**: any (universal)
+
+#### Scenario: Override replaces the action
+- **WHEN** an Override modifier is assigned to a slot
+- **THEN** the slot's normal equipment action is replaced entirely with the override's action for this turn. Override actions do NOT receive Strength/Dexterity bonuses.
+- **Allowed slots**: any (universal). Override can be played on empty slots (slots without equipment) and on any slot regardless of type.
+
+#### Scenario: Feedback applies slot-dependent secondary effect
+- **WHEN** a Feedback modifier is assigned to a slot
+- **THEN** the slot gains a secondary effect based on which slot it occupies:
+  - **HEAD**: cards drawn add +2 bonus damage to Arms per card drawn
+  - **TORSO**: 75% of block gained is dealt as damage to a random enemy
+  - **ARMS**: 33% of damage dealt heals the player (lifesteal)
+  - **LEGS**: block gained from this slot persists to the next turn (decays 50%/turn)
+- Feedback does NOT trigger on Override actions.
+
+#### Scenario: Retaliate reflects damage
+- **WHEN** a Retaliate modifier is assigned to Torso
+- **THEN** during the enemy turn, all incoming damage (dealt + blocked) is reflected back to the attacker
+- **Allowed slots**: Torso only
+
+### Requirement: Persistent Feedback via system card
+
+The Feedback system card (freePlay, Exhaust) applies a permanent per-slot Feedback effect for the rest of combat.
+
+#### Scenario: Feedback system card played
+- **WHEN** the Feedback freePlay card is played targeting a slot
+- **THEN** `persistentFeedback[slot]` is set to true. The slot's Feedback effect triggers every turn for the rest of combat without needing a slot modifier. Requires the slot to have equipment (cannot target empty slots).
+
+#### Scenario: Persistent Feedback does not stack with slot Feedback
+- **WHEN** a slot has both persistent Feedback and a Feedback slot modifier
+- **THEN** only one Feedback effect applies (the slot modifier takes priority, persistent is skipped)
+
+### Requirement: System card effects
+
+System cards provide global effects without occupying a modifier slot. They are assigned to their `homeSlot` and fire immediately during planning. All non-freePlay system cards exhaust after play.
+
+System effect types:
+- `draw`: draw N cards
+- `heal`: heal N HP
+- `applyStatus`: apply status stacks to self or all enemies
+- `removeDebuff`: remove debuff stacks (Weak first, then Vulnerable)
+- `gainBlock`: gain N block
+- `damage`: deal N damage to single enemy or all enemies
+- `applyFeedback`: set persistent Feedback on target slot (freePlay only)
+
+#### Scenario: System card occupies home slot
+- **WHEN** a non-freePlay system card is played
+- **THEN** it is assigned to its `homeSlot`, blocking other cards from that slot for the turn. The equipment in that slot still fires normally during execution.
+
+#### Scenario: System card home slot restriction
+- **WHEN** the player attempts to play a system card on a slot other than its `homeSlot`
+- **THEN** the play is rejected
+
+### Requirement: FreePlay companion cards
+
+Companion cards (Yanah, Yuri) are freePlay system cards. They fire instantly without occupying a slot and can be played alongside any other cards.
+
+#### Scenario: Yanah companion card
+- **WHEN** the player plays the Yanah card
+- **THEN** heal 6 HP and remove 1 debuff. Energy cost: 0. Does not occupy a slot.
+
+#### Scenario: Yuri companion card
+- **WHEN** the player plays the Yuri card
+- **THEN** gain 1 Strength and 1 Inspired. Energy cost: 1. Does not occupy a slot.
+
+#### Scenario: Companion cards in deck
+- **WHEN** a companion is acquired during a run
+- **THEN** the companion's card is added to the deck and cycles through draw/hand/discard like any other card
+
+### Requirement: Starting deck
+
+Every run begins with a fixed set of 8 modifier cards.
 
 #### Scenario: Starting deck composition
 - **WHEN** a new run begins
-- **THEN** Still's deck contains exactly: 3x Boost (Amplify, +1 Heat, +50% output to one slot), 1x Emergency Strike (Override, +2 Heat, any slot deals 8 damage), 1x Emergency Shield (Override, +1 Heat, any slot gains 12 Block), 2x Coolant Flush (Cooling, −3 Heat), 1x Diagnostics (System, +1 Heat, draw 2 modifier cards)
+- **THEN** the deck contains exactly:
+  - 3x **Boost** (Amplify, 2E, +50% to one slot)
+  - 1x **Emergency Strike** (Override, 2E, deal 8 damage to ALL enemies)
+  - 1x **Emergency Shield** (Override, 2E, gain 12 Block)
+  - 2x **Vent** (System/Draw, 2E, draw 2 cards, homeSlot: Legs)
+  - 1x **Diagnostics** (System/Draw, 2E, draw 2 cards, homeSlot: Head)
 
-### Requirement: Companion cards are system modifier cards
-Yanah and Yuri companion cards SHALL be reworked as system modifier cards compatible with the new combat model.
+### Requirement: Slot restrictions by modifier category
 
-#### Scenario: Yanah companion card
-- **WHEN** the player plays the Yanah modifier card
-- **THEN** heal 6 HP and remove 1 debuff. Heat cost: +0. Category: System (Cooling).
+Different modifier categories are restricted to specific body slots.
 
-#### Scenario: Yuri companion card
-- **WHEN** the player plays the Yuri modifier card
-- **THEN** gain 1 Strength and gain 1 Inspired (draw +1 extra card next turn). Heat cost: +1. Category: System (Conditional).
+#### Scenario: Amplify slot restriction
+- **WHEN** an Amplify card is played
+- **THEN** it may only target Arms or Torso
 
-#### Scenario: Companion cards added to starting deck when unlocked
-- **WHEN** a companion is unlocked via Workshop milestones and a new run begins
-- **THEN** the companion's modifier card is added to the starting modifier deck
+#### Scenario: Redirect slot restriction
+- **WHEN** a Redirect card is played
+- **THEN** it may only target Arms
 
-### Requirement: Modifier card acquisition from enemies
-After defeating enemies, the player SHALL be offered modifier cards as rewards.
+#### Scenario: Repeat is universal
+- **WHEN** a Repeat card is played
+- **THEN** it may target any equipped slot
 
-#### Scenario: Post-combat modifier reward
-- **WHEN** a combat encounter is cleared
-- **THEN** the player is shown 3 modifier cards and may choose one to add to their deck, or skip for shards
+#### Scenario: Override is universal
+- **WHEN** an Override card is played
+- **THEN** it may target any slot, including empty slots without equipment
 
-### Requirement: Modifier card upgrades
-Modifier cards SHALL be upgradeable at rest rooms.
+#### Scenario: Feedback is universal
+- **WHEN** a Feedback slot modifier is played
+- **THEN** it may target any equipped slot
 
-#### Scenario: Upgrading a modifier at rest
-- **WHEN** the player chooses to upgrade a modifier card at a rest room
-- **THEN** the selected card is permanently enhanced for the rest of the run (e.g., reduced Heat cost, increased effect magnitude, or added secondary effect)
+#### Scenario: Retaliate slot restriction
+- **WHEN** a Retaliate card is played
+- **THEN** it may only target Torso
 
-### Requirement: Exhaust keyword on modifiers
-Some modifier cards SHALL have the Exhaust keyword.
+#### Scenario: Cannot target disabled slots
+- **WHEN** any modifier card targets a disabled slot
+- **THEN** the play is rejected
 
-#### Scenario: Exhausted modifier removed
-- **WHEN** a modifier card with Exhaust is played
-- **THEN** it is placed in the exhaust zone and does not return to the draw/discard cycle for the rest of combat (exhausted cards return to the deck for the next combat encounter)
-
-### Requirement: Deck zones persist from previous system
-The modifier deck SHALL maintain four zones: draw pile, hand, discard pile, and exhaust pile.
-
-#### Scenario: Drawing modifiers at turn start
-- **WHEN** the player's turn begins
-- **THEN** if the draw pile has fewer cards than the hand draw count, the discard pile is shuffled into the draw pile first, then cards are drawn up to hand size (default: 4)
-
-#### Scenario: Draw pile empty mid-turn
-- **WHEN** a draw effect requests cards during a turn and the draw pile is empty
-- **THEN** the draws fizzle unless a part (such as Perpetual Core) triggers a reshuffle
-
-#### Scenario: Hand limit
-- **WHEN** the player has 10 modifier cards in hand
-- **THEN** additional drawn cards are discarded immediately
+#### Scenario: Non-Override modifiers require equipment
+- **WHEN** a non-Override slot modifier targets a slot without equipment
+- **THEN** the play is rejected

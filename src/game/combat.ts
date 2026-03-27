@@ -71,11 +71,13 @@ export function addStatus(effects: StatusEffect[], type: StatusEffectType, stack
   return copy
 }
 
-const PERMANENT_STATUSES = new Set<StatusEffectType>(['Strength', 'Dexterity'])
+// Str/Dex skip auto-decrement here — player decay is manual in endTurn() (−1/turn),
+// enemy Str/Dex are truly permanent (boss self-buffs persist across turns).
+const STAT_STATUSES = new Set<StatusEffectType>(['Strength', 'Dexterity'])
 
 export function decrementStatuses(effects: StatusEffect[]): StatusEffect[] {
   return effects
-    .map((s) => ({ ...s, stacks: PERMANENT_STATUSES.has(s.type) ? s.stacks : s.stacks - 1 }))
+    .map((s) => ({ ...s, stacks: STAT_STATUSES.has(s.type) ? s.stacks : s.stacks - 1 }))
     .filter((s) => s.stacks > 0)
 }
 
@@ -1222,7 +1224,8 @@ export function endTurn(ctx: CombatContext): CombatResult {
   }
   result.combat._legsFeedbackBlock = 0
 
-  // Stat decay: Strength and Dexterity decay by 1 at end of turn (player only)
+  // Player stat decay: Str/Dex lose 1 stack per turn (skipped in decrementStatuses, handled here)
+  // Net effect: playing +2 Str gives +2 this turn, +1 next turn, +0 after. Not permanent.
   const strIdx = result.combat.statusEffects.findIndex(s => s.type === 'Strength')
   if (strIdx !== -1) {
     result.combat.statusEffects[strIdx].stacks = Math.max(0, result.combat.statusEffects[strIdx].stacks - 1)
