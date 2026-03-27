@@ -355,6 +355,11 @@ export function resolveBodyAction(
         case 'drawCards':
           result.cardsDrawn += part.effect.count
           break
+        case 'damagePerExhausted':
+          if (action.type === 'damage' && !isOverride) {
+            finalValue += combat.exhaustPile.length
+          }
+          break
       }
     }
   }
@@ -1467,6 +1472,9 @@ function applyPartEffect(
       }
       break
     }
+    case 'damagePerExhausted':
+      // Handled in resolveBodyAction (onSlotFire)
+      break
     case 'halveLargeDamage':
       // Handled inline in executeEnemyTurn
       break

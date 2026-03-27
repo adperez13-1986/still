@@ -115,6 +115,7 @@ export type PartEffect =
   | { type: 'reshuffleDiscard' }
   | { type: 'thorns'; value: number }
   | { type: 'voltageCounter' }
+  | { type: 'damagePerExhausted' }
 
 export interface BehavioralPartDefinition {
   id: string

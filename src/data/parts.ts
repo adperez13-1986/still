@@ -345,6 +345,15 @@ const thornsCore: BehavioralPartDefinition = {
   rarity: 'uncommon',
 }
 
+const slagCompressor: BehavioralPartDefinition = {
+  id: 'slag-compressor',
+  name: 'Slag Compressor',
+  description: 'When ARMS fires, deal bonus damage equal to cards in your Exhaust pile.',
+  trigger: { type: 'onSlotFire', slot: 'Arms' },
+  effect: { type: 'damagePerExhausted' },
+  rarity: 'uncommon',
+}
+
 // ─── Sector 2 Behavioral Parts ──────────────────────────────────────────────
 
 const reactiveFrame: BehavioralPartDefinition = {
@@ -454,7 +463,7 @@ export const EQUIPMENT: EquipmentDefinition[] = [
 ]
 
 export const SECTOR1_PART_POOL: BehavioralPartDefinition[] = [
-  frostCore, scrapRecycler, ablativeShell, thornsCore,
+  frostCore, scrapRecycler, ablativeShell, thornsCore, slagCompressor,
 ]
 
 export const SECTOR2_PART_POOL: BehavioralPartDefinition[] = [
