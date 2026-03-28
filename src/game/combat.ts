@@ -659,10 +659,11 @@ export function executeBodyActions(ctx: CombatContext): CombatResult {
       result.log.push(`${slot}: took ${actionResult.selfDamage} self-damage`)
     }
 
-    // Disable slot next turn (Overclock Slot)
+    // Disable slot next turn (Overclock Slot) — stored separately so enemy turn clear doesn't erase it
     if (actionResult.disableSlotNextTurn) {
-      if (!result.combat.disabledSlots.includes(slot)) {
-        result.combat.disabledSlots.push(slot)
+      if (!result.combat._overclockDisables) result.combat._overclockDisables = []
+      if (!result.combat._overclockDisables.includes(slot)) {
+        result.combat._overclockDisables.push(slot)
       }
       result.log.push(`${slot}: overclocked — disabled next turn`)
     }
@@ -1501,6 +1502,16 @@ export function startTurn(ctx: CombatContext, inspiredBonus = 0): CombatResult {
   // Reset energy budget and per-turn counters
   result.combat.currentEnergy = result.combat.maxEnergy
   result.combat.cardsExhaustedThisTurn = 0
+
+  // Apply overclock disables (survived enemy turn clear)
+  if (result.combat._overclockDisables && result.combat._overclockDisables.length > 0) {
+    for (const s of result.combat._overclockDisables) {
+      if (!result.combat.disabledSlots.includes(s)) {
+        result.combat.disabledSlots.push(s)
+      }
+    }
+    result.combat._overclockDisables = []
+  }
 
   // Persistent block: decay by 50%, then add to block pool
   if (result.combat.persistentBlock > 0) {

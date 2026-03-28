@@ -260,6 +260,7 @@ export interface CombatState {
   absorbActive: boolean // block gained this turn also heals 50%
   absorbBlockGained: number // tracks block gained this turn for Absorb heal
   cardsExhaustedThisTurn: number // tracks exhaust events for Feedback Loop
+  _overclockDisables?: BodySlot[] // slots to disable next turn (survives enemy turn clear)
 }
 
 export interface RunState {
