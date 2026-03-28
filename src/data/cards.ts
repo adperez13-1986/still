@@ -1151,8 +1151,8 @@ const recklessBoost: ModifierCardDefinition = {
 const burnout: ModifierCardDefinition = {
   id: 'burnout',
   name: 'Burnout',
-  description: 'Permanent: lose 3 HP and gain 2 Strength each turn.',
-  energyCost: 2,
+  description: 'Permanent: lose 4 HP and gain 2 Strength each turn.',
+  energyCost: 5,
   category: {
     type: 'system',
     modifier: 'Utility',

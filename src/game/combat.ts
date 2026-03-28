@@ -998,7 +998,7 @@ export function playModifierCard(
           }
           case 'applyBurnout':
             result.combat.burnoutActive = true
-            result.log.push('Burnout active: -3 HP, +2 Strength each turn')
+            result.log.push('Burnout active: -4 HP, +2 Strength each turn')
             break
           case 'disableOwnSlot':
             if (targetSlot) {
@@ -1136,7 +1136,7 @@ export function playModifierCard(
         }
         case 'applyBurnout':
           result.combat.burnoutActive = true
-          result.log.push('Burnout active: -3 HP, +2 Strength each turn')
+          result.log.push('Burnout active: -4 HP, +2 Strength each turn')
           break
         case 'disableOwnSlot':
           // Non-freePlay version (shouldn't happen, but handle anyway)
@@ -1545,11 +1545,11 @@ export function startTurn(ctx: CombatContext, inspiredBonus = 0): CombatResult {
   result.combat.phase = 'planning'
   result.combat.roundNumber++
 
-  // Burnout: lose 3 HP, gain 2 Strength each turn
+  // Burnout: lose 4 HP, gain 2 Strength each turn
   if (result.combat.burnoutActive) {
-    result.stillHealth = Math.max(0, result.stillHealth - 3)
+    result.stillHealth = Math.max(0, result.stillHealth - 4)
     result.combat.statusEffects = addStatus(result.combat.statusEffects, 'Strength', 2)
-    result.log.push('Burnout: lost 3 HP, gained 2 Strength')
+    result.log.push('Burnout: lost 4 HP, gained 2 Strength')
   }
 
   // Fire onTurnStart parts
