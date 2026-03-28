@@ -181,6 +181,75 @@ function scoreSlotCard(
       const torsoBlock = ctx.equipment.Torso?.action.type === 'block' ? ctx.equipment.Torso.action.baseValue : 0
       return isDefensive ? torsoBlock * 2.5 : torsoBlock * 1.0
     }
+    // New modifier types — basic scoring
+    case 'amplifyWithSelfDamage': {
+      if (slot === 'Arms' && equip?.action.type === 'damage') {
+        const bonus = Math.floor(equip.action.baseValue * effect.multiplier) - equip.action.baseValue
+        return isDefensive ? bonus * 0.3 : bonus * offensiveMult - effect.selfDamage
+      }
+      if (slot === 'Torso' && equip?.action.type === 'block') {
+        const bonus = Math.floor(equip.action.baseValue * effect.multiplier) - equip.action.baseValue
+        return isDefensive ? bonus * 2 - effect.selfDamage : bonus * 0.3
+      }
+      return -effect.selfDamage
+    }
+    case 'overclockSlot': {
+      if (!equip) return 0
+      return isDefensive ? equip.action.baseValue * 1.5 : equip.action.baseValue * 2
+    }
+    case 'amplifyScaling': {
+      const exhausted = ctx.combat.exhaustPile.length
+      const mult = 1 + effect.perStack * exhausted
+      if (slot === 'Arms' && equip?.action.type === 'damage') {
+        return Math.floor(equip.action.baseValue * mult) * (isDefensive ? defensiveMult : offensiveMult)
+      }
+      if (slot === 'Torso' && equip?.action.type === 'block') {
+        return Math.floor(equip.action.baseValue * mult) * (isDefensive ? 2 : defensiveMult)
+      }
+      return 1
+    }
+    case 'overrideExhaustHand': {
+      const handSize = ctx.combat.hand.length
+      const cards = Math.min(handSize - 1, effect.maxCards) // keep at least 1
+      return cards > 0 ? cards * effect.damagePerCard * (isDefensive ? defensiveMult : offensiveMult) : 0
+    }
+    case 'repeatScaling': {
+      if (!equip) return 0
+      const exhausted = ctx.combat.exhaustPile.length
+      const extra = Math.min(Math.floor(exhausted / effect.perN), effect.maxExtra)
+      return equip.action.baseValue * (1 + extra) * (isDefensive ? 0.5 : 1)
+    }
+    case 'crossSlotBonus': {
+      const source = ctx.equipment[effect.sourceSlot]
+      if (!source || !equip) return 0
+      return source.action.baseValue * (isDefensive ? defensiveMult : offensiveMult)
+    }
+    case 'combinedBlockRetaliate': {
+      if (slot !== 'Torso' || !equip) return 0
+      const block = Math.floor(equip.action.baseValue * effect.multiplier)
+      return isDefensive ? block * 3 : block * 1.5
+    }
+    case 'blockHeal': {
+      if (slot !== 'Torso' || !equip) return 0
+      const heal = Math.floor(equip.action.baseValue * effect.healRatio)
+      return isDefensive ? equip.action.baseValue + heal * 2 : heal
+    }
+    case 'volatileBlock': {
+      return isDefensive ? 8 : 3
+    }
+    case 'amplifyStatMultiplier': {
+      const dex = ctx.combat.statusEffects.find(s => s.type === effect.stat)?.stacks ?? 0
+      return dex > 0 ? dex * effect.multiplier * (isDefensive ? 2 : 0.5) : 0
+    }
+    case 'redirectPower': {
+      if (!equip) return 0
+      return equip.action.baseValue * 1.5
+    }
+    case 'feedbackLoop': {
+      if (!equip) return 0
+      const exhaustedThisTurn = ctx.combat.cardsExhaustedThisTurn
+      return equip.action.baseValue * (1 + exhaustedThisTurn) * (isDefensive ? 0.5 : 1)
+    }
   }
 }
 
@@ -227,6 +296,14 @@ function scoreSystemCard(
       case 'applyFeedback':
         // High value on turn 1 (permanent effect), lower later
         score += ctx.combat.roundNumber <= 2 ? 20 : 8
+        break
+      case 'applyBurnout':
+        // Permanent +2 Str/turn is very strong, -3 HP/turn is risky
+        score += ctx.stillHealth > 30 ? 15 : 3
+        break
+      case 'disableOwnSlot':
+        // 3 energy is valuable if you have cards to spend it on
+        score += ctx.combat.hand.length > 3 ? effect.energyGain * 3 : 0
         break
     }
   }

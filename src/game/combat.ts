@@ -96,6 +96,23 @@ export function getAllowedSlots(card: ModifierCardDefinition): BodySlot[] | null
     case 'retaliate': return ['Torso'] // counter build: Torso only
     case 'override':
       return null // universal — Override replaces any slot's action
+    // Berserker
+    case 'amplifyWithSelfDamage': return ['Arms', 'Torso']
+    case 'overclockSlot': return null // any slot
+    // Exhaust
+    case 'amplifyScaling': return ['Arms', 'Torso']
+    case 'overrideExhaustHand': return null // any slot (Override-like)
+    case 'repeatScaling': return null // any slot
+    // Counter
+    case 'crossSlotBonus': return ['Arms']
+    case 'combinedBlockRetaliate': return ['Torso']
+    case 'blockHeal': return ['Torso']
+    case 'volatileBlock': return ['Torso']
+    // Stat
+    case 'amplifyStatMultiplier': return ['Torso']
+    // Bridge
+    case 'redirectPower': return null // any slot
+    case 'feedbackLoop': return null // any slot
   }
 }
 
@@ -126,6 +143,10 @@ export interface ActionResult {
   feedbackReflectDamage?: number // TORSO feedback: damage to deal to random enemy
   feedbackLifestealRatio?: number // ARMS feedback: ratio of damage to heal
   feedbackPersistBlock?: boolean // LEGS feedback: block should persist
+  // New modifier results
+  selfDamage?: number // berserker: damage to deal to self after slot fires
+  disableSlotNextTurn?: boolean // overclock: disable this slot next turn
+  redirectPowerActive?: boolean // bridge: fire adjacent slot's action as second firing
 }
 
 export interface CombatResult {
@@ -191,6 +212,11 @@ export function initCombat(
     persistentBlock: 0,
     persistentFeedback: { Head: false, Torso: false, Arms: false, Legs: false },
     retaliateActive: false,
+    burnoutActive: false,
+    volatileArmorActive: false,
+    absorbActive: false,
+    absorbBlockGained: 0,
+    cardsExhaustedThisTurn: 0,
   }
 }
 
@@ -258,10 +284,14 @@ export function resolveBodyAction(
   let isOverride = false
 
   const overrideMod = [modifierDef, modifierDef2].find(
-    m => m?.category.type === 'slot' && m.category.effect.type === 'override'
+    m => m?.category.type === 'slot' && (m.category.effect.type === 'override' || m.category.effect.type === 'overrideExhaustHand')
   )
   if (overrideMod?.category.type === 'slot' && overrideMod.category.effect.type === 'override') {
     action = overrideMod.category.effect.action
+    isOverride = true
+  } else if (overrideMod?.category.type === 'slot' && overrideMod.category.effect.type === 'overrideExhaustHand') {
+    // Jettison: damage resolved in executeBodyActions, use dummy action
+    action = { type: 'damage', baseValue: 0, targetMode: 'single_enemy' }
     isOverride = true
   } else if (equipment) {
     action = equipment.action
@@ -313,6 +343,64 @@ export function resolveBodyAction(
         break
       case 'retaliate':
         // Flag is set on combat state during executeBodyActions
+        break
+      // Berserker
+      case 'amplifyWithSelfDamage':
+        finalValue = Math.floor(finalValue * effect.multiplier)
+        result.selfDamage = (result.selfDamage ?? 0) + effect.selfDamage
+        break
+      case 'overclockSlot':
+        repeatCount = 3 // fires exactly 3 times
+        result.disableSlotNextTurn = true
+        break
+      // Exhaust-scaling
+      case 'amplifyScaling': {
+        const exhaustMult = 1 + effect.perStack * combat.exhaustPile.length
+        finalValue = Math.floor(finalValue * exhaustMult)
+        break
+      }
+      case 'overrideExhaustHand':
+        // Handled during executeBodyActions (needs to mutate hand)
+        break
+      case 'repeatScaling': {
+        const extra = Math.min(Math.floor(combat.exhaustPile.length / effect.perN), effect.maxExtra)
+        repeatCount += extra
+        break
+      }
+      // Counter
+      case 'crossSlotBonus':
+        // Resolved in executeBodyActions where full equipment context is available
+        break
+      case 'combinedBlockRetaliate':
+        finalValue = Math.floor(finalValue * effect.multiplier)
+        // Retaliate flag set in executeBodyActions
+        break
+      case 'blockHeal':
+        // Flag set in executeBodyActions
+        break
+      case 'volatileBlock':
+        // Flag set in executeBodyActions
+        break
+      // Stat
+      case 'amplifyStatMultiplier':
+        // Override the stat bonus: multiply the stat's contribution
+        // The stat was already added in applyStatusToAction. We need to add extra.
+        if (effect.stat === 'Dexterity' && slot === 'Torso' && !isOverride) {
+          const dex = getStatus(combat.statusEffects, 'Dexterity')
+          finalValue += dex * (effect.multiplier - 1) // add the extra (3x - 1x = 2x more)
+        }
+        if (effect.stat === 'Strength' && slot === 'Arms' && !isOverride) {
+          const str = getStatus(combat.statusEffects, 'Strength')
+          finalValue += str * (effect.multiplier - 1)
+        }
+        break
+      // Bridge
+      case 'redirectPower':
+        // Second firing with adjacent slot's action — handled in executeBodyActions
+        result.redirectPowerActive = true
+        break
+      case 'feedbackLoop':
+        repeatCount += combat.cardsExhaustedThisTurn
         break
     }
   }
@@ -438,10 +526,13 @@ export function executeBodyActions(ctx: CombatContext): CombatResult {
     log: [],
   }
 
-  // Reset feedback and retaliate state for this execution
+  // Reset per-execution state
   result.combat.feedbackArmsBonus = 0
   result.combat._legsFeedbackBlock = 0
   result.combat.retaliateActive = false
+  result.combat.volatileArmorActive = false
+  result.combat.absorbActive = false
+  result.combat.absorbBlockGained = 0
 
   // Fire onPlanningEnd part triggers (Empty Chamber: block per unplayed card)
   for (const part of ctx.parts) {
@@ -500,6 +591,107 @@ export function executeBodyActions(ctx: CombatContext): CombatResult {
             result.combat.retaliateActive = true
             result.log.push('Retaliate: damage absorbed by block will be dealt back')
           }
+        }
+      }
+    }
+
+    // ─── New modifier effects ──────────────────────────────────────
+
+    // Cross-slot bonus: add source slot's equipment base value as Arms damage
+    const mods = [modInstanceId, modInstanceId2].filter(Boolean)
+    for (const mId of mods) {
+      const card = findAssignedCard(result.combat, mId!)
+      if (!card) continue
+      const mDef = ctx.cardDefs[card.definitionId]
+      if (!mDef || mDef.category.type !== 'slot') continue
+      const eff = mDef.category.effect
+      if (eff.type === 'crossSlotBonus' && !result.combat.disabledSlots.includes(eff.sourceSlot)) {
+        const sourceEquip = ctx.equipment[eff.sourceSlot]
+        if (sourceEquip) {
+          const bonus = sourceEquip.action.baseValue
+          for (const d of actionResult.damage) d.amount += bonus
+          result.log.push(`${mDef.name}: +${bonus} from ${eff.sourceSlot}`)
+        }
+      }
+      // Combined block + retaliate (Iron Curtain)
+      if (eff.type === 'combinedBlockRetaliate') {
+        result.combat.retaliateActive = true
+        result.log.push('Iron Curtain: Retaliate active')
+      }
+      // Block heal (Absorb)
+      if (eff.type === 'blockHeal') {
+        result.combat.absorbActive = true
+      }
+      // Volatile block
+      if (eff.type === 'volatileBlock') {
+        result.combat.volatileArmorActive = true
+        result.log.push('Volatile Armor active')
+      }
+      // Override exhaust hand (Jettison) — exhaust hand cards and create damage
+      if (eff.type === 'overrideExhaustHand') {
+        const handCards = result.combat.hand.slice()
+        let exhausted = 0
+        for (let i = 0; i < Math.min(handCards.length, eff.maxCards); i++) {
+          const c = result.combat.hand.shift()
+          if (c) {
+            result.combat.exhaustPile.push(c)
+            result.combat.cardsExhaustedThisTurn++
+            exhausted++
+            for (const part of ctx.parts) {
+              if (part.trigger.type === 'onCardExhaust') {
+                applyPartEffect(part, result, ctx)
+              }
+            }
+          }
+        }
+        if (exhausted > 0) {
+          const totalDmg = exhausted * eff.damagePerCard
+          // Add as damage entries to actionResult
+          actionResult.damage.push({ enemyId: '__single__', amount: totalDmg })
+          result.log.push(`Jettison: exhausted ${exhausted} cards for ${totalDmg} damage`)
+        }
+      }
+    }
+
+    // Self-damage (Reckless Boost)
+    if (actionResult.selfDamage && actionResult.selfDamage > 0) {
+      result.stillHealth = Math.max(0, result.stillHealth - actionResult.selfDamage)
+      result.log.push(`${slot}: took ${actionResult.selfDamage} self-damage`)
+    }
+
+    // Disable slot next turn (Overclock Slot)
+    if (actionResult.disableSlotNextTurn) {
+      if (!result.combat.disabledSlots.includes(slot)) {
+        result.combat.disabledSlots.push(slot)
+      }
+      result.log.push(`${slot}: overclocked — disabled next turn`)
+    }
+
+    // Track block gained for Absorb
+    if (actionResult.blockGained > 0 && result.combat.absorbActive) {
+      result.combat.absorbBlockGained += actionResult.blockGained
+    }
+
+    // Redirect Power: fire adjacent slot's action as second hit
+    if (actionResult.redirectPowerActive) {
+      const adjacentMap: Record<BodySlot, BodySlot> = { Head: 'Torso', Torso: 'Head', Arms: 'Legs', Legs: 'Arms' }
+      const adjSlot = adjacentMap[slot]
+      const adjEquip = ctx.equipment[adjSlot]
+      if (adjEquip && !result.combat.disabledSlots.includes(adjSlot)) {
+        const adjAction = adjEquip.action
+        const adjValue = adjAction.baseValue
+        if (adjAction.type === 'damage') {
+          actionResult.damage.push({ enemyId: adjAction.targetMode === 'all_enemies' ? '__all__' : '__single__', amount: adjValue })
+          result.log.push(`Redirect Power: +${adjValue} damage from ${adjSlot}`)
+        } else if (adjAction.type === 'block') {
+          actionResult.blockGained += adjValue
+          result.log.push(`Redirect Power: +${adjValue} block from ${adjSlot}`)
+        } else if (adjAction.type === 'draw') {
+          drawCards(result.combat, adjValue, ctx.rng)
+          result.log.push(`Redirect Power: drew ${adjValue} from ${adjSlot}`)
+        } else if (adjAction.type === 'heal') {
+          result.stillHealth = Math.min(ctx.maxHealth, result.stillHealth + adjValue)
+          result.log.push(`Redirect Power: healed ${adjValue} from ${adjSlot}`)
         }
       }
     }
@@ -618,6 +810,15 @@ export function executeBodyActions(ctx: CombatContext): CombatResult {
     result.combat.combatLog.push(slotEvent)
   }
 
+  // Absorb: heal 50% of total block gained this execution
+  if (result.combat.absorbActive && result.combat.absorbBlockGained > 0) {
+    const heal = Math.floor(result.combat.absorbBlockGained * 0.5)
+    if (heal > 0) {
+      result.stillHealth = Math.min(ctx.maxHealth, result.stillHealth + heal)
+      result.log.push(`Absorb: healed ${heal} (50% of ${result.combat.absorbBlockGained} block)`)
+    }
+  }
+
   return result
 }
 
@@ -630,7 +831,9 @@ function hasOverrideModifier(
   const cardInst = findAssignedCard(combat, instanceId)
   if (!cardInst) return false
   const def = cardDefs[cardInst.definitionId]
-  return def?.category.type === 'slot' && def.category.effect.type === 'override'
+  if (!def || def.category.type !== 'slot') return false
+  const t = def.category.effect.type
+  return t === 'override' || t === 'overrideExhaustHand'
 }
 
 // ─── Play Modifier Card ─────────────────────────────────────────────────────
@@ -792,6 +995,19 @@ export function playModifierCard(
             }
             break
           }
+          case 'applyBurnout':
+            result.combat.burnoutActive = true
+            result.log.push('Burnout active: -3 HP, +2 Strength each turn')
+            break
+          case 'disableOwnSlot':
+            if (targetSlot) {
+              if (!result.combat.disabledSlots.includes(targetSlot)) {
+                result.combat.disabledSlots.push(targetSlot)
+              }
+              result.combat.currentEnergy += effect.energyGain
+              result.log.push(`Shutdown: disabled ${targetSlot}, gained ${effect.energyGain} Energy`)
+            }
+            break
         }
       }
       result.log.push(`${card.name} played freely`)
@@ -803,6 +1019,7 @@ export function playModifierCard(
       const fpCardInst = result.combat.hand.splice(fpHandIdx, 1)[0]
       if (card.keywords.includes('Exhaust')) {
         result.combat.exhaustPile.push(fpCardInst)
+        result.combat.cardsExhaustedThisTurn++
         for (const part of ctx.parts) {
           if (part.trigger.type === 'onCardExhaust') {
             applyPartEffect(part, result, ctx)
@@ -916,6 +1133,13 @@ export function playModifierCard(
           }
           break
         }
+        case 'applyBurnout':
+          result.combat.burnoutActive = true
+          result.log.push('Burnout active: -3 HP, +2 Strength each turn')
+          break
+        case 'disableOwnSlot':
+          // Non-freePlay version (shouldn't happen, but handle anyway)
+          break
       }
     }
 
@@ -924,6 +1148,7 @@ export function playModifierCard(
       const shouldExhaust = card.category.type === 'system' || card.keywords.includes('Exhaust')
       if (shouldExhaust) {
         result.combat.exhaustPile.push(cardInst)
+        result.combat.cardsExhaustedThisTurn++
         for (const part of ctx.parts) {
           if (part.trigger.type === 'onCardExhaust') {
             applyPartEffect(part, result, ctx)
@@ -1088,6 +1313,17 @@ export function executeEnemyTurn(ctx: CombatContext): CombatResult {
           result.log.push(`Retaliate: dealt ${retActual} damage back to ${def.name}`)
         }
 
+        // Volatile Armor: consumed block deals damage to attacker
+        if (result.combat.volatileArmorActive && totalBlocked > 0) {
+          const vaAbsorbed = Math.min(enemy.block, totalBlocked)
+          enemy.block -= vaAbsorbed
+          const vaActual = totalBlocked - vaAbsorbed
+          enemy.currentHealth = Math.max(0, enemy.currentHealth - vaActual)
+          if (enemy.currentHealth === 0) enemy.isDefeated = true
+          eventCounterDamage += vaActual
+          result.log.push(`Volatile Armor: dealt ${vaActual} damage to ${def.name}`)
+        }
+
         // Counter parts: trigger on damage taken
         for (const part of ctx.parts) {
           if (part.trigger.type !== 'onDamageTaken') continue
@@ -1204,6 +1440,7 @@ export function endTurn(ctx: CombatContext): CombatResult {
           const def = ctx.cardDefs[cardInst.definitionId]
           if (def?.keywords.includes('Exhaust')) {
             result.combat.exhaustPile.push(cardInst)
+            result.combat.cardsExhaustedThisTurn++
           } else {
             result.combat.discardPile.push(cardInst)
           }
@@ -1261,8 +1498,9 @@ export function startTurn(ctx: CombatContext, inspiredBonus = 0): CombatResult {
     log: [],
   }
 
-  // Reset energy budget
+  // Reset energy budget and per-turn counters
   result.combat.currentEnergy = result.combat.maxEnergy
+  result.combat.cardsExhaustedThisTurn = 0
 
   // Persistent block: decay by 50%, then add to block pool
   if (result.combat.persistentBlock > 0) {
@@ -1295,6 +1533,13 @@ export function startTurn(ctx: CombatContext, inspiredBonus = 0): CombatResult {
   // Set phase
   result.combat.phase = 'planning'
   result.combat.roundNumber++
+
+  // Burnout: lose 3 HP, gain 2 Strength each turn
+  if (result.combat.burnoutActive) {
+    result.stillHealth = Math.max(0, result.stillHealth - 3)
+    result.combat.statusEffects = addStatus(result.combat.statusEffects, 'Strength', 2)
+    result.log.push('Burnout: lost 3 HP, gained 2 Strength')
+  }
 
   // Fire onTurnStart parts
   for (const part of ctx.parts) {

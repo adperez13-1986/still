@@ -1133,6 +1133,216 @@ export const yuri: ModifierCardDefinition = {
 
 // ─── Exports ────────────────────────────────────────────────────────────────
 
+// ─── Berserker Cards ──────────────────────────────────────────────────────
+
+const recklessBoost: ModifierCardDefinition = {
+  id: 'reckless-boost',
+  name: 'Reckless Boost',
+  description: '+150% to one slot. Take 5 damage.',
+  energyCost: 2,
+  category: {
+    type: 'slot',
+    modifier: 'Amplify',
+    effect: { type: 'amplifyWithSelfDamage', multiplier: 2.5, selfDamage: 5 },
+  },
+  keywords: [],
+}
+
+const burnout: ModifierCardDefinition = {
+  id: 'burnout',
+  name: 'Burnout',
+  description: 'Permanent: lose 3 HP and gain 2 Strength each turn.',
+  energyCost: 2,
+  category: {
+    type: 'system',
+    modifier: 'Utility',
+    effects: [{ type: 'applyBurnout' }],
+    homeSlot: 'Arms',
+  },
+  keywords: ['Exhaust'],
+}
+
+const overclockSlot: ModifierCardDefinition = {
+  id: 'overclock-slot',
+  name: 'Overclock Slot',
+  description: 'Slot fires 3 times. Disabled next turn.',
+  energyCost: 2,
+  category: {
+    type: 'slot',
+    modifier: 'Repeat',
+    effect: { type: 'overclockSlot' },
+  },
+  keywords: [],
+}
+
+const shutdown: ModifierCardDefinition = {
+  id: 'shutdown',
+  name: 'Shutdown',
+  description: 'Disable one of your slots. Gain 3 Energy.',
+  energyCost: 0,
+  freePlay: true,
+  category: {
+    type: 'system',
+    modifier: 'Utility',
+    effects: [{ type: 'disableOwnSlot', energyGain: 3 }],
+    homeSlot: 'Head',
+  },
+  keywords: ['Exhaust'],
+}
+
+// ─── Exhaust-Aligned Cards ────────────────────────────────────────────────
+
+const scrapCharge: ModifierCardDefinition = {
+  id: 'scrap-charge',
+  name: 'Scrap Charge',
+  description: '+25% per card in Exhaust pile.',
+  energyCost: 2,
+  category: {
+    type: 'slot',
+    modifier: 'Amplify',
+    effect: { type: 'amplifyScaling', perStack: 0.25 },
+  },
+  keywords: [],
+}
+
+const jettison: ModifierCardDefinition = {
+  id: 'jettison',
+  name: 'Jettison',
+  description: 'Override: exhaust up to 3 hand cards, deal 6 damage each.',
+  energyCost: 2,
+  category: {
+    type: 'slot',
+    modifier: 'Override',
+    effect: { type: 'overrideExhaustHand', damagePerCard: 6, maxCards: 3 },
+  },
+  keywords: [],
+}
+
+const residualCharge: ModifierCardDefinition = {
+  id: 'residual-charge',
+  name: 'Residual Charge',
+  description: 'Slot fires extra for every 3 cards in Exhaust pile (max 4x).',
+  energyCost: 2,
+  category: {
+    type: 'slot',
+    modifier: 'Repeat',
+    effect: { type: 'repeatScaling', perN: 3, maxExtra: 3 },
+  },
+  keywords: [],
+}
+
+// ─── Counter-Aligned Cards ────────────────────────────────────────────────
+
+const crossWire: ModifierCardDefinition = {
+  id: 'cross-wire',
+  name: 'Cross-Wire',
+  description: 'Arms gains bonus damage equal to Torso block value.',
+  energyCost: 2,
+  category: {
+    type: 'slot',
+    modifier: 'Amplify',
+    effect: { type: 'crossSlotBonus', sourceSlot: 'Torso' },
+  },
+  keywords: [],
+}
+
+const ironCurtain: ModifierCardDefinition = {
+  id: 'iron-curtain',
+  name: 'Iron Curtain',
+  description: '+200% block. Gain Retaliate.',
+  energyCost: 3,
+  category: {
+    type: 'slot',
+    modifier: 'Amplify',
+    effect: { type: 'combinedBlockRetaliate', multiplier: 3.0 },
+  },
+  keywords: [],
+}
+
+const absorb: ModifierCardDefinition = {
+  id: 'absorb',
+  name: 'Absorb',
+  description: 'Block gained this turn also heals 50%.',
+  energyCost: 2,
+  category: {
+    type: 'slot',
+    modifier: 'Amplify',
+    effect: { type: 'blockHeal', healRatio: 0.5 },
+  },
+  keywords: [],
+}
+
+const volatileArmor: ModifierCardDefinition = {
+  id: 'volatile-armor',
+  name: 'Volatile Armor',
+  description: 'When block is broken, deal consumed amount to attacker.',
+  energyCost: 2,
+  category: {
+    type: 'slot',
+    modifier: 'Amplify',
+    effect: { type: 'volatileBlock' },
+  },
+  keywords: [],
+}
+
+// ─── Stat-Aligned Cards ──────────────────────────────────────────────────
+
+const reinforce: ModifierCardDefinition = {
+  id: 'reinforce',
+  name: 'Reinforce',
+  description: 'Dexterity bonus to Torso is tripled.',
+  energyCost: 2,
+  category: {
+    type: 'slot',
+    modifier: 'Amplify',
+    effect: { type: 'amplifyStatMultiplier', stat: 'Dexterity', multiplier: 3 },
+  },
+  keywords: [],
+}
+
+// ─── Build-Bridge Cards ──────────────────────────────────────────────────
+
+const linkedFire: ModifierCardDefinition = {
+  id: 'linked-fire',
+  name: 'Linked Fire',
+  description: 'Arms deals bonus damage equal to Legs base value.',
+  energyCost: 2,
+  category: {
+    type: 'slot',
+    modifier: 'Amplify',
+    effect: { type: 'crossSlotBonus', sourceSlot: 'Legs' },
+  },
+  keywords: [],
+}
+
+const redirectPower: ModifierCardDefinition = {
+  id: 'redirect-power',
+  name: 'Redirect Power',
+  description: 'Slot fires twice. Second uses adjacent slot\'s action.',
+  energyCost: 2,
+  category: {
+    type: 'slot',
+    modifier: 'Repeat',
+    effect: { type: 'redirectPower' },
+  },
+  keywords: [],
+}
+
+const feedbackLoopCard: ModifierCardDefinition = {
+  id: 'feedback-loop',
+  name: 'Feedback Loop',
+  description: 'Slot fires extra for each card exhausted this turn.',
+  energyCost: 2,
+  category: {
+    type: 'slot',
+    modifier: 'Repeat',
+    effect: { type: 'feedbackLoop' },
+  },
+  keywords: [],
+}
+
+// ─── Pool Exports ─────────────────────────────────────────────────────────
+
 export const STARTING_CARDS: ModifierCardDefinition[] = [
   boost, boost, boost,
   emergencyStrike, emergencyShield,
@@ -1146,12 +1356,20 @@ export const SECTOR1_CARD_POOL: ModifierCardDefinition[] = [
   fieldRepair, targetLock, armorProtocol, powerSurge,
   precisionStrike, coldEfficiency, fuelTheFire, heatSurge, recklessCharge,
   thermalFlux, overclock, retaliate,
+  // Berserker seeds
+  recklessBoost, overclockSlot,
 ]
 
 export const SECTOR2_CARD_POOL: ModifierCardDefinition[] = [
   failsafeProtocol, reroute,
   glacierLance, controlledBurn, fluxSpike, thermalEquilibrium,
   salvageBurst, cascade, resonance, fortify,
+  // Expansion: exhaust, counter, stat, bridge, berserker system
+  scrapCharge, jettison, residualCharge,
+  crossWire, ironCurtain, absorb, volatileArmor,
+  reinforce,
+  linkedFire, redirectPower, feedbackLoopCard,
+  burnout, shutdown,
 ]
 
 export const CARD_POOL: ModifierCardDefinition[] = [
@@ -1171,6 +1389,12 @@ const allCardList: ModifierCardDefinition[] = [
   armorProtocol, salvageBurst, cascade, resonance,
   retaliate, fortify,
   yanah, yuri,
+  // Expansion
+  recklessBoost, burnout, overclockSlot, shutdown,
+  scrapCharge, jettison, residualCharge,
+  crossWire, ironCurtain, absorb, volatileArmor,
+  reinforce,
+  linkedFire, redirectPower, feedbackLoopCard,
 ]
 
 export const ALL_CARDS: Record<string, ModifierCardDefinition> = Object.fromEntries(

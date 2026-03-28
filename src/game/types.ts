@@ -44,6 +44,23 @@ export type SlotModifierEffect =
   | { type: 'override'; action: BodyAction }
   | { type: 'feedback' }
   | { type: 'retaliate' }
+  // Berserker
+  | { type: 'amplifyWithSelfDamage'; multiplier: number; selfDamage: number }
+  | { type: 'overclockSlot' } // fires 3x, disables slot next turn
+  // Exhaust-scaling
+  | { type: 'amplifyScaling'; perStack: number } // +perStack% per exhausted card
+  | { type: 'overrideExhaustHand'; damagePerCard: number; maxCards: number }
+  | { type: 'repeatScaling'; perN: number; maxExtra: number } // +1 firing per perN exhausted cards
+  // Counter
+  | { type: 'crossSlotBonus'; sourceSlot: BodySlot } // bonus dmg = source slot's equipment base value
+  | { type: 'combinedBlockRetaliate'; multiplier: number } // amplify block + retaliate
+  | { type: 'blockHeal'; healRatio: number } // block gained also heals %
+  | { type: 'volatileBlock' } // consumed block deals damage to attacker
+  // Stat
+  | { type: 'amplifyStatMultiplier'; stat: 'Strength' | 'Dexterity'; multiplier: number }
+  // Bridge
+  | { type: 'redirectPower' } // fires twice, 2nd uses adjacent slot's action
+  | { type: 'feedbackLoop' } // extra firings = cards exhausted this turn
 
 export type SystemEffect =
   | { type: 'draw'; count: number }
@@ -53,6 +70,8 @@ export type SystemEffect =
   | { type: 'gainBlock'; value: number }
   | { type: 'damage'; value: number; targetMode: TargetMode }
   | { type: 'applyFeedback' }
+  | { type: 'applyBurnout' }
+  | { type: 'disableOwnSlot'; energyGain: number }
 
 export type ModifierCardType =
   | { type: 'slot'; modifier: ModifierCategory; effect: SlotModifierEffect }
@@ -236,6 +255,11 @@ export interface CombatState {
   _legsFeedbackBlock?: number // temp: block from LEGS this turn to add to persistentBlock at end of turn
   persistentFeedback: Record<BodySlot, boolean> // permanent Feedback effects applied via system card
   retaliateActive: boolean // whether Retaliate modifier is active this turn
+  burnoutActive: boolean // Burnout Power: -3 HP, +2 Str each turn start
+  volatileArmorActive: boolean // consumed block deals damage to attacker
+  absorbActive: boolean // block gained this turn also heals 50%
+  absorbBlockGained: number // tracks block gained this turn for Absorb heal
+  cardsExhaustedThisTurn: number // tracks exhaust events for Feedback Loop
 }
 
 export interface RunState {
