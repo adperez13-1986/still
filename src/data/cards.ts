@@ -1236,7 +1236,7 @@ const residualCharge: ModifierCardDefinition = {
 const crossWire: ModifierCardDefinition = {
   id: 'cross-wire',
   name: 'Cross-Wire',
-  description: 'Arms gains bonus damage equal to Torso block value.',
+  description: 'Arms deals bonus damage equal to Torso base value.',
   energyCost: 2,
   category: {
     type: 'slot',
