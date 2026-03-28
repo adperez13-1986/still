@@ -18,6 +18,7 @@ interface Props {
   equipment: Record<BodySlot, EquipmentDefinition | null>
   onBuyCard: (cardId: string, cost: number) => void
   onBuyPart: (partId: string, cost: number) => void
+  onReplacePart: (oldPartId: string, newPartId: string, cost: number) => void
   onRecycle: (instanceId: string) => void
   onLeave: () => void
 }
@@ -33,10 +34,11 @@ const PART_COSTS: Record<string, number> = {
   rare: 90, uncommon: 65, common: 45,
 }
 
-export default function ShopScreen({ shards, sector, deck, ownedPartIds, parts, equipment, onBuyCard, onBuyPart, onRecycle, onLeave }: Props) {
+export default function ShopScreen({ shards, sector, deck, ownedPartIds, parts, equipment, onBuyCard, onBuyPart, onReplacePart, onRecycle, onLeave }: Props) {
   const [showRecyclePicker, setShowRecyclePicker] = useState(false)
   const [purchasedPartIds, setPurchasedPartIds] = useState<string[]>([])
   const [infoTab, setInfoTab] = useState<'deck' | 'equips' | null>(null)
+  const [pendingPartReplace, setPendingPartReplace] = useState<{ partId: string; cost: number } | null>(null)
   const SHOP_CARDS = useMemo(() => {
     const pool = sector >= 2 ? SECTOR2_CARD_POOL : SECTOR1_CARD_POOL
     return shuffle(pool).slice(0, 3)
@@ -117,12 +119,16 @@ export default function ShopScreen({ shards, sector, deck, ownedPartIds, parts, 
             const cost = PART_COSTS[part.rarity]
             const sold = purchasedPartIds.includes(part.id)
             const atCapacity = parts.length >= MAX_PARTS
-            const canAfford = shards >= cost && !sold && !atCapacity
+            const canAfford = shards >= cost && !sold
             return (
               <div
                 key={part.id}
                 onClick={() => {
                   if (!canAfford || sold) return
+                  if (atCapacity) {
+                    setPendingPartReplace({ partId: part.id, cost })
+                    return
+                  }
                   onBuyPart(part.id, cost)
                   setPurchasedPartIds(prev => [...prev, part.id])
                 }}
@@ -139,8 +145,8 @@ export default function ShopScreen({ shards, sector, deck, ownedPartIds, parts, 
               >
                 <div style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '6px' }}>{part.name}</div>
                 <div style={{ fontSize: '12px', color: '#aaa', marginBottom: '10px' }}>{part.description}</div>
-                <div style={{ fontSize: '12px', color: sold ? '#27ae60' : atCapacity ? '#e74c3c' : canAfford ? '#f1c40f' : '#555', fontWeight: 'bold' }}>
-                  {sold ? 'SOLD' : atCapacity ? 'MODS FULL' : `${cost} shards`}
+                <div style={{ fontSize: '12px', color: sold ? '#27ae60' : canAfford ? '#f1c40f' : '#555', fontWeight: 'bold' }}>
+                  {sold ? 'SOLD' : `${cost} shards`}
                 </div>
               </div>
             )
@@ -207,6 +213,63 @@ export default function ShopScreen({ shards, sector, deck, ownedPartIds, parts, 
           onTabChange={setInfoTab}
         />
       )}
+
+      {pendingPartReplace && (() => {
+        const incoming = PARTS.find(p => p.id === pendingPartReplace.partId)
+        if (!incoming) return null
+        return (
+          <div style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            backgroundColor: 'rgba(0,0,0,0.7)',
+          }}>
+            <div style={{
+              backgroundColor: '#1e1e2e', border: '2px solid #4a4a6a', borderRadius: '12px',
+              padding: '20px', maxWidth: '340px', width: '90%', color: '#e8e8e8',
+            }}>
+              <div style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '12px', color: '#f39c12' }}>
+                Mods Full (4/4)
+              </div>
+              <div style={{ fontSize: '12px', marginBottom: '8px', color: '#aaa' }}>Buying:</div>
+              <div style={{
+                padding: '8px', backgroundColor: 'rgba(243,156,18,0.15)', border: '1px solid #f39c12',
+                borderRadius: '6px', marginBottom: '12px',
+              }}>
+                <div style={{ fontWeight: 'bold', fontSize: '13px' }}>{incoming.name}</div>
+                <div style={{ fontSize: '11px', color: '#aaa', marginTop: '2px' }}>{incoming.description}</div>
+              </div>
+              <div style={{ fontSize: '12px', marginBottom: '8px', color: '#aaa' }}>Replace one:</div>
+              {parts.map(part => (
+                <div
+                  key={part.id}
+                  onClick={() => {
+                    onReplacePart(part.id, pendingPartReplace.partId, pendingPartReplace.cost)
+                    setPurchasedPartIds(prev => [...prev, pendingPartReplace.partId])
+                    setPendingPartReplace(null)
+                  }}
+                  style={{
+                    padding: '8px', marginBottom: '4px', backgroundColor: '#16213e',
+                    border: '1px solid #2c3e50', borderRadius: '6px', cursor: 'pointer',
+                  }}
+                >
+                  <div style={{ fontWeight: 'bold', fontSize: '12px' }}>{part.name}</div>
+                  <div style={{ fontSize: '10px', color: '#888', marginTop: '2px' }}>{part.description}</div>
+                </div>
+              ))}
+              <div
+                onClick={() => setPendingPartReplace(null)}
+                style={{
+                  padding: '8px', marginTop: '8px', textAlign: 'center',
+                  backgroundColor: '#2c3e50', borderRadius: '6px', cursor: 'pointer',
+                  fontSize: '12px', color: '#aaa',
+                }}
+              >
+                Cancel
+              </div>
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }

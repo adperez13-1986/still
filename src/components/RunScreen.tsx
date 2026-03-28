@@ -392,6 +392,13 @@ export default function RunScreen() {
           run.addShards(-cost)
           run.addPart(part)
         }}
+        onReplacePart={(oldPartId, newPartId, cost) => {
+          if (run.shards < cost) return
+          const newPart = ALL_PARTS[newPartId]
+          if (!newPart) return
+          run.addShards(-cost)
+          run.replacePart(oldPartId, newPart)
+        }}
         onRecycle={(instanceId) => {
           if (run.shards < 60) return
           run.removeCardFromDeck(instanceId)
