@@ -203,9 +203,9 @@ export default function CombatScreen() {
         const baseDef = ALL_CARDS[cardInst.definitionId]
         const def = cardInst.isUpgraded && baseDef?.upgraded ? baseDef.upgraded : baseDef
         if (def?.freePlay) {
-          // Feedback needs slot targeting — go through slot selection flow
+          // Some freePlay cards need slot targeting — go through slot selection flow
           const needsSlotTarget = def.category.type === 'system' &&
-            def.category.effects.some(e => e.type === 'applyFeedback')
+            def.category.effects.some(e => e.type === 'applyFeedback' || e.type === 'disableOwnSlot')
           if (!needsSlotTarget) {
             const homeSlot = def.category.type === 'system' ? def.category.homeSlot : undefined
             run.playCard(instanceId, homeSlot ?? 'Head', targetEnemyId ?? undefined)
