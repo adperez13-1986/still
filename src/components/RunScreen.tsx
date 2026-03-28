@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useLocation } from 'react-router-dom'
 import type { GridRoom, BehavioralPartDefinition } from '../game/types'
+import { MAX_PARTS } from '../game/types'
 import { useRunStore } from '../store/runStore'
 import { usePermanentStore } from '../store/permanentStore'
 import MapScreen from './MapScreen'
@@ -385,6 +386,7 @@ export default function RunScreen() {
         }}
         onBuyPart={(partId, cost) => {
           if (run.shards < cost) return
+          if (run.parts.length >= MAX_PARTS) return
           const part = ALL_PARTS[partId]
           if (!part) return
           run.addShards(-cost)

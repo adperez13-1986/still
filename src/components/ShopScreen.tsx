@@ -5,6 +5,7 @@ import RunInfoOverlay from './RunInfoOverlay'
 import { SECTOR1_CARD_POOL, SECTOR2_CARD_POOL } from '../data/cards'
 import { PARTS } from '../data/parts'
 import type { CardInstance, BehavioralPartDefinition, EquipmentDefinition, BodySlot } from '../game/types'
+import { MAX_PARTS } from '../game/types'
 
 const RECYCLE_COST = 60
 
@@ -115,7 +116,8 @@ export default function ShopScreen({ shards, sector, deck, ownedPartIds, parts, 
           {SHOP_PARTS.map((part) => {
             const cost = PART_COSTS[part.rarity]
             const sold = purchasedPartIds.includes(part.id)
-            const canAfford = shards >= cost && !sold
+            const atCapacity = parts.length >= MAX_PARTS
+            const canAfford = shards >= cost && !sold && !atCapacity
             return (
               <div
                 key={part.id}
@@ -137,8 +139,8 @@ export default function ShopScreen({ shards, sector, deck, ownedPartIds, parts, 
               >
                 <div style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '6px' }}>{part.name}</div>
                 <div style={{ fontSize: '12px', color: '#aaa', marginBottom: '10px' }}>{part.description}</div>
-                <div style={{ fontSize: '12px', color: sold ? '#27ae60' : canAfford ? '#f1c40f' : '#555', fontWeight: 'bold' }}>
-                  {sold ? 'SOLD' : `${cost} shards`}
+                <div style={{ fontSize: '12px', color: sold ? '#27ae60' : atCapacity ? '#e74c3c' : canAfford ? '#f1c40f' : '#555', fontWeight: 'bold' }}>
+                  {sold ? 'SOLD' : atCapacity ? 'MODS FULL' : `${cost} shards`}
                 </div>
               </div>
             )
