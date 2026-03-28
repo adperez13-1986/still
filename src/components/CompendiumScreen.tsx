@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { SECTOR1_CARD_POOL, SECTOR2_CARD_POOL, CARD_POOL, STARTING_CARDS, ALL_CARDS } from '../data/cards'
+import { SECTOR1_CARD_POOL, SECTOR2_CARD_POOL, STARTING_CARDS, ALL_CARDS } from '../data/cards'
 import { EQUIPMENT, SECTOR1_PART_POOL, SECTOR2_PART_POOL } from '../data/parts'
 import { SECTOR1_ENEMIES, SECTOR1_ELITES, SECTOR1_BOSS, SECTOR2_ENEMIES, SECTOR2_ELITES, SECTOR2_BOSS } from '../data/enemies'
 import type { ModifierCardDefinition, EnemyDefinition } from '../game/types'
