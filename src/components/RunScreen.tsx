@@ -20,6 +20,7 @@ import {
   ALL_ENEMIES,
 } from '../data/enemies'
 import { STARTING_CARDS, SECTOR1_CARD_POOL, SECTOR2_CARD_POOL } from '../data/cards'
+import { rollWeightedCards } from '../game/drops'
 import { ALL_PARTS, ALL_EQUIPMENT, STARTING_HEAD, STARTING_TORSO, STARTING_ARMS, STARTING_LEGS } from '../data/parts'
 
 function pickEnemiesForRoom(room: GridRoom, sector: number, combatsCleared: number) {
@@ -138,9 +139,12 @@ export default function RunScreen() {
 
     const starterDeck = STARTING_CARDS.map((c) => makeCardInstance(c.id))
     if (permanent.workshopUpgrades['practiced-routine']) {
-      const nonBasics = SECTOR1_CARD_POOL.filter((c) => !['boost', 'emergency-strike', 'coolant-flush', 'diagnostics'].includes(c.id))
-      const picked = nonBasics[Math.floor(Math.random() * nonBasics.length)]
-      if (picked) starterDeck.push(makeCardInstance(picked.id))
+      const candidates = rollWeightedCards(
+        SECTOR1_CARD_POOL.filter((c) => !['boost', 'emergency-strike', 'coolant-flush', 'diagnostics'].includes(c.id)),
+        SECTOR2_CARD_POOL,
+        1, 1, // sector 1, normal encounter
+      )
+      if (candidates.length > 0) starterDeck.push(makeCardInstance(candidates[0].id))
     }
     // Starting equipment — all four slots filled with scrap-tier gear
     const startingEquipment: import('../game/types').RunState['equipment'] = {
@@ -421,10 +425,12 @@ export default function RunScreen() {
             if (outcome.type === 'health') run.heal(outcome.value)
             if (outcome.type === 'shards') run.addShards(outcome.value)
             if (outcome.type === 'card') {
-              const sectorPool = run.sector >= 2 ? SECTOR2_CARD_POOL : SECTOR1_CARD_POOL
-              const nonBasics = sectorPool.filter((c) => !['boost', 'emergency-strike', 'coolant-flush', 'diagnostics'].includes(c.id))
-              const picked = nonBasics[Math.floor(Math.random() * nonBasics.length)]
-              if (picked) run.addCardToDeck(makeCardInstance(picked.id))
+              const candidates = rollWeightedCards(
+                SECTOR1_CARD_POOL.filter((c) => !['boost', 'emergency-strike', 'coolant-flush', 'diagnostics'].includes(c.id)),
+                SECTOR2_CARD_POOL,
+                1, run.sector,
+              )
+              if (candidates.length > 0) run.addCardToDeck(makeCardInstance(candidates[0].id))
             }
             if (!run.nameDiscovered && !permanent.nameEverDiscovered) {
               run.discoverName()

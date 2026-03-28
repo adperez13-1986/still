@@ -2,8 +2,40 @@ import type { DropPool, ModifierCardDefinition } from '../game/types'
 import { SECTOR1_CARD_POOL, SECTOR2_CARD_POOL } from '../data/cards'
 import { SECTOR1_PART_POOL, SECTOR2_PART_POOL, EQUIPMENT, RUN_WARPING_PARTS } from '../data/parts'
 
-function getCardPoolForSector(sector: number): ModifierCardDefinition[] {
-  return sector >= 2 ? SECTOR2_CARD_POOL : SECTOR1_CARD_POOL
+export type EncounterType = 'normal' | 'elite' | 'boss'
+
+/** Sector-weighted card selection: S1 cards more likely in S1, S2 more likely in S2.
+ *  Elite/boss encounters shift toward S2 (stronger) cards. */
+export function rollWeightedCards(
+  s1Pool: ModifierCardDefinition[],
+  s2Pool: ModifierCardDefinition[],
+  count: number,
+  sector: number,
+  encounterType: EncounterType = 'normal',
+  rng: () => number = Math.random,
+): ModifierCardDefinition[] {
+  // Base S2 probability by sector
+  let s2Chance = sector >= 2 ? 0.75 : 0.25
+
+  // Elite/boss shift toward S2
+  if (encounterType === 'elite') s2Chance = Math.min(1, s2Chance + 0.15)
+  if (encounterType === 'boss') s2Chance = Math.min(1, s2Chance + 0.25)
+
+  const picked: ModifierCardDefinition[] = []
+  const pickedIds = new Set<string>()
+  let attempts = 0
+
+  while (picked.length < count && attempts < 50) {
+    attempts++
+    const pool = rng() < s2Chance ? s2Pool : s1Pool
+    if (pool.length === 0) continue
+    const card = pool[Math.floor(rng() * pool.length)]
+    if (pickedIds.has(card.id)) continue
+    picked.push(card)
+    pickedIds.add(card.id)
+  }
+
+  return picked
 }
 
 export type ResolvedDrop =
@@ -30,13 +62,6 @@ function resolveShardDrop(entry: DropPool): ResolvedDrop {
 }
 
 function resolveBonusDrop(entry: DropPool, sector: number, ownedPartIds: string[] = [], ownedEquipIds: string[] = []): ResolvedDrop[] {
-  if (entry.type === 'card') {
-    const cardPool = getCardPoolForSector(sector)
-    // Always offer 3 choices from full sector pool (enemy ids ignored — they're too restrictive)
-    const shuffled = [...cardPool].sort(() => Math.random() - 0.5)
-    return shuffled.slice(0, 3).map((c) => ({ type: 'card', cardId: c.id }))
-  }
-
   if (entry.type === 'part') {
     const sectorPool = sector >= 2 ? SECTOR2_PART_POOL : SECTOR1_PART_POOL
     const base = entry.ids
@@ -66,7 +91,7 @@ export interface DropResult {
   droppedEquipment: boolean
 }
 
-export function resolveDrops(dropPool: DropPool[], equipPity = 0, sector = 1, ownedPartIds: string[] = [], ownedEquipIds: string[] = []): DropResult {
+export function resolveDrops(dropPool: DropPool[], equipPity = 0, sector = 1, ownedPartIds: string[] = [], ownedEquipIds: string[] = [], encounterType: EncounterType = 'normal'): DropResult {
   const results: ResolvedDrop[] = []
 
   // 1. Always drop shards
@@ -78,10 +103,9 @@ export function resolveDrops(dropPool: DropPool[], equipPity = 0, sector = 1, ow
     results.push({ type: 'shards', amount: 5 })
   }
 
-  // 2. Always offer 3 card choices from sector pool
-  const cardPool = getCardPoolForSector(sector)
-  const shuffled = [...cardPool].sort(() => Math.random() - 0.5)
-  results.push(...shuffled.slice(0, 3).map((c) => ({ type: 'card' as const, cardId: c.id })))
+  // 2. Always offer 3 card choices — sector-weighted from unified pool
+  const cards = rollWeightedCards(SECTOR1_CARD_POOL, SECTOR2_CARD_POOL, 3, sector, encounterType)
+  results.push(...cards.map((c) => ({ type: 'card' as const, cardId: c.id })))
 
   // 3. Bonus roll for part/equipment (ignore card entries in pool)
   const bonusEntries = dropPool.filter((d) => d.type === 'part' || d.type === 'equipment')

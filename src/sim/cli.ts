@@ -3,7 +3,7 @@ import { simulateCombat, type SimLoadout, type SimCombatResult } from './runner'
 import { planTurn } from './heuristic'
 import { aggregateResults, formatStats } from './stats'
 
-import { ALL_CARDS, STARTING_CARDS, SECTOR1_CARD_POOL, SECTOR2_CARD_POOL } from '../data/cards'
+import { ALL_CARDS, STARTING_CARDS, SECTOR1_CARD_POOL, SECTOR2_CARD_POOL, CARD_POOL } from '../data/cards'
 import {
   ALL_ENEMIES,
   SECTOR1_ENCOUNTERS, SECTOR1_ELITE_ENCOUNTERS,
@@ -101,6 +101,7 @@ function resolveDeck(spec: string | undefined): string[] {
   if (!spec || spec === 'default') return starterIds
   if (spec === 's1-pool') return [...starterIds, ...SECTOR1_CARD_POOL.slice(0, 4).map(c => c.id)]
   if (spec === 's2-pool') return [...starterIds, ...SECTOR1_CARD_POOL.slice(0, 4).map(c => c.id), ...SECTOR2_CARD_POOL.slice(0, 2).map(c => c.id)]
+  if (spec === 'mixed-pool') return [...starterIds, ...CARD_POOL.slice(0, 6).map(c => c.id)]
 
   // "raw:" prefix = full custom deck (no starters prepended)
   // Supports "+" suffix for upgraded cards (e.g., "overclock+")

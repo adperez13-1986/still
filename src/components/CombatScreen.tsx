@@ -7,7 +7,7 @@ import { resolveDrops, resolveWarperDrop } from '../game/drops'
 import { collapseRandomRoom } from '../game/mapGen'
 import { makeCardInstance, projectSlotActions } from '../game/combat'
 import { ALL_PARTS, ALL_EQUIPMENT, getPartSector } from '../data/parts'
-import { ALL_CARDS, SECTOR1_CARD_POOL, SECTOR2_CARD_POOL } from '../data/cards'
+import { ALL_CARDS } from '../data/cards'
 import type { BodySlot, EquipmentDefinition, BehavioralPartDefinition, CombatEvent } from '../game/types'
 import { MAX_PARTS } from '../game/types'
 
@@ -360,17 +360,10 @@ export default function CombatScreen() {
       if (primaryEnemy) {
         const def = ALL_ENEMIES[primaryEnemy.definitionId]!
         const ownedEquipIds = Object.values(run.equipment).filter(Boolean).map(e => e!.id)
-        const result = resolveDrops(def.dropPool, run.equipPity, run.sector, run.parts.map(p => p.id), ownedEquipIds)
+        const encType: import('../game/drops').EncounterType = def.isBoss ? 'boss' : def.isElite ? 'elite' : 'normal'
+        const result = resolveDrops(def.dropPool, run.equipPity, run.sector, run.parts.map(p => p.id), ownedEquipIds, encType)
         if (result.droppedEquipment) anyEquip = true
-        // Replace card drops with a clean 3-pick from sector pool
-        const nonCards = result.drops.filter(d => d.type !== 'card')
-        const hasCards = result.drops.some(d => d.type === 'card')
-        drops = [...nonCards]
-        if (hasCards) {
-          const pool = run.sector >= 2 ? SECTOR2_CARD_POOL : SECTOR1_CARD_POOL
-          const shuffled = [...pool].sort(() => Math.random() - 0.5)
-          drops.push(...shuffled.slice(0, 3).map(c => ({ type: 'card' as const, cardId: c.id })))
-        }
+        drops = result.drops
       }
 
       // Run-warping part drop chance for elite/boss encounters

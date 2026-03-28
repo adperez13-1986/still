@@ -3,6 +3,7 @@ import CardDisplay from './CardDisplay'
 import CardPicker from './CardPicker'
 import RunInfoOverlay from './RunInfoOverlay'
 import { SECTOR1_CARD_POOL, SECTOR2_CARD_POOL } from '../data/cards'
+import { rollWeightedCards } from '../game/drops'
 import { PARTS } from '../data/parts'
 import type { CardInstance, BehavioralPartDefinition, EquipmentDefinition, BodySlot } from '../game/types'
 import { MAX_PARTS } from '../game/types'
@@ -40,8 +41,7 @@ export default function ShopScreen({ shards, sector, deck, ownedPartIds, parts, 
   const [infoTab, setInfoTab] = useState<'deck' | 'equips' | null>(null)
   const [pendingPartReplace, setPendingPartReplace] = useState<{ partId: string; cost: number } | null>(null)
   const SHOP_CARDS = useMemo(() => {
-    const pool = sector >= 2 ? SECTOR2_CARD_POOL : SECTOR1_CARD_POOL
-    return shuffle(pool).slice(0, 3)
+    return rollWeightedCards(SECTOR1_CARD_POOL, SECTOR2_CARD_POOL, 3, sector)
   }, [sector])
   const SHOP_PARTS = useMemo(() => {
     const available = PARTS.filter(p => !ownedPartIds.includes(p.id))

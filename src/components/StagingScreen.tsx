@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useRunStore } from '../store/runStore'
 import { ALL_CARDS, SECTOR1_CARD_POOL, SECTOR2_CARD_POOL } from '../data/cards'
+import { rollWeightedCards } from '../game/drops'
 import { BEHAVIORAL_PARTS, EQUIPMENT } from '../data/parts'
 import { makeCardInstance } from '../game/combat'
 import CardDisplay from './CardDisplay'
@@ -67,12 +68,8 @@ export default function StagingScreen() {
   const [detail, setDetail] = useState<DetailPopover | null>(null)
   const nextSector = run.sector + 1
 
-  const nextCardPool = useMemo(() => {
-    return nextSector >= 2 ? SECTOR2_CARD_POOL : SECTOR1_CARD_POOL
-  }, [nextSector])
-
   // Bonus reward options (generated once)
-  const bonusCards = useMemo(() => shuffle(nextCardPool).slice(0, 3), [nextCardPool])
+  const bonusCards = useMemo(() => rollWeightedCards(SECTOR1_CARD_POOL, SECTOR2_CARD_POOL, 3, nextSector), [nextSector])
   const bonusPart = useMemo(() => {
     const ownedIds = new Set(run.parts.map(p => p.id))
     const parts = shuffle(BEHAVIORAL_PARTS.filter(p => !ownedIds.has(p.id)))

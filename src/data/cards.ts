@@ -1154,6 +1154,11 @@ export const SECTOR2_CARD_POOL: ModifierCardDefinition[] = [
   salvageBurst, cascade, resonance, fortify,
 ]
 
+export const CARD_POOL: ModifierCardDefinition[] = [
+  ...SECTOR1_CARD_POOL,
+  ...SECTOR2_CARD_POOL,
+]
+
 const allCardList: ModifierCardDefinition[] = [
   boost, emergencyStrike, vent, diagnostics,
   overcharge, spreadShot, echoProtocol, feedback, shieldBash, emergencyShield,
