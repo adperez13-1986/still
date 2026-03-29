@@ -133,7 +133,8 @@ export default function RunScreen() {
     const archivePartDef = archivePartId ? (ALL_PARTS[archivePartId] ?? null) : null
     const initialParts: BehavioralPartDefinition[] = []
     // S1 parts are active immediately; S2 parts are added but tracked as inert
-    if (archivePartDef && archiveEntry) {
+    // Parts on cooldown are NOT carried into the run
+    if (archivePartDef && archiveEntry && archiveEntry.cooldownLeft === 0) {
       initialParts.push(archivePartDef)
     }
 
