@@ -7,8 +7,8 @@ const wanderingDrone: EnemyDefinition = {
   name: 'Wandering Drone',
   maxHealth: 40,
   intentPattern: [
-    { type: 'Attack', value: 6 },
-    { type: 'Attack', value: 6 },
+    { type: 'Attack', value: 9 },
+    { type: 'Attack', value: 9 },
     { type: 'Block', value: 5 },
   ],
   dropPool: [
@@ -21,8 +21,8 @@ const rustGuard: EnemyDefinition = {
   name: 'Rust Guard',
   maxHealth: 55,
   intentPattern: [
-    { type: 'Attack', value: 8 },
-    { type: 'Attack', value: 10 },
+    { type: 'Attack', value: 11 },
+    { type: 'Attack', value: 14 },
     { type: 'Block', value: 8 },
   ],
   dropPool: [
@@ -37,9 +37,9 @@ const corrodedSentry: EnemyDefinition = {
   name: 'Corroded Sentry',
   maxHealth: 35,
   intentPattern: [
-    { type: 'Attack', value: 5 },
-    { type: 'Debuff', value: 2, status: 'Weak' },
     { type: 'Attack', value: 8 },
+    { type: 'Debuff', value: 2, status: 'Weak' },
+    { type: 'Attack', value: 11 },
   ],
   dropPool: [
     { type: 'shards', amount: 7, weight: 1 },
@@ -51,8 +51,8 @@ const fractureMite: EnemyDefinition = {
   name: 'Fracture Mite',
   maxHealth: 16,
   intentPattern: [
-    { type: 'Attack', value: 3, hits: 2 },
-    { type: 'Attack', value: 3, hits: 2 },
+    { type: 'Attack', value: 4, hits: 2 },
+    { type: 'Attack', value: 4, hits: 2 },
   ],
   dropPool: [
     { type: 'shards', amount: 5, weight: 1 },
@@ -64,8 +64,8 @@ const ironCrawler: EnemyDefinition = {
   name: 'Iron Crawler',
   maxHealth: 48,
   intentPattern: [
-    { type: 'AttackDebuff', value: 7, status: 'Vulnerable', statusStacks: 1 },
-    { type: 'Attack', value: 9 },
+    { type: 'AttackDebuff', value: 10, status: 'Vulnerable', statusStacks: 1 },
+    { type: 'Attack', value: 12 },
     { type: 'Block', value: 6 },
   ],
   dropPool: [
@@ -79,9 +79,9 @@ const glitchNode: EnemyDefinition = {
   name: 'Glitch Node',
   maxHealth: 24,
   intentPattern: [
-    { type: 'Attack', value: 6 },
-    { type: 'Buff', value: 1, status: 'Strength' },
-    { type: 'Attack', value: 10 },
+    { type: 'Attack', value: 9 },
+    { type: 'Buff', value: 2, status: 'Strength' },
+    { type: 'Attack', value: 13 },
   ],
   dropPool: [
     { type: 'shards', amount: 9, weight: 1 },
@@ -93,9 +93,9 @@ const sentinelShard: EnemyDefinition = {
   name: 'Sentinel Shard',
   maxHealth: 42,
   intentPattern: [
-    { type: 'Attack', value: 8 },
+    { type: 'Attack', value: 11 },
     { type: 'Block', value: 8 },
-    { type: 'Attack', value: 14 },
+    { type: 'Attack', value: 17 },
   ],
   dropPool: [
     { type: 'shards', amount: 11, weight: 2 },
@@ -108,9 +108,9 @@ const hollowRepeater: EnemyDefinition = {
   name: 'Hollow Repeater',
   maxHealth: 38,
   intentPattern: [
-    { type: 'Attack', value: 3, hits: 2 },
-    { type: 'Buff', value: 1, status: 'Strength' },
-    { type: 'Attack', value: 3, hits: 3 },
+    { type: 'Attack', value: 4, hits: 2 },
+    { type: 'Buff', value: 2, status: 'Strength' },
+    { type: 'Attack', value: 4, hits: 3 },
   ],
   dropPool: [
     { type: 'shards', amount: 8, weight: 1 },
@@ -123,9 +123,9 @@ const driftingFrame: EnemyDefinition = {
   name: 'Drifting Frame',
   maxHealth: 52,
   intentPattern: [
-    { type: 'Attack', value: 11 },
+    { type: 'Attack', value: 14 },
     { type: 'Debuff', value: 2, status: 'Vulnerable' },
-    { type: 'Attack', value: 7 },
+    { type: 'Attack', value: 10 },
   ],
   dropPool: [
     { type: 'shards', amount: 13, weight: 2 },
@@ -139,10 +139,10 @@ const echoConstruct: EnemyDefinition = {
   name: 'Echo Construct',
   maxHealth: 60,
   intentPattern: [
-    { type: 'Attack', value: 10 },
-    { type: 'Attack', value: 12 },
+    { type: 'Attack', value: 13 },
+    { type: 'Attack', value: 15 },
     { type: 'Debuff', value: 2, status: 'Weak' },
-    { type: 'Attack', value: 12 },
+    { type: 'Attack', value: 15 },
   ],
   dropPool: [
     { type: 'shards', amount: 15, weight: 1 },
@@ -157,7 +157,7 @@ const thermalScanner: EnemyDefinition = {
   intentPattern: [
     { type: 'Scan', value: 0 },
     { type: 'Debuff', value: 1, status: 'Vulnerable' },
-    { type: 'Attack', value: 12 },
+    { type: 'Attack', value: 15 },
     { type: 'Block', value: 6 },
   ],
   dropPool: [
@@ -172,8 +172,8 @@ const signalJammer: EnemyDefinition = {
   maxHealth: 30,
   intentPattern: [
     { type: 'DisableSlot', value: 0, targetSlot: 'Arms' },
-    { type: 'Attack', value: 8 },
-    { type: 'Attack', value: 10 },
+    { type: 'Attack', value: 11 },
+    { type: 'Attack', value: 13 },
   ],
   dropPool: [
     { type: 'shards', amount: 9, weight: 2 },
@@ -468,25 +468,28 @@ export interface Encounter {
 }
 
 export const SECTOR1_ENCOUNTERS: Encounter[] = [
+  // Solo — early/intro fights only
   { enemies: ['wandering-drone'] },
-  { enemies: ['rust-guard'] },
   { enemies: ['corroded-sentry'] },
   { enemies: ['fracture-mite', 'fracture-mite'] },
-  { enemies: ['iron-crawler'] },
   { enemies: ['glitch-node'] },
-  { enemies: ['sentinel-shard'] },
-  { enemies: ['hollow-repeater'] },
-  { enemies: ['drifting-frame'] },
-  { enemies: ['echo-construct'] },
-  { enemies: ['wandering-drone', 'fracture-mite'] },
-  { enemies: ['corroded-sentry', 'fracture-mite'] },
-  { enemies: ['rust-guard', 'glitch-node'] },
   { enemies: ['thermal-scanner'] },
-  { enemies: ['thermal-scanner', 'fracture-mite'] },
-  { enemies: ['signal-jammer', 'fracture-mite'] },
-  { enemies: ['signal-jammer', 'glitch-node'] },
-  { enemies: ['iron-crawler', 'fracture-mite', 'fracture-mite'] },
-  { enemies: ['corroded-sentry', 'glitch-node'] },
+  // Synergy pairs — debuffer + attacker
+  { enemies: ['iron-crawler', 'sentinel-shard'] },        // Vulnerable + 14 spike
+  { enemies: ['drifting-frame', 'rust-guard'] },           // Vulnerable 2 + chunky hits
+  { enemies: ['thermal-scanner', 'hollow-repeater'] },     // Vulnerable + multi-hit
+  { enemies: ['corroded-sentry', 'glitch-node'] },         // Weak + escalating Str
+  { enemies: ['corroded-sentry', 'sentinel-shard'] },      // Weak + 14 spike
+  // Utility + attacker
+  { enemies: ['signal-jammer', 'sentinel-shard'] },        // Disable Arms + big hits
+  { enemies: ['signal-jammer', 'rust-guard'] },            // Disable Arms + chunky hits
+  { enemies: ['signal-jammer', 'fracture-mite'] },         // Disable Arms + chip
+  // Multi-enemy pressure
+  { enemies: ['echo-construct', 'fracture-mite'] },        // Weak + chip from two sources
+  { enemies: ['iron-crawler', 'fracture-mite', 'fracture-mite'] }, // Vulnerable + swarm
+  { enemies: ['wandering-drone', 'wandering-drone'] },     // Two attackers, simple but doubles damage
+  { enemies: ['hollow-repeater', 'glitch-node'] },         // Both escalate with Str buffs
+  { enemies: ['drifting-frame', 'fracture-mite'] },        // Vulnerable + chip
 ]
 
 export const SECTOR1_ELITE_ENCOUNTERS: Encounter[] = [
