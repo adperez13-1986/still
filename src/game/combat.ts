@@ -147,6 +147,8 @@ export interface ActionResult {
   selfDamage?: number // berserker: damage to deal to self after slot fires
   disableSlotNextTurn?: boolean // overclock: disable this slot next turn
   redirectPowerActive?: boolean // bridge: fire adjacent slot's action as second firing
+  debuffsApplied?: Array<{ debuffType: string; stacks: number; targetMode: TargetMode }> // HEAD debuff
+  damageReduction?: number // LEGS per-hit reduction
 }
 
 export interface CombatResult {
@@ -217,6 +219,7 @@ export function initCombat(
     absorbActive: false,
     absorbBlockGained: 0,
     cardsExhaustedThisTurn: 0,
+    damageReduction: 0,
   }
 }
 
@@ -307,10 +310,7 @@ export function resolveBodyAction(
     result.healAmount += equipment.bonusHeal
   }
 
-  // bonusForesight: reveal extra enemy intents alongside primary action
-  if (equipment?.bonusForesight) {
-    result.foresight += equipment.bonusForesight
-  }
+  // bonusForesight removed — foresight no longer on equipment
 
   // Apply modifier effects (non-override) from both modifiers
   let repeatCount = 1
@@ -470,6 +470,19 @@ export function resolveBodyAction(
       case 'foresight':
         result.foresight += finalValue
         break
+      case 'debuff':
+        if (action.debuffType) {
+          if (!result.debuffsApplied) result.debuffsApplied = []
+          result.debuffsApplied.push({
+            debuffType: action.debuffType,
+            stacks: finalValue,
+            targetMode: action.targetMode,
+          })
+        }
+        break
+      case 'reduce':
+        result.damageReduction = (result.damageReduction ?? 0) + finalValue
+        break
     }
   }
 
@@ -533,6 +546,7 @@ export function executeBodyActions(ctx: CombatContext): CombatResult {
   result.combat.volatileArmorActive = false
   result.combat.absorbActive = false
   result.combat.absorbBlockGained = 0
+  result.combat.damageReduction = 0
 
   // Fire onPlanningEnd part triggers (Empty Chamber: block per unplayed card)
   for (const part of ctx.parts) {
@@ -673,6 +687,32 @@ export function executeBodyActions(ctx: CombatContext): CombatResult {
       result.combat.absorbBlockGained += actionResult.blockGained
     }
 
+    // Apply debuffs from HEAD
+    if (actionResult.debuffsApplied) {
+      for (const deb of actionResult.debuffsApplied) {
+        const targets = deb.targetMode === 'all_enemies'
+          ? result.combat.enemies.filter(e => !e.isDefeated)
+          : resolveSingleTarget(result.combat.enemies, ctx.targetEnemyId)
+        for (const enemy of targets) {
+          enemy.statusEffects = addStatus(enemy.statusEffects, deb.debuffType as any, deb.stacks)
+        }
+        result.log.push(`${slot}: applied ${deb.stacks} ${deb.debuffType}${deb.targetMode === 'all_enemies' ? ' to all' : ''}`)
+      }
+    }
+
+    // Apply damage reduction from LEGS
+    if (actionResult.damageReduction && actionResult.damageReduction > 0) {
+      result.combat.damageReduction += actionResult.damageReduction
+      result.log.push(`${slot}: damage reduction ${result.combat.damageReduction} per hit`)
+    }
+
+    // Apply bonus block from equipment (LEGS hybrid pieces)
+    if (equip?.bonusBlock && equip.bonusBlock > 0) {
+      result.combat.block += equip.bonusBlock
+      if (result.combat.absorbActive) result.combat.absorbBlockGained += equip.bonusBlock
+      result.log.push(`${slot}: +${equip.bonusBlock} bonus Block`)
+    }
+
     // Redirect Power: fire adjacent slot's action as second hit
     if (actionResult.redirectPowerActive) {
       const adjacentMap: Record<BodySlot, BodySlot> = { Head: 'Torso', Torso: 'Head', Arms: 'Legs', Legs: 'Arms' }
@@ -773,17 +813,8 @@ export function executeBodyActions(ctx: CombatContext): CombatResult {
     }
 
     // Apply card draw from body actions
-    // HEAD base draw happens at turn start, but extra draw from Repeat fires during execution
     if (actionResult.cardsDrawn > 0) {
-      if (slot === 'Head') {
-        const baseDraw = equip?.action.baseValue ?? 0
-        const extraDraw = actionResult.cardsDrawn - baseDraw
-        if (extraDraw > 0) {
-          drawCards(result.combat, extraDraw, ctx.rng)
-        }
-      } else {
-        drawCards(result.combat, actionResult.cardsDrawn, ctx.rng)
-      }
+      drawCards(result.combat, actionResult.cardsDrawn, ctx.rng)
     }
 
     // Apply blockCost
@@ -1290,6 +1321,10 @@ export function executeEnemyTurn(ctx: CombatContext): CombatResult {
               }
             }
           }
+          // LEGS damage reduction: reduce each hit before block
+          if (result.combat.damageReduction > 0) {
+            dealt = Math.max(0, dealt - result.combat.damageReduction)
+          }
           const absorbed = Math.min(result.combat.block, dealt)
           result.combat.block -= absorbed
           const actual = dealt - absorbed
@@ -1525,15 +1560,9 @@ export function startTurn(ctx: CombatContext, inspiredBonus = 0): CombatResult {
     result.combat.block = 0
   }
 
-  // HEAD draw bonus
-  let headDrawBonus = 0
-  const headEquip = ctx.equipment.Head
-  if (headEquip && headEquip.action.type === 'draw' && !result.combat.disabledSlots.includes('Head')) {
-    headDrawBonus = headEquip.action.baseValue
-  }
-
   // Step 3: Reshuffle discard into draw pile if needed, then draw
-  const drawCount = ctx.drawCount + inspiredBonus + headDrawBonus
+  // Draw is base only (drawCount) + Inspired. No HEAD equipment bonus.
+  const drawCount = ctx.drawCount + inspiredBonus
   if (result.combat.drawPile.length < drawCount && result.combat.discardPile.length > 0) {
     result.combat.drawPile = shuffle([...result.combat.drawPile, ...result.combat.discardPile], ctx.rng)
     result.combat.discardPile = []
@@ -1572,6 +1601,9 @@ export interface SlotProjection {
   heal: number
   draw: number
   foresight: number
+  debuffStacks: number
+  debuffType?: string
+  reduction: number
   targetMode: 'single' | 'all'
   isOverride: boolean
   isDisabled: boolean
@@ -1613,6 +1645,8 @@ export function projectSlotActions(
         heal: 0,
         draw: 0,
         foresight: 0,
+        debuffStacks: 0,
+        reduction: 0,
         targetMode: 'single',
         isOverride: false,
         isDisabled,
@@ -1633,6 +1667,10 @@ export function projectSlotActions(
     const totalDamage = result.damage.reduce((sum, d) => sum + d.amount, 0)
     const isAoe = result.damage.length > 0 && result.damage[0].enemyId === '__all__'
 
+    // Compute debuff info from action result
+    const debuffStacks = result.debuffsApplied?.reduce((sum, d) => sum + d.stacks, 0) ?? 0
+    const debuffType = result.debuffsApplied?.[0]?.debuffType
+
     projections.push({
       slot,
       willFire: true,
@@ -1641,6 +1679,9 @@ export function projectSlotActions(
       heal: result.healAmount,
       draw: result.cardsDrawn,
       foresight: result.foresight,
+      debuffStacks,
+      debuffType,
+      reduction: result.damageReduction ?? 0,
       targetMode: isAoe ? 'all' : 'single',
       isOverride: hasOverride,
       isDisabled: false,

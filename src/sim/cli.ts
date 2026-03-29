@@ -144,7 +144,7 @@ function main() {
     parts: resolveParts(opts['parts']),
     health,
     maxHealth: health,
-    drawCount: 3,
+    drawCount: 5,
     combatsCleared,
   }
 

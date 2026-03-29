@@ -2,22 +2,22 @@ import type { EquipmentDefinition, BehavioralPartDefinition } from '../game/type
 
 // ─── Equipment Definitions ──────────────────────────────────────────────────
 
-// HEAD slot: information domain
+// HEAD slot: control/debuff domain
 const basicScanner: EquipmentDefinition = {
   id: 'basic-scanner',
   name: 'Scrap Scanner',
-  description: 'Draw 1 modifier card.',
+  description: 'Apply 1 Vulnerable to one enemy.',
   slot: 'Head',
-  action: { type: 'draw', baseValue: 1, targetMode: 'self' },
+  action: { type: 'debuff', baseValue: 1, targetMode: 'single_enemy', debuffType: 'Vulnerable' },
   rarity: 'common',
 }
 
 const crackedLens: EquipmentDefinition = {
   id: 'cracked-lens',
   name: 'Cracked Lens',
-  description: 'Reveal 1 extra enemy intent.',
+  description: 'Apply 1 Weak to one enemy.',
   slot: 'Head',
-  action: { type: 'foresight', baseValue: 1, targetMode: 'self' },
+  action: { type: 'debuff', baseValue: 1, targetMode: 'single_enemy', debuffType: 'Weak' },
   rarity: 'common',
 }
 
@@ -60,22 +60,22 @@ const weldingTorch: EquipmentDefinition = {
   rarity: 'common',
 }
 
-// LEGS slot: flow domain (draw, cycling, block)
+// LEGS slot: evasion/damage reduction domain
 const scrapActuators: EquipmentDefinition = {
   id: 'worn-actuators',
   name: 'Scrap Actuators',
-  description: 'Gain 2 Block.',
+  description: 'Reduce each hit by 2.',
   slot: 'Legs',
-  action: { type: 'block', baseValue: 2, targetMode: 'self' },
+  action: { type: 'reduce', baseValue: 2, targetMode: 'self' },
   rarity: 'common',
 }
 
 const salvagedTreads: EquipmentDefinition = {
   id: 'salvaged-treads',
   name: 'Salvaged Treads',
-  description: 'Gain 2 Block and draw 1 card.',
+  description: 'Reduce each hit by 3.',
   slot: 'Legs',
-  action: { type: 'block', baseValue: 2, targetMode: 'self' },
+  action: { type: 'reduce', baseValue: 3, targetMode: 'self' },
   rarity: 'uncommon',
 }
 
@@ -84,9 +84,9 @@ const salvagedTreads: EquipmentDefinition = {
 const calibratedOptics: EquipmentDefinition = {
   id: 'calibrated-optics',
   name: 'Calibrated Optics',
-  description: 'Draw 2 cards.',
+  description: 'Apply 1 Vulnerable to ALL enemies.',
   slot: 'Head',
-  action: { type: 'draw', baseValue: 2, targetMode: 'self' },
+  action: { type: 'debuff', baseValue: 1, targetMode: 'all_enemies', debuffType: 'Vulnerable' },
   rarity: 'uncommon',
 }
 
@@ -111,10 +111,11 @@ const overclockedPistons: EquipmentDefinition = {
 const adaptiveTreads: EquipmentDefinition = {
   id: 'adaptive-treads',
   name: 'Adaptive Treads',
-  description: 'Draw 2 cards.',
+  description: 'Reduce each hit by 2. Gain 2 Block.',
   slot: 'Legs',
-  action: { type: 'draw', baseValue: 2, targetMode: 'self' },
+  action: { type: 'reduce', baseValue: 2, targetMode: 'self' },
   rarity: 'uncommon',
+  bonusBlock: 2,
 }
 
 // ─── Tradeoff Equipment ────────────────────────────────────────────────────
@@ -150,35 +151,33 @@ const meltdownCannon: EquipmentDefinition = {
   rarity: 'rare',
 }
 
-// HEAD uncommon: draw 1 + foresight 1
+// HEAD uncommon: Weak 2 single
 const tacticalVisor: EquipmentDefinition = {
   id: 'tactical-visor',
   name: 'Tactical Visor',
-  description: 'Draw 1 card. Reveal 1 extra enemy intent.',
+  description: 'Apply 2 Weak to one enemy.',
   slot: 'Head',
-  action: { type: 'draw', baseValue: 1, targetMode: 'self' },
+  action: { type: 'debuff', baseValue: 2, targetMode: 'single_enemy', debuffType: 'Weak' },
   rarity: 'uncommon',
-  bonusForesight: 1,
 }
 
-// HEAD rare: draw 2 + foresight 1
+// HEAD rare: Vulnerable 1 AoE + Weak 1 (via bonusBlock hack — TODO: proper dual debuff)
 const neuralSync: EquipmentDefinition = {
   id: 'neural-sync',
   name: 'Neural Sync',
-  description: 'Draw 2 cards. Reveal 1 extra enemy intent.',
+  description: 'Apply 1 Vulnerable and 1 Weak to ALL enemies.',
   slot: 'Head',
-  action: { type: 'draw', baseValue: 2, targetMode: 'self' },
+  action: { type: 'debuff', baseValue: 1, targetMode: 'all_enemies', debuffType: 'Vulnerable' },
   rarity: 'rare',
-  bonusForesight: 1,
 }
 
-// HEAD rare: draw 2 (formerly draw 1/3 conditional on Hot)
+// HEAD rare: Weak 2 AoE
 const pyroclastScanner: EquipmentDefinition = {
   id: 'pyroclast-scanner',
   name: 'Pyroclast Scanner',
-  description: 'Draw 2 cards.',
+  description: 'Apply 2 Weak to ALL enemies.',
   slot: 'Head',
-  action: { type: 'draw', baseValue: 2, targetMode: 'self' },
+  action: { type: 'debuff', baseValue: 2, targetMode: 'all_enemies', debuffType: 'Weak' },
   rarity: 'rare',
 }
 
@@ -203,45 +202,46 @@ const cryoShell: EquipmentDefinition = {
   bonusHeal: 2,
 }
 
-// LEGS rare: gain 5 Block + draw 1 (formerly cooling + Cool block)
+// LEGS rare: reduce 4 per hit
 const cryoLock: EquipmentDefinition = {
   id: 'cryo-lock',
   name: 'Cryo Lock',
-  description: 'Gain 5 Block. Draw 1 card.',
+  description: 'Reduce each hit by 4.',
   slot: 'Legs',
-  action: { type: 'block', baseValue: 5, targetMode: 'self' },
+  action: { type: 'reduce', baseValue: 4, targetMode: 'self' },
   rarity: 'rare',
 }
 
-// LEGS rare: draw 2 + gain 2 Block (formerly cooling + Hot cooling)
+// LEGS rare: reduce 3 + gain 3 Block
 const thermalExhaust: EquipmentDefinition = {
   id: 'thermal-exhaust',
   name: 'Thermal Exhaust',
-  description: 'Draw 2 cards. Gain 2 Block.',
+  description: 'Reduce each hit by 3. Gain 3 Block.',
   slot: 'Legs',
-  action: { type: 'draw', baseValue: 2, targetMode: 'self' },
+  action: { type: 'reduce', baseValue: 3, targetMode: 'self' },
   rarity: 'rare',
+  bonusBlock: 3,
 }
 
 // ─── Sector 2 Equipment ────────────────────────────────────────────────────
 
-// HEAD slot
+// HEAD slot (S2)
 const thermalImager: EquipmentDefinition = {
   id: 'thermal-imager',
   name: 'Thermal Imager',
-  description: 'Draw 2 cards.',
+  description: 'Apply 2 Vulnerable to one enemy.',
   slot: 'Head',
-  action: { type: 'draw', baseValue: 2, targetMode: 'self' },
+  action: { type: 'debuff', baseValue: 2, targetMode: 'single_enemy', debuffType: 'Vulnerable' },
   rarity: 'uncommon',
 }
 
-// HEAD rare: draw 2 (formerly draw 1/2 conditional on Cool)
+// HEAD rare (S2): Vulnerable 2 AoE
 const predictiveArray: EquipmentDefinition = {
   id: 'predictive-array',
   name: 'Predictive Array',
-  description: 'Draw 2 cards.',
+  description: 'Apply 2 Vulnerable to ALL enemies.',
   slot: 'Head',
-  action: { type: 'draw', baseValue: 2, targetMode: 'self' },
+  action: { type: 'debuff', baseValue: 2, targetMode: 'all_enemies', debuffType: 'Vulnerable' },
   rarity: 'rare',
 }
 
@@ -284,24 +284,26 @@ const arcWelder: EquipmentDefinition = {
   rarity: 'rare',
 }
 
-// LEGS slot: flow domain (formerly cooling)
+// LEGS slot (S2): reduce + bonus block
 const hydraulicPump: EquipmentDefinition = {
   id: 'coolant-injector',
   name: 'Hydraulic Pump',
-  description: 'Draw 1 card. Gain 3 Block.',
+  description: 'Reduce each hit by 3. Gain 2 Block.',
   slot: 'Legs',
-  action: { type: 'draw', baseValue: 1, targetMode: 'self' },
+  action: { type: 'reduce', baseValue: 3, targetMode: 'self' },
   rarity: 'uncommon',
+  bonusBlock: 2,
 }
 
-// LEGS rare: draw 2 + 3 Block (formerly cooling + block per heat)
+// LEGS rare (S2): reduce 4 + 2 Block
 const stabilizerTreads: EquipmentDefinition = {
   id: 'stabilizer-treads',
   name: 'Stabilizer Treads',
-  description: 'Draw 2 cards. Gain 3 Block.',
+  description: 'Reduce each hit by 4. Gain 2 Block.',
   slot: 'Legs',
-  action: { type: 'draw', baseValue: 2, targetMode: 'self' },
+  action: { type: 'reduce', baseValue: 4, targetMode: 'self' },
   rarity: 'rare',
+  bonusBlock: 2,
 }
 
 // ─── Sector 1 Behavioral Parts ──────────────────────────────────────────────

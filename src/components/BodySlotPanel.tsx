@@ -11,6 +11,8 @@ const ACTION_TYPE_LABELS: Record<string, string> = {
   heal: 'Heal',
   draw: 'Draw',
   foresight: 'Foresight',
+  debuff: 'Debuff',
+  reduce: 'Reduce',
 }
 
 function EquipPopup({ equip, onClose }: { equip: EquipmentDefinition; onClose: () => void }) {
@@ -57,8 +59,8 @@ function EquipPopup({ equip, onClose }: { equip: EquipmentDefinition; onClose: (
           {equip.blockCost ? (
             <span style={{ color: '#e74c3c' }}>-{equip.blockCost} Block on fire</span>
           ) : null}
-          {equip.bonusForesight ? (
-            <span style={{ color: '#9b59b6' }}>+{equip.bonusForesight} Foresight</span>
+          {equip.bonusBlock ? (
+            <span style={{ color: '#3498db' }}>+{equip.bonusBlock} Block</span>
           ) : null}
           {equip.bonusHeal ? (
             <span style={{ color: '#2ecc71' }}>+{equip.bonusHeal} Heal</span>
@@ -260,6 +262,16 @@ export default function BodySlotPanel({ combat, equipment, parts, selectedCardId
                         eye {proj.foresight}
                       </span>
                     )}
+                    {proj.debuffStacks > 0 && (
+                      <span style={{ color: '#e67e22', fontWeight: 'bold', fontSize: '10px' }}>
+                        {proj.debuffType === 'Vulnerable' ? 'vuln' : 'weak'} {proj.debuffStacks}
+                      </span>
+                    )}
+                    {proj.reduction > 0 && (
+                      <span style={{ color: '#1abc9c', fontWeight: 'bold', fontSize: '10px' }}>
+                        -{proj.reduction}/hit
+                      </span>
+                    )}
                   </>
                 )}
                 {/* Modifier badge(s) + remove */}
@@ -385,6 +397,16 @@ export default function BodySlotPanel({ combat, equipment, parts, selectedCardId
                     {proj.foresight > 0 && (
                       <span style={{ color: '#9b59b6', fontWeight: 'bold' }}>
                         → eye {proj.foresight}
+                      </span>
+                    )}
+                    {proj.debuffStacks > 0 && (
+                      <span style={{ color: '#e67e22', fontWeight: 'bold' }}>
+                        → {proj.debuffType === 'Vulnerable' ? 'vuln' : 'weak'} {proj.debuffStacks}
+                      </span>
+                    )}
+                    {proj.reduction > 0 && (
+                      <span style={{ color: '#1abc9c', fontWeight: 'bold' }}>
+                        → -{proj.reduction}/hit
                       </span>
                     )}
                   </div>

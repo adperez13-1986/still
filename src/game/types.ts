@@ -9,13 +9,14 @@ export type BodySlot = 'Head' | 'Torso' | 'Arms' | 'Legs'
 
 export const BODY_SLOTS: BodySlot[] = ['Head', 'Torso', 'Arms', 'Legs']
 
-export type BodyActionType = 'damage' | 'block' | 'heal' | 'draw' | 'foresight'
+export type BodyActionType = 'damage' | 'block' | 'heal' | 'draw' | 'foresight' | 'debuff' | 'reduce'
 export type TargetMode = 'single_enemy' | 'all_enemies' | 'self'
 
 export interface BodyAction {
   type: BodyActionType
   baseValue: number
   targetMode: TargetMode
+  debuffType?: StatusEffectType // for 'debuff' action type
 }
 
 export interface EquipmentDefinition {
@@ -26,8 +27,8 @@ export interface EquipmentDefinition {
   action: BodyAction
   rarity: 'common' | 'uncommon' | 'rare'
   bonusHeal?: number // bonus healing applied alongside the main action
+  bonusBlock?: number // bonus block gained alongside the main action
   blockCost?: number // lose this much Block when the slot fires
-  bonusForesight?: number // reveal extra enemy intents alongside primary action
 }
 
 // ─── Modifier Cards ─────────────────────────────────────────────────────────
@@ -260,6 +261,7 @@ export interface CombatState {
   absorbActive: boolean // block gained this turn also heals 50%
   absorbBlockGained: number // tracks block gained this turn for Absorb heal
   cardsExhaustedThisTurn: number // tracks exhaust events for Feedback Loop
+  damageReduction: number // per-hit reduction from LEGS equipment this turn
   _overclockDisables?: BodySlot[] // slots to disable next turn (survives enemy turn clear)
 }
 

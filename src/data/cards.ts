@@ -1341,13 +1341,43 @@ const feedbackLoopCard: ModifierCardDefinition = {
   keywords: [],
 }
 
+// ─── Filler Starters ──────────────────────────────────────────────────────
+
+const spark: ModifierCardDefinition = {
+  id: 'spark',
+  name: 'Spark',
+  description: 'Override: deal 4 damage to one enemy.',
+  energyCost: 2,
+  category: {
+    type: 'slot',
+    modifier: 'Override',
+    effect: { type: 'override', action: { type: 'damage', baseValue: 4, targetMode: 'single_enemy' } },
+  },
+  keywords: [],
+}
+
+const patchJob: ModifierCardDefinition = {
+  id: 'patch-job',
+  name: 'Patch Job',
+  description: 'Override: gain 6 Block.',
+  energyCost: 2,
+  category: {
+    type: 'slot',
+    modifier: 'Override',
+    effect: { type: 'override', action: { type: 'block', baseValue: 6, targetMode: 'self' } },
+  },
+  keywords: [],
+}
+
 // ─── Pool Exports ─────────────────────────────────────────────────────────
 
 export const STARTING_CARDS: ModifierCardDefinition[] = [
-  boost, boost, boost,
+  boost,
   emergencyStrike, emergencyShield,
   vent, vent,
   diagnostics,
+  spark, spark, spark,
+  patchJob, patchJob, patchJob,
 ]
 
 export const SECTOR1_CARD_POOL: ModifierCardDefinition[] = [
@@ -1395,6 +1425,7 @@ const allCardList: ModifierCardDefinition[] = [
   crossWire, ironCurtain, absorb, volatileArmor,
   reinforce,
   linkedFire, redirectPower, feedbackLoopCard,
+  spark, patchJob,
 ]
 
 export const ALL_CARDS: Record<string, ModifierCardDefinition> = Object.fromEntries(

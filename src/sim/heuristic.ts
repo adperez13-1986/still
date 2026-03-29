@@ -135,6 +135,16 @@ function scoreSlotCard(
         const bonus = Math.floor(base * effect.multiplier) - base
         return isDefensive ? bonus * 2 : bonus * defensiveMult
       }
+      if (slot === 'Head' && equip?.action.type === 'debuff') {
+        // More debuff stacks = more damage via Vulnerable or more mitigation via Weak
+        const bonus = Math.floor(equip.action.baseValue * effect.multiplier) - equip.action.baseValue
+        return bonus * 4 // debuff stacks are very valuable
+      }
+      if (slot === 'Legs' && equip?.action.type === 'reduce') {
+        const base = equip.action.baseValue
+        const bonus = Math.floor(base * effect.multiplier) - base
+        return isDefensive ? bonus * 3 : bonus * 1
+      }
       return 1
     }
     case 'redirect': {
@@ -152,6 +162,12 @@ function scoreSlotCard(
       }
       if (slot === 'Torso' && equip.action.type === 'block') {
         return isDefensive ? equip.action.baseValue * (1 + effect.extraFirings) : equip.action.baseValue * defensiveMult
+      }
+      if (slot === 'Head' && equip.action.type === 'debuff') {
+        return equip.action.baseValue * (1 + effect.extraFirings) * 3
+      }
+      if (slot === 'Legs' && equip.action.type === 'reduce') {
+        return isDefensive ? equip.action.baseValue * (1 + effect.extraFirings) * 2 : equip.action.baseValue
       }
       return equip.action.baseValue
     }
