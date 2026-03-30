@@ -3,21 +3,23 @@ import type { EquipmentDefinition, BehavioralPartDefinition } from '../game/type
 // ─── Equipment Definitions ──────────────────────────────────────────────────
 
 // HEAD slot: control/debuff domain
+// Starter is Weak (defensive utility, worth overriding sometimes).
+// Vulnerable is the upgrade tier (offensive powerhouse, want to protect).
 const basicScanner: EquipmentDefinition = {
   id: 'basic-scanner',
   name: 'Scrap Scanner',
-  description: 'Apply 1 Vulnerable to one enemy.',
+  description: 'Apply 1 Weak to one enemy.',
   slot: 'Head',
-  action: { type: 'debuff', baseValue: 1, targetMode: 'single_enemy', debuffType: 'Vulnerable' },
+  action: { type: 'debuff', baseValue: 1, targetMode: 'single_enemy', debuffType: 'Weak' },
   rarity: 'common',
 }
 
 const crackedLens: EquipmentDefinition = {
   id: 'cracked-lens',
   name: 'Cracked Lens',
-  description: 'Apply 1 Weak to one enemy.',
+  description: 'Apply 1 Weak to ALL enemies.',
   slot: 'Head',
-  action: { type: 'debuff', baseValue: 1, targetMode: 'single_enemy', debuffType: 'Weak' },
+  action: { type: 'debuff', baseValue: 1, targetMode: 'all_enemies', debuffType: 'Weak' },
   rarity: 'common',
 }
 
@@ -84,9 +86,9 @@ const salvagedTreads: EquipmentDefinition = {
 const calibratedOptics: EquipmentDefinition = {
   id: 'calibrated-optics',
   name: 'Calibrated Optics',
-  description: 'Apply 1 Vulnerable to ALL enemies.',
+  description: 'Apply 1 Vulnerable to one enemy.',
   slot: 'Head',
-  action: { type: 'debuff', baseValue: 1, targetMode: 'all_enemies', debuffType: 'Vulnerable' },
+  action: { type: 'debuff', baseValue: 1, targetMode: 'single_enemy', debuffType: 'Vulnerable' },
   rarity: 'uncommon',
 }
 
@@ -151,21 +153,21 @@ const meltdownCannon: EquipmentDefinition = {
   rarity: 'rare',
 }
 
-// HEAD uncommon: Weak 2 single
+// HEAD uncommon: Vulnerable 1 single (upgrade from Weak)
 const tacticalVisor: EquipmentDefinition = {
   id: 'tactical-visor',
   name: 'Tactical Visor',
-  description: 'Apply 2 Weak to one enemy.',
+  description: 'Apply 1 Vulnerable to one enemy.',
   slot: 'Head',
-  action: { type: 'debuff', baseValue: 2, targetMode: 'single_enemy', debuffType: 'Weak' },
+  action: { type: 'debuff', baseValue: 1, targetMode: 'single_enemy', debuffType: 'Vulnerable' },
   rarity: 'uncommon',
 }
 
-// HEAD rare: Vulnerable 1 AoE + Weak 1 (via bonusBlock hack — TODO: proper dual debuff)
+// HEAD rare: Vulnerable 1 AoE
 const neuralSync: EquipmentDefinition = {
   id: 'neural-sync',
   name: 'Neural Sync',
-  description: 'Apply 1 Vulnerable and 1 Weak to ALL enemies.',
+  description: 'Apply 1 Vulnerable to ALL enemies.',
   slot: 'Head',
   action: { type: 'debuff', baseValue: 1, targetMode: 'all_enemies', debuffType: 'Vulnerable' },
   rarity: 'rare',
@@ -225,23 +227,23 @@ const thermalExhaust: EquipmentDefinition = {
 
 // ─── Sector 2 Equipment ────────────────────────────────────────────────────
 
-// HEAD slot (S2)
+// HEAD slot (S2): Weak AoE uncommon, Vulnerable AoE rare
 const thermalImager: EquipmentDefinition = {
   id: 'thermal-imager',
   name: 'Thermal Imager',
-  description: 'Apply 2 Vulnerable to one enemy.',
+  description: 'Apply 1 Weak to ALL enemies.',
   slot: 'Head',
-  action: { type: 'debuff', baseValue: 2, targetMode: 'single_enemy', debuffType: 'Vulnerable' },
+  action: { type: 'debuff', baseValue: 1, targetMode: 'all_enemies', debuffType: 'Weak' },
   rarity: 'uncommon',
 }
 
-// HEAD rare (S2): Vulnerable 2 AoE
+// HEAD rare (S2): Vulnerable 1 AoE (same tier as Neural Sync)
 const predictiveArray: EquipmentDefinition = {
   id: 'predictive-array',
   name: 'Predictive Array',
-  description: 'Apply 2 Vulnerable to ALL enemies.',
+  description: 'Apply 1 Vulnerable to ALL enemies.',
   slot: 'Head',
-  action: { type: 'debuff', baseValue: 2, targetMode: 'all_enemies', debuffType: 'Vulnerable' },
+  action: { type: 'debuff', baseValue: 1, targetMode: 'all_enemies', debuffType: 'Vulnerable' },
   rarity: 'rare',
 }
 
