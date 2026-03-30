@@ -118,6 +118,11 @@ export default function CombatScreen() {
           const id = ++dmgIdRef.current
           setDamageNumbers(prev => [...prev, { id, value: event.blocked!, color: '#3498db', target: 'still' }])
         }
+        // Damage reduction from LEGS — show teal number on still
+        if (event.reduced && event.reduced > 0) {
+          const id = ++dmgIdRef.current
+          setDamageNumbers(prev => [...prev, { id, value: event.reduced!, color: '#1abc9c', target: 'still' }])
+        }
         // Counter damage (retaliate, thorns, voltage) — show on the attacking enemy
         if (event.counterDamage && event.counterDamage > 0) {
           setDisplayEnemyHealth(prev => {

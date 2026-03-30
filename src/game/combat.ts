@@ -1282,6 +1282,7 @@ export function executeEnemyTurn(ctx: CombatContext): CombatResult {
 
     let eventDamage: number | undefined
     let eventBlocked: number | undefined
+    let eventReduced: number | undefined
     let eventBlock: number | undefined
     let eventStatus: StatusEffectType | undefined
     let eventCounterDamage = 0
@@ -1307,6 +1308,7 @@ export function executeEnemyTurn(ctx: CombatContext): CombatResult {
         const hitCount = intent.hits ?? 1
         let totalDamage = 0
         let totalBlocked = 0
+        let totalReduced = 0
         for (let h = 0; h < hitCount; h++) {
           let dealt = perHit
           // Ablative Shell: halve first big hit each combat
@@ -1323,7 +1325,9 @@ export function executeEnemyTurn(ctx: CombatContext): CombatResult {
           }
           // LEGS damage reduction: reduce each hit before block
           if (result.combat.damageReduction > 0) {
-            dealt = Math.max(0, dealt - result.combat.damageReduction)
+            const reduced = Math.min(dealt, result.combat.damageReduction)
+            dealt -= reduced
+            totalReduced += reduced
           }
           const absorbed = Math.min(result.combat.block, dealt)
           result.combat.block -= absorbed
@@ -1334,8 +1338,10 @@ export function executeEnemyTurn(ctx: CombatContext): CombatResult {
         }
         eventDamage = totalDamage
         eventBlocked = totalBlocked
+        eventReduced = totalReduced > 0 ? totalReduced : undefined
         const hitsLabel = hitCount > 1 ? ` (${hitCount} hits)` : ''
-        result.log.push(`${def.name} attacks for ${totalDamage} (${totalBlocked} blocked)${hitsLabel}`)
+        const reducedLabel = totalReduced > 0 ? `, ${totalReduced} reduced` : ''
+        result.log.push(`${def.name} attacks for ${totalDamage} (${totalBlocked} blocked${reducedLabel})${hitsLabel}`)
 
         // Retaliate: reflect ALL incoming damage back to attacker
         const totalIncoming = totalDamage + totalBlocked
@@ -1439,6 +1445,7 @@ export function executeEnemyTurn(ctx: CombatContext): CombatResult {
       intentType: intent.type,
       damage: eventDamage,
       blocked: eventBlocked,
+      reduced: eventReduced,
       block: eventBlock,
       statusApplied: eventStatus,
       counterDamage: eventCounterDamage > 0 ? eventCounterDamage : undefined,

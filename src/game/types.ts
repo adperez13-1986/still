@@ -231,7 +231,7 @@ export type CombatPhase = 'planning' | 'executing' | 'enemyTurn' | 'reward' | 'f
 
 export type CombatEvent =
   | { type: 'slotFire'; slot: BodySlot; damages?: Array<{ enemyId: string; amount: number }>; block?: number; heal?: number; targetMode: TargetMode }
-  | { type: 'enemyAction'; enemyId: string; enemyName: string; intentType: IntentType; damage?: number; blocked?: number; block?: number; statusApplied?: StatusEffectType; counterDamage?: number }
+  | { type: 'enemyAction'; enemyId: string; enemyName: string; intentType: IntentType; damage?: number; blocked?: number; reduced?: number; block?: number; statusApplied?: StatusEffectType; counterDamage?: number }
   | { type: 'partTrigger'; partId: string }
 
 export interface CombatState {
