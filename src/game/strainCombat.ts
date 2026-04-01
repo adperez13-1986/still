@@ -41,7 +41,7 @@ export interface StrainAbility {
 }
 
 export const STRAIN_ABILITIES: StrainAbility[] = [
-  { id: 'repair', label: 'Repair', description: 'Heal 4 HP', strainCost: 2 },
+  { id: 'repair', label: 'Repair', description: 'Heal 4 HP', strainCost: 1 },
   { id: 'brace', label: 'Brace', description: 'Reduce incoming damage by 3 per hit', strainCost: 1 },
 ]
 
