@@ -9,6 +9,11 @@
 import type { EnemyInstance, Intent, IntentType } from './types'
 import { ALL_ENEMIES } from '../data/enemies'
 
+// ─── Constants ────────────────────────────────────────────────────────────
+
+/** Strain recovered passively between combats */
+export const STRAIN_DECAY_BETWEEN_COMBATS = 2
+
 // ─── Slot Definitions ──────────────────────────────────────────────────────
 
 export interface StrainSlot {
@@ -83,7 +88,7 @@ export function initStrainCombat(
     phase: 'planning',
     enemies,
     strain: currentStrain,
-    maxStrain: 10,
+    maxStrain: 20,
     block: 0,
     damageReduction: 0,
     pushedSlots: { A: false, B: false, C: false },
@@ -159,7 +164,7 @@ export function executeStrainTurn(
 
   // 2. Check forfeit
   if (combat.strain >= combat.maxStrain) {
-    combat.strain = 7 // drops to 7 after forfeit
+    combat.strain = 14 // drops to 70% of max after forfeit
     combat.phase = 'forfeit'
     combat.combatLog.push({ type: 'forfeit' })
     return { combat, health: hp }

@@ -1,6 +1,6 @@
 import { useRunStore } from '../store/runStore'
 import { ALL_ENEMIES } from '../data/enemies'
-import { STRAIN_SLOTS, STRAIN_ABILITIES, getEnemyIntent, projectedStrain, wouldForfeit } from '../game/strainCombat'
+import { STRAIN_SLOTS, STRAIN_ABILITIES, STRAIN_DECAY_BETWEEN_COMBATS, getEnemyIntent, projectedStrain, wouldForfeit } from '../game/strainCombat'
 import type { StrainSlot, StrainCombatEvent } from '../game/strainCombat'
 import type { EnemyInstance } from '../game/types'
 
@@ -11,7 +11,7 @@ function StrainMeter({ current, projected, max }: { current: number; projected: 
   const projPct = (projected / max) * 100
 
   // Color shifts as strain rises
-  const barColor = current <= 3 ? '#636e72' : current <= 6 ? '#e67e22' : '#e74c3c'
+  const barColor = current <= 7 ? '#636e72' : current <= 14 ? '#e67e22' : '#e74c3c'
   const projColor = projected >= max ? '#c0392b' : '#f39c12'
 
   return (
@@ -214,6 +214,8 @@ export default function StrainCombatScreen() {
   const endStrainCombat = (clearRoom: boolean) => {
     useRunStore.setState((s) => {
       const next = { ...s, strainCombat: null }
+      // Passive strain decay between combats
+      next.strain = Math.max(0, s.strain - STRAIN_DECAY_BETWEEN_COMBATS)
       if (clearRoom) next.combatsCleared = s.combatsCleared + 1
       return next
     })
@@ -235,7 +237,7 @@ export default function StrainCombatScreen() {
           You stopped.
         </div>
         <div style={{ fontSize: 14, color: '#888', marginBottom: 24 }}>
-          No rewards. Strain drops to {sc.strain}.
+          No rewards. Strain drops to {sc.strain}, then decays by {STRAIN_DECAY_BETWEEN_COMBATS}.
         </div>
         <button
           onClick={() => endStrainCombat(false)}
@@ -262,7 +264,7 @@ export default function StrainCombatScreen() {
           Still standing.
         </div>
         <div style={{ fontSize: 14, color: '#888', marginBottom: 8 }}>
-          Strain: {sc.strain} / {sc.maxStrain}
+          Strain: {sc.strain} / {sc.maxStrain} (−{STRAIN_DECAY_BETWEEN_COMBATS} decay)
         </div>
         <div style={{ fontSize: 14, color: '#888', marginBottom: 24 }}>
           HP: {run.health} / {run.maxHealth}
