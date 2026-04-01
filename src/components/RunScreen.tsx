@@ -6,6 +6,7 @@ import { useRunStore } from '../store/runStore'
 import { usePermanentStore } from '../store/permanentStore'
 import MapScreen from './MapScreen'
 import CombatScreen from './CombatScreen'
+import StrainCombatScreen from './StrainCombatScreen'
 import RestScreen from './RestScreen'
 import ShopScreen from './ShopScreen'
 import EventScreen from './EventScreen'
@@ -122,6 +123,8 @@ export default function RunScreen() {
         lastCollapseMessage: null,
         carriedPartSector: null,
         isDebug: true,
+        strain: 2,
+        strainCombat: null,
       })
       run.saveRun()
       return
@@ -174,6 +177,8 @@ export default function RunScreen() {
       combatsCleared: 0,
       lastCollapseMessage: null,
       carriedPartSector: archiveEntry?.sector ?? null,
+      strain: 2,
+      strainCombat: null,
     })
     run.saveRun()
   }, [])
@@ -219,7 +224,7 @@ export default function RunScreen() {
         const remaining = path.slice(i + 1)
         setAutoPath(remaining.length > 0 ? remaining : null)
         walkingRef.current = false
-        useRunStore.getState().startCombat(enemies)
+        useRunStore.getState().startStrainCombat(enemies)
         return
       }
 
@@ -249,6 +254,11 @@ export default function RunScreen() {
         Preparing...
       </div>
     )
+  }
+
+  // Strain combat prototype — takes priority when active
+  if (run.strainCombat) {
+    return <StrainCombatScreen />
   }
 
   // Combat active — handled entirely by CombatScreen

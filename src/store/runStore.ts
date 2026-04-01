@@ -27,6 +27,12 @@ import {
 } from '../game/combat'
 
 import { ALL_CARDS } from '../data/cards'
+import {
+  initStrainCombat,
+  togglePush,
+  toggleAbility,
+  executeStrainTurn as execStrainTurn,
+} from '../game/strainCombat'
 import { ALL_ENEMIES } from '../data/enemies'
 import { generateGridMaze } from '../game/mapGen'
 import { saveRunState, loadRunState, clearRunState } from '../game/persistence'
@@ -83,6 +89,12 @@ interface RunActions {
   // Companions
   acquireCompanion: (id: string) => void
 
+  // Strain prototype
+  startStrainCombat: (enemies: EnemyInstance[]) => void
+  toggleStrainPush: (slotId: 'A' | 'B' | 'C') => void
+  toggleStrainAbility: (abilityId: string) => void
+  executeStrainTurn: () => void
+
   // Persistence
   saveRun: () => void
   restoreRun: () => boolean
@@ -106,6 +118,9 @@ const emptyRunState: RunState = {
   combatsCleared: 0,
   lastCollapseMessage: null,
   carriedPartSector: null,
+  // Strain prototype
+  strain: 2,
+  strainCombat: null,
 }
 
 /** Filter out inert carried parts (S2 part in S1) */
@@ -479,6 +494,34 @@ export const useRunStore = create<RunState & RunActions>()(
         }
       }),
 
+    // ─── Strain Prototype ───────────────────────────────────────────────────
+    startStrainCombat: (enemies) =>
+      set((state) => {
+        state.strainCombat = initStrainCombat(enemies, state.strain)
+      }),
+
+    toggleStrainPush: (slotId) =>
+      set((state) => {
+        if (!state.strainCombat || state.strainCombat.phase !== 'planning') return
+        state.strainCombat = togglePush(state.strainCombat, slotId)
+      }),
+
+    toggleStrainAbility: (abilityId) =>
+      set((state) => {
+        if (!state.strainCombat || state.strainCombat.phase !== 'planning') return
+        state.strainCombat = toggleAbility(state.strainCombat, abilityId)
+      }),
+
+    executeStrainTurn: () =>
+      set((state) => {
+        if (!state.strainCombat || state.strainCombat.phase !== 'planning') return
+        const result = execStrainTurn(state.strainCombat, state.health)
+        state.strainCombat = result.combat
+        state.health = result.health
+        state.strain = result.combat.strain
+        // If combat ended (reward/forfeit/finished), clear strainCombat after UI handles it
+      }),
+
     saveRun: () => {
       const state = get()
       if (!state.active) return
@@ -501,6 +544,8 @@ export const useRunStore = create<RunState & RunActions>()(
         combatsCleared: state.combatsCleared,
         lastCollapseMessage: state.lastCollapseMessage,
         carriedPartSector: state.carriedPartSector,
+        strain: state.strain,
+        strainCombat: null,
       }
       saveRunState(toSave)
     },

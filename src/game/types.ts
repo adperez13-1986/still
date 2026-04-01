@@ -284,6 +284,9 @@ export interface RunState {
   lastCollapseMessage: string | null
   carriedPartSector: 1 | 2 | null
   isDebug?: boolean
+  // Strain prototype
+  strain: number
+  strainCombat: import('./strainCombat').StrainCombatState | null
 }
 
 // ─── Part Archive ────────────────────────────────────────────────────────────
