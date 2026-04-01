@@ -24,21 +24,21 @@ import { STARTING_CARDS, SECTOR1_CARD_POOL, SECTOR2_CARD_POOL } from '../data/ca
 import { rollWeightedCards } from '../game/drops'
 import { ALL_PARTS, ALL_EQUIPMENT, STARTING_HEAD, STARTING_TORSO, STARTING_ARMS, STARTING_LEGS } from '../data/parts'
 
-function pickEnemiesForRoom(room: GridRoom, sector: number, combatsCleared: number) {
+function pickEnemiesForRoom(room: GridRoom, sector: number, _combatsCleared: number) {
   if (room.type === 'Boss') {
     const boss = sector >= 2 ? SECTOR2_BOSS : SECTOR1_BOSS
-    return [makeEnemyInstance(boss, combatsCleared)]
+    return [makeEnemyInstance(boss, 0)]
   }
   const encounters = sector >= 2 ? SECTOR2_ENCOUNTERS : SECTOR1_ENCOUNTERS
   const eliteEncounters = sector >= 2 ? SECTOR2_ELITE_ENCOUNTERS : SECTOR1_ELITE_ENCOUNTERS
   // ~20% of combat rooms are elite encounters, but not in the first 3 combats
-  const canBeElite = combatsCleared >= 3
+  const canBeElite = _combatsCleared >= 3
   const pool = canBeElite && Math.random() < 0.2 ? eliteEncounters : encounters
   const encounter = pool[Math.floor(Math.random() * pool.length)]
   return encounter.enemies.map(id => {
     const def = ALL_ENEMIES[id]
     if (!def) throw new Error(`Unknown enemy: ${id}`)
-    return makeEnemyInstance(def, combatsCleared)
+    return makeEnemyInstance(def, 0)
   })
 }
 
