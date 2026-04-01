@@ -1,7 +1,8 @@
 import { useRunStore } from '../store/runStore'
 import { ALL_ENEMIES } from '../data/enemies'
 import { STRAIN_SLOTS, STRAIN_ABILITIES, getEnemyIntent, projectedStrain, wouldForfeit } from '../game/strainCombat'
-import type { StrainSlot, StrainAbility } from '../game/strainCombat'
+import type { StrainSlot, StrainCombatEvent } from '../game/strainCombat'
+import type { EnemyInstance } from '../game/types'
 
 // ─── Strain Meter ────────────────────────────────────────────────────────
 
@@ -103,7 +104,7 @@ function SlotCard({ slot, pushed, onToggle, disabled }: {
 
 // ─── Enemy Display ───────────────────────────────────────────────────────
 
-function EnemyDisplay({ enemy }: { enemy: typeof useRunStore extends () => infer R ? R extends { strainCombat: infer C } ? C extends { enemies: (infer E)[] } ? E : never : never : never }) {
+function EnemyDisplay({ enemy }: { enemy: EnemyInstance }) {
   const def = ALL_ENEMIES[enemy.definitionId]
   if (!def || enemy.isDefeated) return null
 
@@ -149,7 +150,7 @@ function EnemyDisplay({ enemy }: { enemy: typeof useRunStore extends () => infer
 
 // ─── Combat Log ──────────────────────────────────────────────────────────
 
-function CombatLog({ log }: { log: ReturnType<typeof useRunStore>['strainCombat'] extends { combatLog: infer L } | null ? L : never }) {
+function CombatLog({ log }: { log: StrainCombatEvent[] }) {
   if (!log || log.length === 0) return null
   return (
     <div style={{

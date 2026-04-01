@@ -6,7 +6,7 @@
  * No cards, no deck, no equipment lookups.
  */
 
-import type { EnemyInstance, EnemyDefinition, Intent, IntentType, StatusEffect } from './types'
+import type { EnemyInstance, Intent, IntentType } from './types'
 import { ALL_ENEMIES } from '../data/enemies'
 
 // ─── Slot Definitions ──────────────────────────────────────────────────────
