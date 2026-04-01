@@ -125,6 +125,7 @@ export default function RunScreen() {
         isDebug: true,
         strain: 2,
         strainCombat: null,
+        growth: { abilities: [], masteries: [] },
       })
       run.saveRun()
       return
@@ -179,6 +180,7 @@ export default function RunScreen() {
       carriedPartSector: archiveEntry?.sector ?? null,
       strain: 2,
       strainCombat: null,
+      growth: { abilities: [], masteries: [] },
     })
     run.saveRun()
   }, [])

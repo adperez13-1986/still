@@ -287,6 +287,7 @@ export interface RunState {
   // Strain prototype
   strain: number
   strainCombat: import('./strainCombat').StrainCombatState | null
+  growth: { abilities: string[]; masteries: string[] }
 }
 
 // ─── Part Archive ────────────────────────────────────────────────────────────

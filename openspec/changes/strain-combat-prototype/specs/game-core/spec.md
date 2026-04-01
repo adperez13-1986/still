@@ -1,7 +1,7 @@
 ## MODIFIED Requirements
 
 ### Requirement: Run structure
-The game SHALL be organized into discrete runs. Each run begins with Still at strain 2 and ends when Still clears the sector or is defeated (HP 0). Strain persists across encounters within a run.
+The game SHALL be organized into discrete runs. Each run begins with Still at strain 2 and ends when Still clears the sector or is defeated (HP 0). Strain persists across encounters within a run, with passive decay of 2 between combats.
 
 #### Scenario: Starting a new run
 - **WHEN** the player starts a new run
@@ -11,9 +11,9 @@ The game SHALL be organized into discrete runs. Each run begins with Still at st
 - **WHEN** Still's health reaches zero during combat
 - **THEN** the run ends with game over
 
-#### Scenario: Strain carries between encounters
-- **WHEN** a combat encounter ends and the player enters a new encounter
-- **THEN** strain retains its value from the previous encounter
+#### Scenario: Strain carries between encounters with decay
+- **WHEN** a combat encounter ends with victory and the player enters a new encounter
+- **THEN** strain retains its value from the previous encounter, minus 2 passive decay (minimum 0)
 
 ### Requirement: Win and loss conditions per combat
 
@@ -25,6 +25,6 @@ The game SHALL be organized into discrete runs. Each run begins with Still at st
 - **WHEN** Still's health reaches zero
 - **THEN** combat ends, run ends with game over
 
-#### Scenario: Strain 10 forfeit
-- **WHEN** strain reaches 10 during combat
-- **THEN** combat ends with forfeit. No rewards. Strain drops to 7. Run continues.
+#### Scenario: Strain 20 forfeit
+- **WHEN** strain reaches 20 during combat
+- **THEN** combat ends with forfeit. No rewards. Strain drops to 14. Run continues.

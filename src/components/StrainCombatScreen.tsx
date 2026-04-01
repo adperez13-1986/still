@@ -1,6 +1,6 @@
 import { useRunStore } from '../store/runStore'
 import { ALL_ENEMIES } from '../data/enemies'
-import { STRAIN_SLOTS, STRAIN_ABILITIES, STRAIN_DECAY_BETWEEN_COMBATS, VENT_STRAIN_RECOVERY, getEnemyIntent, projectedStrain, wouldForfeit, isVenting } from '../game/strainCombat'
+import { STRAIN_SLOTS, STRAIN_DECAY_BETWEEN_COMBATS, VENT_STRAIN_RECOVERY, getEnemyIntent, projectedStrain, wouldForfeit, isVenting, getAvailableAbilities, getAvailableGrowthRewards, pickComfortReward } from '../game/strainCombat'
 import type { StrainSlot, StrainCombatEvent } from '../game/strainCombat'
 import type { EnemyInstance } from '../game/types'
 
@@ -55,11 +55,12 @@ function StrainMeter({ current, projected, max }: { current: number; projected: 
 
 // ─── Slot Card ───────────────────────────────────────────────────────────
 
-function SlotCard({ slot, pushed, onToggle, disabled }: {
+function SlotCard({ slot, pushed, onToggle, disabled, effectivePushCost }: {
   slot: StrainSlot
   pushed: boolean
   onToggle: () => void
   disabled: boolean
+  effectivePushCost: number
 }) {
   const value = pushed ? slot.pushedValue : slot.baseValue
   const typeLabel = slot.type === 'damage_single' ? 'DMG'
@@ -89,13 +90,13 @@ function SlotCard({ slot, pushed, onToggle, disabled }: {
       </div>
       <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>{typeLabel}</div>
       {pushed && (
-        <div style={{ fontSize: 11, color: '#e67e22', marginTop: 6 }}>
-          PUSHED (+{slot.pushCost} strain)
+        <div style={{ fontSize: 11, color: effectivePushCost === 0 ? '#2ecc71' : '#e67e22', marginTop: 6 }}>
+          {effectivePushCost === 0 ? 'MASTERED (free)' : `PUSHED (+${effectivePushCost} strain)`}
         </div>
       )}
       {!pushed && (
         <div style={{ fontSize: 11, color: '#636e72', marginTop: 6 }}>
-          tap to push
+          {effectivePushCost === 0 ? 'tap to push (free)' : 'tap to push'}
         </div>
       )}
     </button>
@@ -255,32 +256,82 @@ export default function StrainCombatScreen() {
     )
   }
 
-  // Reward screen
+  // Reward choice screen
   if (sc.phase === 'reward') {
+    const availableGrowth = getAvailableGrowthRewards(run.growth)
+    // Pick deterministically based on combatsCleared to avoid re-render flicker
+    const growthReward = availableGrowth.length > 0 ? availableGrowth[run.combatsCleared % availableGrowth.length] : null
+    // Check affordability
+    const canAffordGrowth = growthReward != null && (run.strain + growthReward.strainCost) < 20
+    const comfortReward = pickComfortReward(run.health, run.maxHealth, run.strain)
+
     return (
       <div style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center',
         justifyContent: 'center', height: '100vh', background: '#0d0d1a', color: '#fff',
         padding: 24,
       }}>
-        <div style={{ fontSize: 28, fontWeight: 300, marginBottom: 16, color: '#dfe6e9' }}>
+        <div style={{ fontSize: 28, fontWeight: 300, marginBottom: 8, color: '#dfe6e9' }}>
           Still standing.
         </div>
-        <div style={{ fontSize: 14, color: '#888', marginBottom: 8 }}>
-          Strain: {sc.strain} / {sc.maxStrain} (−{STRAIN_DECAY_BETWEEN_COMBATS} decay)
-        </div>
         <div style={{ fontSize: 14, color: '#888', marginBottom: 24 }}>
-          HP: {run.health} / {run.maxHealth}
+          Strain: {run.strain} / 20 | HP: {run.health} / {run.maxHealth}
         </div>
-        <button
-          onClick={() => endStrainCombat(true)}
-          style={{
-            padding: '12px 32px', background: '#2d3436', border: '1px solid #636e72',
-            borderRadius: 6, color: '#dfe6e9', fontSize: 16, cursor: 'pointer',
-          }}
-        >
-          Continue
-        </button>
+
+        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', justifyContent: 'center' }}>
+          {/* Growth reward */}
+          {growthReward && (
+            <button
+              disabled={!canAffordGrowth}
+              onClick={() => {
+                if (!canAffordGrowth) return
+                run.applyGrowthReward(growthReward.id, growthReward.strainCost)
+                endStrainCombat(true)
+              }}
+              style={{
+                width: 180, padding: 20,
+                background: canAffordGrowth ? '#1a2a1a' : '#1a1a2e',
+                border: canAffordGrowth ? '2px solid #e67e22' : '2px solid #333',
+                borderRadius: 8,
+                color: canAffordGrowth ? '#fff' : '#555',
+                cursor: canAffordGrowth ? 'pointer' : 'default',
+                textAlign: 'center',
+              }}
+            >
+              <div style={{ fontSize: 11, color: '#e67e22', marginBottom: 8, fontWeight: 600 }}>GROWTH</div>
+              <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 6 }}>{growthReward.label}</div>
+              <div style={{ fontSize: 12, color: '#aaa', marginBottom: 12 }}>{growthReward.description}</div>
+              <div style={{ fontSize: 13, color: canAffordGrowth ? '#e67e22' : '#555' }}>
+                +{growthReward.strainCost} strain → {run.strain + growthReward.strainCost}
+              </div>
+              {!canAffordGrowth && (
+                <div style={{ fontSize: 11, color: '#e74c3c', marginTop: 6 }}>Too strained</div>
+              )}
+            </button>
+          )}
+
+          {/* Comfort reward */}
+          <button
+            onClick={() => {
+              run.applyComfortReward(comfortReward.id)
+              endStrainCombat(true)
+            }}
+            style={{
+              width: 180, padding: 20,
+              background: '#1a1a2e',
+              border: '2px solid #636e72',
+              borderRadius: 8,
+              color: '#fff',
+              cursor: 'pointer',
+              textAlign: 'center',
+            }}
+          >
+            <div style={{ fontSize: 11, color: '#636e72', marginBottom: 8, fontWeight: 600 }}>COMFORT</div>
+            <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 6 }}>{comfortReward.label}</div>
+            <div style={{ fontSize: 12, color: '#aaa', marginBottom: 12 }}>{comfortReward.description}</div>
+            <div style={{ fontSize: 13, color: '#2ecc71' }}>free</div>
+          </button>
+        </div>
       </div>
     )
   }
@@ -367,6 +418,7 @@ export default function StrainCombatScreen() {
               pushed={!venting && sc.pushedSlots[slot.id]}
               onToggle={() => run.toggleStrainPush(slot.id)}
               disabled={!isPlanning || venting}
+              effectivePushCost={sc.pushCosts[slot.id]}
             />
           )
         })}
@@ -376,7 +428,7 @@ export default function StrainCombatScreen() {
       <div style={{
         display: 'flex', gap: 8, justifyContent: 'center', margin: '8px 0',
       }}>
-        {STRAIN_ABILITIES.map(ability => {
+        {getAvailableAbilities(run.growth).map(ability => {
           const active = sc.activeAbilities.includes(ability.id)
           return (
             <button

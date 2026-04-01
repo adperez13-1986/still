@@ -43,11 +43,79 @@ export interface StrainAbility {
   strainCost: number
 }
 
+/** All abilities that can exist in combat. Only those in growth.abilities (+ vent) are shown. */
 export const STRAIN_ABILITIES: StrainAbility[] = [
   { id: 'repair', label: 'Repair', description: 'Heal 4 HP', strainCost: 1 },
   { id: 'brace', label: 'Brace', description: 'Reduce incoming damage by 3 per hit', strainCost: 1 },
   { id: 'vent', label: 'Vent', description: `Release ${4} strain. Skip all attacks this turn.`, strainCost: 0 },
 ]
+
+/** Default ability always available. Repair and Brace must be earned via growth rewards. */
+export const DEFAULT_ABILITIES = ['vent']
+
+// ─── Growth Rewards ───────────────────────────────────────────────────────
+
+export interface GrowthReward {
+  id: string
+  label: string
+  description: string
+  strainCost: number
+  type: 'ability' | 'mastery'
+}
+
+export const GROWTH_REWARD_POOL: GrowthReward[] = [
+  { id: 'repair', label: 'Learn: Repair', description: 'Heal 4 HP (1 strain per use)', strainCost: 2, type: 'ability' },
+  { id: 'brace', label: 'Learn: Brace', description: 'Reduce incoming damage by 3/hit (1 strain per use)', strainCost: 2, type: 'ability' },
+  { id: 'mastery-A', label: 'Strike Mastery', description: 'Push Strike for free', strainCost: 3, type: 'mastery' },
+  { id: 'mastery-B', label: 'Shield Mastery', description: 'Push Shield for free', strainCost: 3, type: 'mastery' },
+  { id: 'mastery-C', label: 'Barrage Mastery', description: 'Push Barrage for free', strainCost: 3, type: 'mastery' },
+]
+
+// ─── Comfort Rewards ──────────────────────────────────────────────────────
+
+export interface ComfortReward {
+  id: string
+  label: string
+  description: string
+}
+
+export const COMFORT_HEAL: ComfortReward = { id: 'heal', label: 'Heal', description: 'Restore 8 HP' }
+export const COMFORT_RELIEF: ComfortReward = { id: 'relief', label: 'Relief', description: 'Reduce strain by 4' }
+export const COMFORT_COMPANION: ComfortReward = { id: 'companion', label: 'A quiet moment', description: 'Reduce strain by 2' }
+
+// ─── Growth Helpers ───────────────────────────────────────────────────────
+
+export interface GrowthState {
+  abilities: string[]
+  masteries: string[]
+}
+
+/** Get abilities available in combat based on growth state */
+export function getAvailableAbilities(growth: GrowthState): StrainAbility[] {
+  const unlocked = [...DEFAULT_ABILITIES, ...growth.abilities]
+  return STRAIN_ABILITIES.filter(a => unlocked.includes(a.id))
+}
+
+/** Get effective push cost for a slot, accounting for masteries */
+export function getEffectivePushCost(slot: StrainSlot, growth: GrowthState): number {
+  return growth.masteries.includes(slot.id) ? 0 : slot.pushCost
+}
+
+/** Get available (unacquired) growth rewards */
+export function getAvailableGrowthRewards(growth: GrowthState): GrowthReward[] {
+  return GROWTH_REWARD_POOL.filter(r => {
+    if (r.type === 'ability') return !growth.abilities.includes(r.id)
+    if (r.type === 'mastery') return !growth.masteries.includes(r.id.replace('mastery-', ''))
+    return false
+  })
+}
+
+/** Pick the right comfort reward based on player state */
+export function pickComfortReward(health: number, maxHealth: number, strain: number): ComfortReward {
+  if (health < maxHealth * 0.5) return COMFORT_HEAL
+  if (strain >= 10) return COMFORT_RELIEF
+  return COMFORT_COMPANION
+}
 
 // ─── Combat State ──────────────────────────────────────────────────────────
 
@@ -77,6 +145,7 @@ export interface StrainCombatState {
   block: number
   damageReduction: number
   pushedSlots: Record<'A' | 'B' | 'C', boolean>
+  pushCosts: Record<'A' | 'B' | 'C', number>
   activeAbilities: string[]
   selectedTargetId: string | null
   roundNumber: number
@@ -88,6 +157,7 @@ export interface StrainCombatState {
 export function initStrainCombat(
   enemies: EnemyInstance[],
   currentStrain: number,
+  growth: GrowthState = { abilities: [], masteries: [] },
 ): StrainCombatState {
   return {
     phase: 'planning',
@@ -97,6 +167,11 @@ export function initStrainCombat(
     block: 0,
     damageReduction: 0,
     pushedSlots: { A: false, B: false, C: false },
+    pushCosts: {
+      A: getEffectivePushCost(STRAIN_SLOTS[0], growth),
+      B: getEffectivePushCost(STRAIN_SLOTS[1], growth),
+      C: getEffectivePushCost(STRAIN_SLOTS[2], growth),
+    },
     activeAbilities: [],
     selectedTargetId: enemies.find(e => !e.isDefeated)?.instanceId ?? null,
     roundNumber: 1,
@@ -159,7 +234,7 @@ export function projectedStrainCost(state: StrainCombatState): number {
     return abilityCost - VENT_STRAIN_RECOVERY
   }
   const pushCost = STRAIN_SLOTS.reduce((sum, slot) => {
-    return sum + (state.pushedSlots[slot.id] ? slot.pushCost : 0)
+    return sum + (state.pushedSlots[slot.id] ? state.pushCosts[slot.id] : 0)
   }, 0)
   const abilityCost = STRAIN_ABILITIES.reduce((sum, ability) => {
     return sum + (state.activeAbilities.includes(ability.id) ? ability.strainCost : 0)

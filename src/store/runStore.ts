@@ -96,6 +96,8 @@ interface RunActions {
   toggleStrainAbility: (abilityId: string) => void
   selectStrainTarget: (enemyInstanceId: string) => void
   executeStrainTurn: () => void
+  applyGrowthReward: (rewardId: string, strainCost: number) => void
+  applyComfortReward: (rewardId: string) => void
 
   // Persistence
   saveRun: () => void
@@ -123,6 +125,7 @@ const emptyRunState: RunState = {
   // Strain prototype
   strain: 2,
   strainCombat: null,
+  growth: { abilities: [], masteries: [] },
 }
 
 /** Filter out inert carried parts (S2 part in S1) */
@@ -499,7 +502,7 @@ export const useRunStore = create<RunState & RunActions>()(
     // ─── Strain Prototype ───────────────────────────────────────────────────
     startStrainCombat: (enemies) =>
       set((state) => {
-        state.strainCombat = initStrainCombat(enemies, state.strain)
+        state.strainCombat = initStrainCombat(enemies, state.strain, state.growth)
       }),
 
     toggleStrainPush: (slotId) =>
@@ -530,6 +533,34 @@ export const useRunStore = create<RunState & RunActions>()(
         // If combat ended (reward/forfeit/finished), clear strainCombat after UI handles it
       }),
 
+    applyGrowthReward: (rewardId, strainCost) =>
+      set((state) => {
+        // Pay strain
+        state.strain = Math.min(state.strain + strainCost, 20)
+        // Apply reward
+        if (rewardId === 'repair' || rewardId === 'brace') {
+          if (!state.growth.abilities.includes(rewardId)) {
+            state.growth.abilities.push(rewardId)
+          }
+        } else if (rewardId.startsWith('mastery-')) {
+          const slotId = rewardId.replace('mastery-', '')
+          if (!state.growth.masteries.includes(slotId)) {
+            state.growth.masteries.push(slotId)
+          }
+        }
+      }),
+
+    applyComfortReward: (rewardId) =>
+      set((state) => {
+        if (rewardId === 'heal') {
+          state.health = Math.min(state.health + 8, state.maxHealth)
+        } else if (rewardId === 'relief') {
+          state.strain = Math.max(0, state.strain - 4)
+        } else if (rewardId === 'companion') {
+          state.strain = Math.max(0, state.strain - 2)
+        }
+      }),
+
     saveRun: () => {
       const state = get()
       if (!state.active) return
@@ -554,6 +585,7 @@ export const useRunStore = create<RunState & RunActions>()(
         carriedPartSector: state.carriedPartSector,
         strain: state.strain,
         strainCombat: null,
+        growth: state.growth,
       }
       saveRunState(toSave)
     },
