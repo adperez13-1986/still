@@ -31,6 +31,7 @@ import {
   initStrainCombat,
   togglePush,
   toggleAbility,
+  selectTarget,
   executeStrainTurn as execStrainTurn,
 } from '../game/strainCombat'
 import { ALL_ENEMIES } from '../data/enemies'
@@ -93,6 +94,7 @@ interface RunActions {
   startStrainCombat: (enemies: EnemyInstance[]) => void
   toggleStrainPush: (slotId: 'A' | 'B' | 'C') => void
   toggleStrainAbility: (abilityId: string) => void
+  selectStrainTarget: (enemyInstanceId: string) => void
   executeStrainTurn: () => void
 
   // Persistence
@@ -510,6 +512,12 @@ export const useRunStore = create<RunState & RunActions>()(
       set((state) => {
         if (!state.strainCombat || state.strainCombat.phase !== 'planning') return
         state.strainCombat = toggleAbility(state.strainCombat, abilityId)
+      }),
+
+    selectStrainTarget: (enemyInstanceId) =>
+      set((state) => {
+        if (!state.strainCombat || state.strainCombat.phase !== 'planning') return
+        state.strainCombat = selectTarget(state.strainCombat, enemyInstanceId)
       }),
 
     executeStrainTurn: () =>

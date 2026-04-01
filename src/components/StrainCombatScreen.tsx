@@ -104,7 +104,7 @@ function SlotCard({ slot, pushed, onToggle, disabled }: {
 
 // ─── Enemy Display ───────────────────────────────────────────────────────
 
-function EnemyDisplay({ enemy }: { enemy: EnemyInstance }) {
+function EnemyDisplay({ enemy, selected, onClick }: { enemy: EnemyInstance; selected?: boolean; onClick?: () => void }) {
   const def = ALL_ENEMIES[enemy.definitionId]
   if (!def || enemy.isDefeated) return null
 
@@ -112,14 +112,17 @@ function EnemyDisplay({ enemy }: { enemy: EnemyInstance }) {
   const hpPct = (enemy.currentHealth / enemy.maxHealth) * 100
 
   return (
-    <div style={{
-      background: '#1a1a2e',
-      border: '1px solid #444',
-      borderRadius: 8,
-      padding: 12,
-      minWidth: 120,
-      textAlign: 'center',
-    }}>
+    <div
+      onClick={onClick}
+      style={{
+        background: '#1a1a2e',
+        border: selected ? '2px solid #e74c3c' : '1px solid #444',
+        borderRadius: 8,
+        padding: 12,
+        minWidth: 120,
+        textAlign: 'center',
+        cursor: onClick ? 'pointer' : 'default',
+      }}>
       <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>{def.name}</div>
       {/* HP bar */}
       <div style={{ height: 8, background: '#2d3436', borderRadius: 4, overflow: 'hidden', marginBottom: 6 }}>
@@ -338,7 +341,12 @@ export default function StrainCombatScreen() {
         flexWrap: 'wrap', marginBottom: 16,
       }}>
         {sc.enemies.filter(e => !e.isDefeated).map(enemy => (
-          <EnemyDisplay key={enemy.instanceId} enemy={enemy} />
+          <EnemyDisplay
+            key={enemy.instanceId}
+            enemy={enemy}
+            selected={enemy.instanceId === sc.selectedTargetId}
+            onClick={isPlanning ? () => run.selectStrainTarget(enemy.instanceId) : undefined}
+          />
         ))}
       </div>
 

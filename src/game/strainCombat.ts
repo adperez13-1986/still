@@ -78,6 +78,7 @@ export interface StrainCombatState {
   damageReduction: number
   pushedSlots: Record<'A' | 'B' | 'C', boolean>
   activeAbilities: string[]
+  selectedTargetId: string | null
   roundNumber: number
   combatLog: StrainCombatEvent[]
 }
@@ -97,6 +98,7 @@ export function initStrainCombat(
     damageReduction: 0,
     pushedSlots: { A: false, B: false, C: false },
     activeAbilities: [],
+    selectedTargetId: enemies.find(e => !e.isDefeated)?.instanceId ?? null,
     roundNumber: 1,
     combatLog: [],
   }
@@ -115,6 +117,15 @@ export function toggleAbility(
       ? state.activeAbilities.filter(id => id !== abilityId)
       : [...state.activeAbilities, abilityId],
   }
+}
+
+// ─── Target Selection ──────────────────────────────────────────────────
+
+export function selectTarget(
+  state: StrainCombatState,
+  enemyInstanceId: string,
+): StrainCombatState {
+  return { ...state, selectedTargetId: enemyInstanceId }
 }
 
 // ─── Push Toggle ───────────────────────────────────────────────────────────
@@ -214,8 +225,9 @@ export function executeStrainTurn(
       const value = pushed ? slot.pushedValue : slot.baseValue
 
       if (slot.type === 'damage_single') {
-        // Hit first alive enemy
-        const target = enemies.find(e => !e.isDefeated)
+        // Hit selected target, or first alive enemy as fallback
+        const target = enemies.find(e => e.instanceId === combat.selectedTargetId && !e.isDefeated)
+          || enemies.find(e => !e.isDefeated)
         if (target) {
           const blocked = Math.min(target.block, value)
           target.block -= blocked
@@ -338,6 +350,11 @@ export function executeStrainTurn(
   combat.damageReduction = 0 // brace resets
   combat.pushedSlots = { A: false, B: false, C: false }
   combat.activeAbilities = [] // abilities reset
+  // Auto-retarget if current target is dead
+  const currentTarget = combat.enemies.find(e => e.instanceId === combat.selectedTargetId && !e.isDefeated)
+  if (!currentTarget) {
+    combat.selectedTargetId = combat.enemies.find(e => !e.isDefeated)?.instanceId ?? null
+  }
   combat.roundNumber++
   combat.phase = 'planning'
 
