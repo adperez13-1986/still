@@ -14,6 +14,9 @@ import { ALL_ENEMIES } from '../data/enemies'
 /** Strain recovered passively between combats */
 export const STRAIN_DECAY_BETWEEN_COMBATS = 2
 
+/** Strain recovered when venting (skip all attacks for a turn) */
+export const VENT_STRAIN_RECOVERY = 4
+
 // ─── Slot Definitions ──────────────────────────────────────────────────────
 
 export interface StrainSlot {
@@ -43,6 +46,7 @@ export interface StrainAbility {
 export const STRAIN_ABILITIES: StrainAbility[] = [
   { id: 'repair', label: 'Repair', description: 'Heal 4 HP', strainCost: 1 },
   { id: 'brace', label: 'Brace', description: 'Reduce incoming damage by 3 per hit', strainCost: 1 },
+  { id: 'vent', label: 'Vent', description: `Release ${4} strain. Skip all attacks this turn.`, strainCost: 0 },
 ]
 
 // ─── Combat State ──────────────────────────────────────────────────────────
@@ -128,8 +132,21 @@ export function togglePush(
   }
 }
 
+/** Is vent currently toggled on? */
+export function isVenting(state: StrainCombatState): boolean {
+  return state.activeAbilities.includes('vent')
+}
+
 /** Calculate total strain cost of current push selections + active abilities */
 export function projectedStrainCost(state: StrainCombatState): number {
+  // Venting reduces strain and skips attacks — pushes are ignored
+  if (isVenting(state)) {
+    const abilityCost = STRAIN_ABILITIES.reduce((sum, ability) => {
+      if (ability.id === 'vent') return sum
+      return sum + (state.activeAbilities.includes(ability.id) ? ability.strainCost : 0)
+    }, 0)
+    return abilityCost - VENT_STRAIN_RECOVERY
+  }
   const pushCost = STRAIN_SLOTS.reduce((sum, slot) => {
     return sum + (state.pushedSlots[slot.id] ? slot.pushCost : 0)
   }, 0)
@@ -141,7 +158,7 @@ export function projectedStrainCost(state: StrainCombatState): number {
 
 /** Strain value after current push selections are confirmed */
 export function projectedStrain(state: StrainCombatState): number {
-  return state.strain + projectedStrainCost(state)
+  return Math.max(0, state.strain + projectedStrainCost(state))
 }
 
 /** Would current selections trigger forfeit? */
@@ -158,9 +175,10 @@ export function executeStrainTurn(
   let combat = { ...state, combatLog: [] as StrainCombatEvent[], phase: 'executing' as StrainCombatPhase }
   let hp = health
 
-  // 1. Deduct strain for pushed slots
+  // 1. Deduct strain for pushed slots (or recover if venting)
+  const venting = isVenting(combat)
   const strainCost = projectedStrainCost(combat)
-  combat.strain = Math.min(combat.strain + strainCost, combat.maxStrain)
+  combat.strain = Math.max(0, Math.min(combat.strain + strainCost, combat.maxStrain))
 
   // 2. Check forfeit
   if (combat.strain >= combat.maxStrain) {
@@ -182,56 +200,60 @@ export function executeStrainTurn(
     } else if (ability.id === 'brace') {
       combat.damageReduction = 3
       combat.combatLog.push({ type: 'ability', abilityId: 'brace', abilityLabel: 'Brace' })
+    } else if (ability.id === 'vent') {
+      combat.combatLog.push({ type: 'ability', abilityId: 'vent', abilityLabel: 'Vent' })
     }
   }
 
-  // 3. Fire slots in order: A → B → C
+  // 3. Fire slots in order: A → B → C (skipped when venting)
   const enemies = combat.enemies.map(e => ({ ...e }))
 
-  for (const slot of STRAIN_SLOTS) {
-    const pushed = combat.pushedSlots[slot.id]
-    const value = pushed ? slot.pushedValue : slot.baseValue
+  if (!venting) {
+    for (const slot of STRAIN_SLOTS) {
+      const pushed = combat.pushedSlots[slot.id]
+      const value = pushed ? slot.pushedValue : slot.baseValue
 
-    if (slot.type === 'damage_single') {
-      // Hit first alive enemy
-      const target = enemies.find(e => !e.isDefeated)
-      if (target) {
-        const blocked = Math.min(target.block, value)
-        target.block -= blocked
-        const actualDamage = value - blocked
-        target.currentHealth = Math.max(0, target.currentHealth - actualDamage)
-        if (target.currentHealth <= 0) target.isDefeated = true
+      if (slot.type === 'damage_single') {
+        // Hit first alive enemy
+        const target = enemies.find(e => !e.isDefeated)
+        if (target) {
+          const blocked = Math.min(target.block, value)
+          target.block -= blocked
+          const actualDamage = value - blocked
+          target.currentHealth = Math.max(0, target.currentHealth - actualDamage)
+          if (target.currentHealth <= 0) target.isDefeated = true
+          combat.combatLog.push({
+            type: 'slotFire',
+            slotId: slot.id,
+            slotLabel: slot.label,
+            damage: actualDamage,
+            enemyId: target.instanceId,
+          })
+        }
+      } else if (slot.type === 'block') {
+        combat.block += value
         combat.combatLog.push({
           type: 'slotFire',
           slotId: slot.id,
           slotLabel: slot.label,
-          damage: actualDamage,
-          enemyId: target.instanceId,
+          block: value,
         })
-      }
-    } else if (slot.type === 'block') {
-      combat.block += value
-      combat.combatLog.push({
-        type: 'slotFire',
-        slotId: slot.id,
-        slotLabel: slot.label,
-        block: value,
-      })
-    } else if (slot.type === 'damage_all') {
-      for (const enemy of enemies) {
-        if (enemy.isDefeated) continue
-        const blocked = Math.min(enemy.block, value)
-        enemy.block -= blocked
-        const actualDamage = value - blocked
-        enemy.currentHealth = Math.max(0, enemy.currentHealth - actualDamage)
-        if (enemy.currentHealth <= 0) enemy.isDefeated = true
-        combat.combatLog.push({
-          type: 'slotFire',
-          slotId: slot.id,
-          slotLabel: slot.label,
-          damage: actualDamage,
-          enemyId: enemy.instanceId,
-        })
+      } else if (slot.type === 'damage_all') {
+        for (const enemy of enemies) {
+          if (enemy.isDefeated) continue
+          const blocked = Math.min(enemy.block, value)
+          enemy.block -= blocked
+          const actualDamage = value - blocked
+          enemy.currentHealth = Math.max(0, enemy.currentHealth - actualDamage)
+          if (enemy.currentHealth <= 0) enemy.isDefeated = true
+          combat.combatLog.push({
+            type: 'slotFire',
+            slotId: slot.id,
+            slotLabel: slot.label,
+            damage: actualDamage,
+            enemyId: enemy.instanceId,
+          })
+        }
       }
     }
   }

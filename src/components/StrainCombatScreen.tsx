@@ -1,6 +1,6 @@
 import { useRunStore } from '../store/runStore'
 import { ALL_ENEMIES } from '../data/enemies'
-import { STRAIN_SLOTS, STRAIN_ABILITIES, STRAIN_DECAY_BETWEEN_COMBATS, getEnemyIntent, projectedStrain, wouldForfeit } from '../game/strainCombat'
+import { STRAIN_SLOTS, STRAIN_ABILITIES, STRAIN_DECAY_BETWEEN_COMBATS, VENT_STRAIN_RECOVERY, getEnemyIntent, projectedStrain, wouldForfeit, isVenting } from '../game/strainCombat'
 import type { StrainSlot, StrainCombatEvent } from '../game/strainCombat'
 import type { EnemyInstance } from '../game/types'
 
@@ -350,15 +350,18 @@ export default function StrainCombatScreen() {
         display: 'flex', gap: 12,
         flex: 1, alignItems: 'center',
       }}>
-        {STRAIN_SLOTS.map(slot => (
-          <SlotCard
-            key={slot.id}
-            slot={slot}
-            pushed={sc.pushedSlots[slot.id]}
-            onToggle={() => run.toggleStrainPush(slot.id)}
-            disabled={!isPlanning}
-          />
-        ))}
+        {STRAIN_SLOTS.map(slot => {
+          const venting = isVenting(sc)
+          return (
+            <SlotCard
+              key={slot.id}
+              slot={slot}
+              pushed={!venting && sc.pushedSlots[slot.id]}
+              onToggle={() => run.toggleStrainPush(slot.id)}
+              disabled={!isPlanning || venting}
+            />
+          )
+        })}
       </div>
 
       {/* Abilities */}
@@ -385,7 +388,9 @@ export default function StrainCombatScreen() {
               }}
             >
               <span style={{ fontWeight: 600 }}>{ability.label}</span>
-              <span style={{ color: '#888', marginLeft: 6 }}>({ability.strainCost} strain)</span>
+              <span style={{ color: '#888', marginLeft: 6 }}>
+                {ability.id === 'vent' ? `(−${VENT_STRAIN_RECOVERY} strain)` : `(${ability.strainCost} strain)`}
+              </span>
               <div style={{ fontSize: 11, color: '#666', marginTop: 2 }}>{ability.description}</div>
             </button>
           )
