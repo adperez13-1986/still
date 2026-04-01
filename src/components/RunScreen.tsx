@@ -31,6 +31,16 @@ function pickEnemiesForRoom(room: GridRoom, sector: number, _combatsCleared: num
   }
   const encounters = sector >= 2 ? SECTOR2_ENCOUNTERS : SECTOR1_ENCOUNTERS
   const eliteEncounters = sector >= 2 ? SECTOR2_ELITE_ENCOUNTERS : SECTOR1_ELITE_ENCOUNTERS
+  // First 2 combats: solo enemies only (player has no abilities yet)
+  if (_combatsCleared < 2) {
+    const solos = encounters.filter(e => e.enemies.length === 1)
+    const encounter = solos[Math.floor(Math.random() * solos.length)]
+    return encounter.enemies.map(id => {
+      const def = ALL_ENEMIES[id]
+      if (!def) throw new Error(`Unknown enemy: ${id}`)
+      return makeEnemyInstance(def, 0)
+    })
+  }
   // ~20% of combat rooms are elite encounters, but not in the first 3 combats
   const canBeElite = _combatsCleared >= 3
   const pool = canBeElite && Math.random() < 0.2 ? eliteEncounters : encounters
