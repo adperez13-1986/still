@@ -346,7 +346,10 @@ export function executeStrainTurn(
   }
 
   // 7. Start next turn
-  combat.block = 0 // block resets
+  combat.block = 0 // player block resets
+  for (const enemy of combat.enemies) {
+    if (!enemy.isDefeated) enemy.block = 0 // enemy block resets
+  }
   combat.damageReduction = 0 // brace resets
   combat.pushedSlots = { A: false, B: false, C: false }
   combat.activeAbilities = [] // abilities reset
