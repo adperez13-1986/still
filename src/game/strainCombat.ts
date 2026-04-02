@@ -53,22 +53,39 @@ export const STRAIN_ABILITIES: StrainAbility[] = [
 /** Default ability always available. Repair and Brace must be earned via growth rewards. */
 export const DEFAULT_ABILITIES = ['vent']
 
-// ─── Growth Rewards ───────────────────────────────────────────────────────
+// ─── Growth Rewards — Branching Tree ─────────────────────────────────────
 
 export interface GrowthReward {
   id: string
   label: string
   description: string
   strainCost: number
-  type: 'ability' | 'mastery'
+  tier: 1 | 2 | 3
+  branch: 'repair' | 'brace' | 'offense'
+  requires: string | null
 }
 
-export const GROWTH_REWARD_POOL: GrowthReward[] = [
-  { id: 'repair', label: 'Learn: Repair', description: 'Heal 4 HP (1 strain per use)', strainCost: 2, type: 'ability' },
-  { id: 'brace', label: 'Learn: Brace', description: 'Reduce incoming damage by 3/hit (1 strain per use)', strainCost: 2, type: 'ability' },
-  { id: 'mastery-A', label: 'Strike Mastery', description: 'Push Strike for free', strainCost: 3, type: 'mastery' },
-  { id: 'mastery-B', label: 'Shield Mastery', description: 'Push Shield for free', strainCost: 3, type: 'mastery' },
-  { id: 'mastery-C', label: 'Barrage Mastery', description: 'Push Barrage for free', strainCost: 3, type: 'mastery' },
+export const GROWTH_TREE: GrowthReward[] = [
+  // Tier 1 — new verbs
+  { id: 'repair',    label: 'Learn: Repair',    description: 'Heal 4 HP (1 strain/use)',               strainCost: 2, tier: 1, branch: 'repair',  requires: null },
+  { id: 'brace',     label: 'Learn: Brace',     description: 'Reduce damage by 3/hit (1 strain/use)',  strainCost: 2, tier: 1, branch: 'brace',   requires: null },
+  { id: 'mastery-A', label: 'Strike Mastery',    description: 'Push Strike for free',                   strainCost: 3, tier: 1, branch: 'offense', requires: null },
+  { id: 'mastery-B', label: 'Shield Mastery',    description: 'Push Shield for free',                   strainCost: 3, tier: 1, branch: 'offense', requires: null },
+  { id: 'mastery-C', label: 'Barrage Mastery',   description: 'Push Barrage for free',                  strainCost: 3, tier: 1, branch: 'offense', requires: null },
+  // Tier 2 — forks
+  { id: 'repair-plus',     label: 'Repair+',          description: 'Repair heals 7 instead of 4',                strainCost: 2, tier: 2, branch: 'repair',  requires: 'repair' },
+  { id: 'drain-strike',    label: 'Drain Strike',     description: 'Strike heals you for half damage dealt',     strainCost: 2, tier: 2, branch: 'repair',  requires: 'repair' },
+  { id: 'brace-plus',      label: 'Brace+',           description: 'Brace reduces 5 instead of 3',              strainCost: 2, tier: 2, branch: 'brace',   requires: 'brace' },
+  { id: 'reactive-shield', label: 'Reactive Shield',  description: 'Shield fires after enemy turn',              strainCost: 2, tier: 2, branch: 'brace',   requires: 'brace' },
+  { id: 'piercing-strike', label: 'Piercing Strike',  description: 'Strike ignores enemy block',                 strainCost: 3, tier: 2, branch: 'offense', requires: 'mastery-A' },
+  { id: 'scatter-barrage', label: 'Scatter Barrage',  description: 'Barrage hits 3 random targets',              strainCost: 3, tier: 2, branch: 'offense', requires: 'mastery-C' },
+  // Tier 3 — identity
+  { id: 'desperate-repair', label: 'Desperate Repair', description: 'Strain 15+: Repair heals 8',               strainCost: 3, tier: 3, branch: 'repair',  requires: 'repair-plus' },
+  { id: 'lifeline',         label: 'Lifeline',         description: 'Strain 12+: Vent also heals 4 HP',         strainCost: 3, tier: 3, branch: 'repair',  requires: 'drain-strike' },
+  { id: 'calm-brace',       label: 'Calm Brace',       description: 'Strain ≤8: Brace reduces 6',               strainCost: 3, tier: 3, branch: 'brace',   requires: 'brace-plus' },
+  { id: 'fortify',          label: 'Fortify',          description: 'Unused block converts to HP healing',       strainCost: 3, tier: 3, branch: 'brace',   requires: 'reactive-shield' },
+  { id: 'executioner',      label: 'Executioner',      description: 'Bonus damage to enemies below 30% HP',      strainCost: 3, tier: 3, branch: 'offense', requires: 'piercing-strike' },
+  { id: 'chain-reaction',   label: 'Chain Reaction',   description: 'Kill during Barrage triggers bonus Barrage', strainCost: 3, tier: 3, branch: 'offense', requires: 'scatter-barrage' },
 ]
 
 // ─── Comfort Rewards ──────────────────────────────────────────────────────
@@ -86,27 +103,32 @@ export const COMFORT_COMPANION: ComfortReward = { id: 'companion', label: 'A qui
 // ─── Growth Helpers ───────────────────────────────────────────────────────
 
 export interface GrowthState {
-  abilities: string[]
-  masteries: string[]
+  rewards: string[]
+}
+
+/** Check if a reward ID has been acquired */
+export function hasReward(growth: GrowthState, id: string): boolean {
+  return growth.rewards.includes(id)
 }
 
 /** Get abilities available in combat based on growth state */
 export function getAvailableAbilities(growth: GrowthState): StrainAbility[] {
-  const unlocked = [...DEFAULT_ABILITIES, ...growth.abilities]
+  const unlocked = [...DEFAULT_ABILITIES, ...growth.rewards.filter(id => id === 'repair' || id === 'brace')]
   return STRAIN_ABILITIES.filter(a => unlocked.includes(a.id))
 }
 
 /** Get effective push cost for a slot, accounting for masteries */
 export function getEffectivePushCost(slot: StrainSlot, growth: GrowthState): number {
-  return growth.masteries.includes(slot.id) ? 0 : slot.pushCost
+  return hasReward(growth, `mastery-${slot.id}`) ? 0 : slot.pushCost
 }
 
-/** Get available (unacquired) growth rewards */
-export function getAvailableGrowthRewards(growth: GrowthState): GrowthReward[] {
-  return GROWTH_REWARD_POOL.filter(r => {
-    if (r.type === 'ability') return !growth.abilities.includes(r.id)
-    if (r.type === 'mastery') return !growth.masteries.includes(r.id.replace('mastery-', ''))
-    return false
+/** Get available growth rewards: prerequisites met, not acquired, affordable */
+export function getAvailableGrowthRewards(growth: GrowthState, currentStrain: number): GrowthReward[] {
+  return GROWTH_TREE.filter(r => {
+    if (growth.rewards.includes(r.id)) return false
+    if (r.requires && !growth.rewards.includes(r.requires)) return false
+    if (currentStrain + r.strainCost >= 20) return false
+    return true
   })
 }
 
@@ -150,6 +172,8 @@ export interface StrainCombatState {
   selectedTargetId: string | null
   roundNumber: number
   combatLog: StrainCombatEvent[]
+  /** Growth rewards acquired — copied at combat init, used for effect resolution */
+  growthRewards: string[]
 }
 
 // ─── Init ──────────────────────────────────────────────────────────────────
@@ -176,6 +200,7 @@ export function initStrainCombat(
     selectedTargetId: enemies.find(e => !e.isDefeated)?.instanceId ?? null,
     roundNumber: 1,
     combatLog: [],
+    growthRewards: growth.rewards,
   }
 }
 
@@ -274,25 +299,64 @@ export function executeStrainTurn(
     return { combat, health: hp }
   }
 
-  // 2.5. Resolve abilities
+  // 2.5. Resolve abilities (with growth reward modifiers)
+  const gr = combat.growthRewards
   combat.damageReduction = 0
   for (const abilityId of combat.activeAbilities) {
     const ability = STRAIN_ABILITIES.find(a => a.id === abilityId)
     if (!ability) continue
 
     if (ability.id === 'repair') {
-      hp = Math.min(hp + 4, 70) // cap at max health (hardcoded for prototype)
-      combat.combatLog.push({ type: 'ability', abilityId: 'repair', abilityLabel: 'Repair', heal: 4 })
+      let healAmt = 4
+      if (gr.includes('repair-plus')) healAmt = 7
+      if (gr.includes('desperate-repair') && combat.strain >= 15) healAmt = 8
+      hp = Math.min(hp + healAmt, 70)
+      combat.combatLog.push({ type: 'ability', abilityId: 'repair', abilityLabel: 'Repair', heal: healAmt })
     } else if (ability.id === 'brace') {
-      combat.damageReduction = 3
+      let reduction = 3
+      if (gr.includes('brace-plus')) reduction = 5
+      if (gr.includes('calm-brace') && combat.strain <= 8) reduction = 6
+      combat.damageReduction = reduction
       combat.combatLog.push({ type: 'ability', abilityId: 'brace', abilityLabel: 'Brace' })
     } else if (ability.id === 'vent') {
-      combat.combatLog.push({ type: 'ability', abilityId: 'vent', abilityLabel: 'Vent' })
+      // Lifeline: Vent also heals 4 HP at high strain (checked before strain drops)
+      if (gr.includes('lifeline') && combat.strain >= 12) {
+        hp = Math.min(hp + 4, 70)
+        combat.combatLog.push({ type: 'ability', abilityId: 'vent', abilityLabel: 'Vent + Lifeline', heal: 4 })
+      } else {
+        combat.combatLog.push({ type: 'ability', abilityId: 'vent', abilityLabel: 'Vent' })
+      }
     }
   }
 
   // 3. Fire slots in order: A → B → C (skipped when venting)
+  //    Shield (B) deferred if Reactive Shield is active
   const enemies = combat.enemies.map(e => ({ ...e }))
+  const hasReactiveShield = gr.includes('reactive-shield')
+  const hasPiercing = gr.includes('piercing-strike')
+  const hasDrainStrike = gr.includes('drain-strike')
+  const hasExecutioner = gr.includes('executioner')
+  const hasScatter = gr.includes('scatter-barrage')
+  const hasChainReaction = gr.includes('chain-reaction')
+  let deferredShieldValue = 0
+
+  /** Apply damage to a single enemy, return actual damage dealt */
+  function dealDamage(target: EnemyInstance, baseDmg: number, piercing: boolean, slotId: 'A' | 'B' | 'C', slotLabel: string): number {
+    let actualDamage: number
+    if (piercing) {
+      actualDamage = baseDmg
+    } else {
+      const blocked = Math.min(target.block, baseDmg)
+      target.block -= blocked
+      actualDamage = baseDmg - blocked
+    }
+    target.currentHealth = Math.max(0, target.currentHealth - actualDamage)
+    if (target.currentHealth <= 0) target.isDefeated = true
+    combat.combatLog.push({
+      type: 'slotFire', slotId, slotLabel, damage: actualDamage, enemyId: target.instanceId,
+    })
+    return actualDamage
+  }
 
   if (!venting) {
     for (const slot of STRAIN_SLOTS) {
@@ -300,46 +364,54 @@ export function executeStrainTurn(
       const value = pushed ? slot.pushedValue : slot.baseValue
 
       if (slot.type === 'damage_single') {
-        // Hit selected target, or first alive enemy as fallback
         const target = enemies.find(e => e.instanceId === combat.selectedTargetId && !e.isDefeated)
           || enemies.find(e => !e.isDefeated)
         if (target) {
-          const blocked = Math.min(target.block, value)
-          target.block -= blocked
-          const actualDamage = value - blocked
-          target.currentHealth = Math.max(0, target.currentHealth - actualDamage)
-          if (target.currentHealth <= 0) target.isDefeated = true
-          combat.combatLog.push({
-            type: 'slotFire',
-            slotId: slot.id,
-            slotLabel: slot.label,
-            damage: actualDamage,
-            enemyId: target.instanceId,
-          })
+          // Executioner: bonus damage to low-HP enemies
+          let dmg = value
+          if (hasExecutioner && target.currentHealth < target.maxHealth * 0.3) {
+            dmg += 4
+          }
+          const actual = dealDamage(target, dmg, hasPiercing, slot.id, slot.label)
+          // Drain Strike: heal for half damage dealt
+          if (hasDrainStrike && actual > 0) {
+            const drainHeal = Math.floor(actual / 2)
+            hp = Math.min(hp + drainHeal, 70)
+            combat.combatLog.push({ type: 'ability', abilityId: 'drain-strike', abilityLabel: 'Drain', heal: drainHeal })
+          }
         }
       } else if (slot.type === 'block') {
-        combat.block += value
-        combat.combatLog.push({
-          type: 'slotFire',
-          slotId: slot.id,
-          slotLabel: slot.label,
-          block: value,
-        })
+        if (hasReactiveShield) {
+          // Defer Shield to after enemy turn
+          deferredShieldValue = value
+        } else {
+          combat.block += value
+          combat.combatLog.push({ type: 'slotFire', slotId: slot.id, slotLabel: slot.label, block: value })
+        }
       } else if (slot.type === 'damage_all') {
-        for (const enemy of enemies) {
-          if (enemy.isDefeated) continue
-          const blocked = Math.min(enemy.block, value)
-          enemy.block -= blocked
-          const actualDamage = value - blocked
-          enemy.currentHealth = Math.max(0, enemy.currentHealth - actualDamage)
-          if (enemy.currentHealth <= 0) enemy.isDefeated = true
-          combat.combatLog.push({
-            type: 'slotFire',
-            slotId: slot.id,
-            slotLabel: slot.label,
-            damage: actualDamage,
-            enemyId: enemy.instanceId,
-          })
+        if (hasScatter) {
+          // Scatter Barrage: 3 hits on random alive enemies
+          for (let hit = 0; hit < 3; hit++) {
+            const alive = enemies.filter(e => !e.isDefeated)
+            if (alive.length === 0) break
+            const target = alive[Math.floor(Math.random() * alive.length)]
+            dealDamage(target, value, false, slot.id, slot.label)
+          }
+        } else {
+          for (const enemy of enemies) {
+            if (enemy.isDefeated) continue
+            dealDamage(enemy, value, false, slot.id, slot.label)
+          }
+        }
+        // Chain Reaction: if any enemy was killed during this Barrage, fire bonus Barrage
+        if (hasChainReaction) {
+          const newlyDead = enemies.filter(e => e.isDefeated && e.currentHealth <= 0)
+          if (newlyDead.length > 0) {
+            const alive = enemies.filter(e => !e.isDefeated)
+            for (const enemy of alive) {
+              dealDamage(enemy, value, false, slot.id, 'Chain Reaction')
+            }
+          }
         }
       }
     }
@@ -414,13 +486,26 @@ export function executeStrainTurn(
     }
   }
 
-  // 6. Check loss
+  // 6. Reactive Shield: fire after enemy turn
+  if (hasReactiveShield && deferredShieldValue > 0 && !venting) {
+    combat.block += deferredShieldValue
+    combat.combatLog.push({ type: 'slotFire', slotId: 'B', slotLabel: 'Reactive Shield', block: deferredShieldValue })
+  }
+
+  // 6.5 Fortify: convert remaining block to HP healing
+  if (gr.includes('fortify') && combat.block > 0) {
+    const fortifyHeal = combat.block
+    hp = Math.min(hp + fortifyHeal, 70)
+    combat.combatLog.push({ type: 'ability', abilityId: 'fortify', abilityLabel: 'Fortify', heal: fortifyHeal })
+  }
+
+  // 7. Check loss
   if (hp <= 0) {
     combat.phase = 'finished'
     return { combat, health: 0 }
   }
 
-  // 7. Start next turn
+  // 8. Start next turn
   combat.block = 0 // player block resets
   for (const enemy of combat.enemies) {
     if (!enemy.isDefeated) enemy.block = 0 // enemy block resets

@@ -258,11 +258,9 @@ export default function StrainCombatScreen() {
 
   // Reward choice screen
   if (sc.phase === 'reward') {
-    const availableGrowth = getAvailableGrowthRewards(run.growth)
+    const availableGrowth = getAvailableGrowthRewards(run.growth, run.strain)
     // Pick deterministically based on combatsCleared to avoid re-render flicker
     const growthReward = availableGrowth.length > 0 ? availableGrowth[run.combatsCleared % availableGrowth.length] : null
-    // Check affordability
-    const canAffordGrowth = growthReward != null && (run.strain + growthReward.strainCost) < 20
     const comfortReward = pickComfortReward(run.health, run.maxHealth, run.strain)
 
     return (
@@ -282,31 +280,26 @@ export default function StrainCombatScreen() {
           {/* Growth reward */}
           {growthReward && (
             <button
-              disabled={!canAffordGrowth}
               onClick={() => {
-                if (!canAffordGrowth) return
                 run.applyGrowthReward(growthReward.id, growthReward.strainCost)
                 endStrainCombat(true)
               }}
               style={{
                 width: 180, padding: 20,
-                background: canAffordGrowth ? '#1a2a1a' : '#1a1a2e',
-                border: canAffordGrowth ? '2px solid #e67e22' : '2px solid #333',
+                background: '#1a2a1a',
+                border: '2px solid #e67e22',
                 borderRadius: 8,
-                color: canAffordGrowth ? '#fff' : '#555',
-                cursor: canAffordGrowth ? 'pointer' : 'default',
+                color: '#fff',
+                cursor: 'pointer',
                 textAlign: 'center',
               }}
             >
-              <div style={{ fontSize: 11, color: '#e67e22', marginBottom: 8, fontWeight: 600 }}>GROWTH</div>
+              <div style={{ fontSize: 11, color: '#e67e22', marginBottom: 8, fontWeight: 600 }}>GROWTH{growthReward.tier > 1 ? ` · T${growthReward.tier}` : ''}</div>
               <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 6 }}>{growthReward.label}</div>
               <div style={{ fontSize: 12, color: '#aaa', marginBottom: 12 }}>{growthReward.description}</div>
-              <div style={{ fontSize: 13, color: canAffordGrowth ? '#e67e22' : '#555' }}>
+              <div style={{ fontSize: 13, color: '#e67e22' }}>
                 +{growthReward.strainCost} strain → {run.strain + growthReward.strainCost}
               </div>
-              {!canAffordGrowth && (
-                <div style={{ fontSize: 11, color: '#e74c3c', marginTop: 6 }}>Too strained</div>
-              )}
             </button>
           )}
 

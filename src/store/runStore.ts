@@ -125,7 +125,7 @@ const emptyRunState: RunState = {
   // Strain prototype
   strain: 2,
   strainCombat: null,
-  growth: { abilities: [], masteries: [] },
+  growth: { rewards: [] },
 }
 
 /** Filter out inert carried parts (S2 part in S1) */
@@ -535,18 +535,9 @@ export const useRunStore = create<RunState & RunActions>()(
 
     applyGrowthReward: (rewardId, strainCost) =>
       set((state) => {
-        // Pay strain
         state.strain = Math.min(state.strain + strainCost, 20)
-        // Apply reward
-        if (rewardId === 'repair' || rewardId === 'brace') {
-          if (!state.growth.abilities.includes(rewardId)) {
-            state.growth.abilities.push(rewardId)
-          }
-        } else if (rewardId.startsWith('mastery-')) {
-          const slotId = rewardId.replace('mastery-', '')
-          if (!state.growth.masteries.includes(slotId)) {
-            state.growth.masteries.push(slotId)
-          }
+        if (!state.growth.rewards.includes(rewardId)) {
+          state.growth.rewards.push(rewardId)
         }
       }),
 
