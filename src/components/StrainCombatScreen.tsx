@@ -259,12 +259,10 @@ export default function StrainCombatScreen() {
   // Reward choice screen
   if (sc.phase === 'reward') {
     const availableGrowth = getAvailableGrowthRewards(run.growth, run.strain)
-    // Offer up to 3 growth options, deterministic shuffle based on combatsCleared
-    const growthOptions = availableGrowth
-      .map((r, i) => ({ r, sort: ((run.combatsCleared * 7 + i * 13) % 97) }))
-      .sort((a, b) => a.sort - b.sort)
+    // Show up to 3 growth options, lowest tier first
+    const growthOptions = [...availableGrowth]
+      .sort((a, b) => a.tier - b.tier)
       .slice(0, 3)
-      .map(x => x.r)
     const comfortReward = pickComfortReward(run.health, run.maxHealth, run.strain)
 
     return (
