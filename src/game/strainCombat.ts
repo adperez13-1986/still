@@ -76,7 +76,7 @@ export const GROWTH_TREE: GrowthReward[] = [
   { id: 'repair-plus',     label: 'Repair+',          description: 'Repair heals 7 instead of 4',                strainCost: 2, tier: 2, branch: 'repair',  requires: 'repair' },
   { id: 'drain-strike',    label: 'Drain Strike',     description: 'Strike heals you for half damage dealt',     strainCost: 2, tier: 2, branch: 'repair',  requires: 'repair' },
   { id: 'brace-plus',      label: 'Brace+',           description: 'Brace reduces 5 instead of 3',              strainCost: 2, tier: 2, branch: 'brace',   requires: 'brace' },
-  { id: 'reactive-shield', label: 'Reactive Shield',  description: 'Shield fires after enemy turn',              strainCost: 2, tier: 2, branch: 'brace',   requires: 'brace' },
+  { id: 'reactive-shield', label: 'Reactive Shield',  description: 'Block persists between turns',               strainCost: 2, tier: 2, branch: 'brace',   requires: 'brace' },
   { id: 'piercing-strike', label: 'Piercing Strike',  description: 'Strike ignores enemy block',                 strainCost: 3, tier: 2, branch: 'offense', requires: 'mastery-A' },
   { id: 'scatter-barrage', label: 'Scatter Barrage',  description: 'Barrage hits 3 random targets',              strainCost: 3, tier: 2, branch: 'offense', requires: 'mastery-C' },
   // Tier 3 — identity
@@ -357,7 +357,7 @@ export function executeStrainTurn(
   }
 
   // 3. Fire slots in order: A → B → C (skipped when venting)
-  //    Shield (B) deferred if Reactive Shield is active
+  //    Reactive Shield: block persists between turns (not reset at end)
   const enemies = combat.enemies.map(e => ({ ...e }))
   const hasReactiveShield = gr.includes('reactive-shield')
   const hasPiercing = gr.includes('piercing-strike')
@@ -365,7 +365,6 @@ export function executeStrainTurn(
   const hasExecutioner = gr.includes('executioner')
   const hasScatter = gr.includes('scatter-barrage')
   const hasChainReaction = gr.includes('chain-reaction')
-  let deferredShieldValue = 0
 
   /** Apply damage to a single enemy, return actual damage dealt */
   function dealDamage(target: EnemyInstance, baseDmg: number, piercing: boolean, slotId: 'A' | 'B' | 'C', slotLabel: string): number {
@@ -408,13 +407,8 @@ export function executeStrainTurn(
           }
         }
       } else if (slot.type === 'block') {
-        if (hasReactiveShield) {
-          // Defer Shield to after enemy turn
-          deferredShieldValue = value
-        } else {
-          combat.block += value
-          combat.combatLog.push({ type: 'slotFire', slotId: slot.id, slotLabel: slot.label, block: value })
-        }
+        combat.block += value
+        combat.combatLog.push({ type: 'slotFire', slotId: slot.id, slotLabel: slot.label, block: value })
       } else if (slot.type === 'damage_all') {
         if (hasScatter) {
           // Scatter Barrage: 3 hits on random alive enemies
@@ -513,13 +507,7 @@ export function executeStrainTurn(
     }
   }
 
-  // 6. Reactive Shield: fire after enemy turn
-  if (hasReactiveShield && deferredShieldValue > 0 && !venting) {
-    combat.block += deferredShieldValue
-    combat.combatLog.push({ type: 'slotFire', slotId: 'B', slotLabel: 'Reactive Shield', block: deferredShieldValue })
-  }
-
-  // 6.5 Fortify: convert remaining block to HP healing
+  // 6. Fortify: convert remaining block to HP healing
   if (gr.includes('fortify') && combat.block > 0) {
     const fortifyHeal = combat.block
     hp = Math.min(hp + fortifyHeal, 70)
