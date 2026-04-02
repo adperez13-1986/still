@@ -259,8 +259,12 @@ export default function StrainCombatScreen() {
   // Reward choice screen
   if (sc.phase === 'reward') {
     const availableGrowth = getAvailableGrowthRewards(run.growth, run.strain)
-    // Pick deterministically based on combatsCleared to avoid re-render flicker
-    const growthReward = availableGrowth.length > 0 ? availableGrowth[run.combatsCleared % availableGrowth.length] : null
+    // Offer up to 3 growth options, deterministic shuffle based on combatsCleared
+    const growthOptions = availableGrowth
+      .map((r, i) => ({ r, sort: ((run.combatsCleared * 7 + i * 13) % 97) }))
+      .sort((a, b) => a.sort - b.sort)
+      .slice(0, 3)
+      .map(x => x.r)
     const comfortReward = pickComfortReward(run.health, run.maxHealth, run.strain)
 
     return (
@@ -277,15 +281,16 @@ export default function StrainCombatScreen() {
         </div>
 
         <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', justifyContent: 'center' }}>
-          {/* Growth reward */}
-          {growthReward && (
+          {/* Growth rewards */}
+          {growthOptions.map(gr => (
             <button
+              key={gr.id}
               onClick={() => {
-                run.applyGrowthReward(growthReward.id, growthReward.strainCost)
+                run.applyGrowthReward(gr.id, gr.strainCost)
                 endStrainCombat(true)
               }}
               style={{
-                width: 180, padding: 20,
+                width: 160, padding: 16,
                 background: '#1a2a1a',
                 border: '2px solid #e67e22',
                 borderRadius: 8,
@@ -294,14 +299,14 @@ export default function StrainCombatScreen() {
                 textAlign: 'center',
               }}
             >
-              <div style={{ fontSize: 11, color: '#e67e22', marginBottom: 8, fontWeight: 600 }}>GROWTH{growthReward.tier > 1 ? ` · T${growthReward.tier}` : ''}</div>
-              <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 6 }}>{growthReward.label}</div>
-              <div style={{ fontSize: 12, color: '#aaa', marginBottom: 12 }}>{growthReward.description}</div>
+              <div style={{ fontSize: 11, color: '#e67e22', marginBottom: 8, fontWeight: 600 }}>GROWTH{gr.tier > 1 ? ` · T${gr.tier}` : ''}</div>
+              <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 6 }}>{gr.label}</div>
+              <div style={{ fontSize: 11, color: '#aaa', marginBottom: 10 }}>{gr.description}</div>
               <div style={{ fontSize: 13, color: '#e67e22' }}>
-                +{growthReward.strainCost} strain → {run.strain + growthReward.strainCost}
+                +{gr.strainCost} strain → {run.strain + gr.strainCost}
               </div>
             </button>
-          )}
+          ))}
 
           {/* Comfort reward */}
           <button
