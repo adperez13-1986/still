@@ -297,7 +297,7 @@ export default function StrainCombatScreen() {
                 textAlign: 'center',
               }}
             >
-              <div style={{ fontSize: 11, color: '#e67e22', marginBottom: 8, fontWeight: 600 }}>GROWTH{gr.tier > 1 ? ` · T${gr.tier}` : ''}</div>
+              <div style={{ fontSize: 11, color: '#e67e22', marginBottom: 8, fontWeight: 600 }}>GROWTH{gr.tier > 1 ? ` · T${gr.tier} · ${gr.branch}` : ''}</div>
               <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 6 }}>{gr.label}</div>
               <div style={{ fontSize: 11, color: '#aaa', marginBottom: 10 }}>{gr.description}</div>
               <div style={{ fontSize: 13, color: '#e67e22' }}>
