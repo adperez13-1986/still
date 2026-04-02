@@ -533,7 +533,10 @@ export function executeStrainTurn(
   }
 
   // 8. Start next turn
-  combat.block = 0 // player block resets
+  // Reactive Shield block persists — it was gained after enemy attacks
+  if (!hasReactiveShield) {
+    combat.block = 0 // player block resets
+  }
   for (const enemy of combat.enemies) {
     if (!enemy.isDefeated) enemy.block = 0 // enemy block resets
   }
