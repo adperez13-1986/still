@@ -265,11 +265,11 @@ const theFirstWarden: EnemyDefinition = {
 const thermalLeech: EnemyDefinition = {
   id: 'thermal-leech',
   name: 'Thermal Leech',
-  maxHealth: 34,
+  maxHealth: 42,
   intentPattern: [
-    { type: 'Attack', value: 8 },
-    { type: 'AttackDebuff', value: 7, status: 'Weak', statusStacks: 1 },
     { type: 'Attack', value: 10 },
+    { type: 'AttackDebuff', value: 8, status: 'Weak', statusStacks: 1 },
+    { type: 'Attack', value: 12 },
   ],
   dropPool: [
     { type: 'shards', amount: 18, weight: 1 },
@@ -279,11 +279,11 @@ const thermalLeech: EnemyDefinition = {
 const wireJammer: EnemyDefinition = {
   id: 'wire-jammer',
   name: 'Wire Jammer',
-  maxHealth: 28,
+  maxHealth: 35,
   intentPattern: [
-    { type: 'Attack', value: 8 },
+    { type: 'Attack', value: 10 },
     { type: 'DisableSlot', value: 0, targetSlot: 'Arms' },
-    { type: 'Attack', value: 8 },
+    { type: 'Attack', value: 10 },
   ],
   dropPool: [
     { type: 'shards', amount: 16, weight: 1 },
@@ -293,11 +293,11 @@ const wireJammer: EnemyDefinition = {
 const slagHeap: EnemyDefinition = {
   id: 'slag-heap',
   name: 'Slag Heap',
-  maxHealth: 50,
+  maxHealth: 62,
   intentPattern: [
-    { type: 'Attack', value: 10 },
-    { type: 'AttackDebuff', value: 8, status: 'Vulnerable', statusStacks: 1 },
     { type: 'Attack', value: 12 },
+    { type: 'AttackDebuff', value: 10, status: 'Vulnerable', statusStacks: 1 },
+    { type: 'Attack', value: 14 },
   ],
   dropPool: [
     { type: 'shards', amount: 22, weight: 2 },
@@ -309,11 +309,11 @@ const slagHeap: EnemyDefinition = {
 const feedbackLoop: EnemyDefinition = {
   id: 'feedback-loop',
   name: 'Feedback Loop',
-  maxHealth: 24,
+  maxHealth: 30,
   intentPattern: [
-    { type: 'AttackDebuff', value: 7, status: 'Vulnerable', statusStacks: 2 },
-    { type: 'Attack', value: 11 },
-    { type: 'Attack', value: 11 },
+    { type: 'AttackDebuff', value: 8, status: 'Vulnerable', statusStacks: 2 },
+    { type: 'Attack', value: 13 },
+    { type: 'Attack', value: 13 },
   ],
   dropPool: [
     { type: 'shards', amount: 15, weight: 1 },
@@ -323,11 +323,11 @@ const feedbackLoop: EnemyDefinition = {
 const phaseDrone: EnemyDefinition = {
   id: 'phase-drone',
   name: 'Phase Drone',
-  maxHealth: 30,
+  maxHealth: 38,
   intentPattern: [
-    { type: 'Attack', value: 9 },
+    { type: 'Attack', value: 11 },
     { type: 'DisableSlot', value: 0, targetSlot: 'Arms' },
-    { type: 'Attack', value: 10 },
+    { type: 'Attack', value: 12 },
   ],
   dropPool: [
     { type: 'shards', amount: 17, weight: 1 },
@@ -338,10 +338,10 @@ const phaseDrone: EnemyDefinition = {
 const furnaceTick: EnemyDefinition = {
   id: 'furnace-tick',
   name: 'Furnace Tick',
-  maxHealth: 14,
+  maxHealth: 18,
   intentPattern: [
-    { type: 'Attack', value: 5 },
-    { type: 'Attack', value: 5 },
+    { type: 'Attack', value: 6 },
+    { type: 'Attack', value: 6 },
     { type: 'Attack', value: 4, hits: 2 },
   ],
   dropPool: [
@@ -352,11 +352,11 @@ const furnaceTick: EnemyDefinition = {
 const staticFrame: EnemyDefinition = {
   id: 'static-frame',
   name: 'Static Frame',
-  maxHealth: 34,
+  maxHealth: 42,
   intentPattern: [
-    { type: 'Attack', value: 9 },
-    { type: 'AttackDebuff', value: 8, status: 'Weak', statusStacks: 2 },
     { type: 'Attack', value: 11 },
+    { type: 'AttackDebuff', value: 9, status: 'Weak', statusStacks: 2 },
+    { type: 'Attack', value: 13 },
   ],
   dropPool: [
     { type: 'shards', amount: 20, weight: 1 },
@@ -367,11 +367,11 @@ const staticFrame: EnemyDefinition = {
 const conduitSpider: EnemyDefinition = {
   id: 'conduit-spider',
   name: 'Conduit Spider',
-  maxHealth: 30,
+  maxHealth: 38,
   intentPattern: [
-    { type: 'Attack', value: 8 },
+    { type: 'Attack', value: 10 },
     { type: 'DisableSlot', value: 0, targetSlot: 'Arms' },
-    { type: 'AttackDebuff', value: 7, status: 'Vulnerable', statusStacks: 2 },
+    { type: 'AttackDebuff', value: 8, status: 'Vulnerable', statusStacks: 2 },
   ],
   dropPool: [
     { type: 'shards', amount: 17, weight: 1 },
@@ -384,12 +384,12 @@ const conduitSpider: EnemyDefinition = {
 const overchargeSentinel: EnemyDefinition = {
   id: 'overcharge-sentinel',
   name: 'Overcharge Sentinel',
-  maxHealth: 65,
+  maxHealth: 80,
   intentPattern: [
-    { type: 'Attack', value: 12 },
-    { type: 'Block', value: 10 },
+    { type: 'Attack', value: 14 },
+    { type: 'Block', value: 12 },
     { type: 'Buff', value: 2, status: 'Strength' },
-    { type: 'Attack', value: 15 },
+    { type: 'Attack', value: 18 },
   ],
   dropPool: [
     { type: 'shards', amount: 45, weight: 1 },
@@ -402,11 +402,11 @@ const overchargeSentinel: EnemyDefinition = {
 const lockdownWarden: EnemyDefinition = {
   id: 'lockdown-warden',
   name: 'Lockdown Warden',
-  maxHealth: 60,
+  maxHealth: 75,
   intentPattern: [
-    { type: 'Attack', value: 13 },
+    { type: 'Attack', value: 15 },
     { type: 'DisableSlot', value: 0, targetSlot: 'Arms' },
-    { type: 'Attack', value: 13 },
+    { type: 'Attack', value: 15 },
     { type: 'DisableSlot', value: 0, targetSlot: 'Head' },
     { type: 'Buff', value: 2, status: 'Strength' },
   ],
@@ -420,13 +420,13 @@ const lockdownWarden: EnemyDefinition = {
 const meltdownCore: EnemyDefinition = {
   id: 'meltdown-core',
   name: 'Meltdown Core',
-  maxHealth: 70,
+  maxHealth: 85,
   intentPattern: [
-    { type: 'Attack', value: 16 },
+    { type: 'Attack', value: 18 },
     { type: 'Debuff', value: 2, status: 'Vulnerable' },
-    { type: 'Attack', value: 12 },
-    { type: 'Block', value: 10 },
-    { type: 'Attack', value: 16 },
+    { type: 'Attack', value: 14 },
+    { type: 'Block', value: 12 },
+    { type: 'Attack', value: 18 },
   ],
   dropPool: [
     { type: 'shards', amount: 55, weight: 1 },
@@ -441,16 +441,16 @@ const meltdownCore: EnemyDefinition = {
 const theThermalArbiter: EnemyDefinition = {
   id: 'the-thermal-arbiter',
   name: 'The Thermal Arbiter',
-  maxHealth: 100,
+  maxHealth: 130,
   intentPattern: [
-    { type: 'Attack', value: 12 },
-    { type: 'AttackDebuff', value: 10, status: 'Weak', statusStacks: 1 },
+    { type: 'Attack', value: 14 },
+    { type: 'AttackDebuff', value: 12, status: 'Weak', statusStacks: 1 },
     { type: 'DisableSlot', value: 0, targetSlot: 'Arms' },
-    { type: 'Attack', value: 15 },
+    { type: 'Attack', value: 18 },
     { type: 'Buff', value: 2, status: 'Strength' },
     { type: 'DisableSlot', value: 0, targetSlot: 'Legs' },
-    { type: 'AttackDebuff', value: 15, status: 'Vulnerable', statusStacks: 2 },
-    { type: 'Attack', value: 18 },
+    { type: 'AttackDebuff', value: 18, status: 'Vulnerable', statusStacks: 2 },
+    { type: 'Attack', value: 22 },
   ],
   dropPool: [
     { type: 'shards', amount: 80, weight: 1 },
