@@ -224,7 +224,15 @@ export default function StrainCombatScreen() {
       return next
     })
     if (clearRoom) {
-      useRunStore.getState().clearCurrentRoom()
+      const state = useRunStore.getState()
+      state.clearCurrentRoom()
+      // Check if this was the boss — advance sector
+      if (state.map) {
+        const tile = state.map.grid[state.map.playerY][state.map.playerX]
+        if (tile?.type === 'Boss' && state.sector < 3) {
+          state.advanceSector()
+        }
+      }
     }
     useRunStore.getState().saveRun()
   }
