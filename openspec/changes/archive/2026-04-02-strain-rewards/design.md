@@ -17,12 +17,13 @@ The reward system needs to create a run arc where the player grows more efficien
 - Natural difficulty curve: boss is a hard wall that requires growth investment
 
 **Non-Goals:**
-- Bigger damage/block numbers as rewards (explicitly rejected)
+- Unearned bigger numbers (stat bumps handed to you). Bigger numbers that result from creative build paths ARE fine — the distinction is whether the player earned it through choices.
 - Card/deck system (replaced by strain)
 - Equipment system (not yet — slots are fixed for this prototype)
 - Companion node integration (designed separately, relevant but not in scope)
 - Sector 2+ content (boss is the wall for sector 1)
 - Balancing the boss fight (that's a separate concern after rewards exist)
+- Reducing combat count to match pool size — pool depth should drive combat count, not the other way around
 
 ## Decisions
 
@@ -58,27 +59,72 @@ The reward system needs to create a run arc where the player grows more efficien
 └─────────────────────────────────────────────┘
 ```
 
-### 3. Growth reward types
+### 3. Growth reward types — tiered branching tree
 
-**Decision:** Three categories of growth, implemented incrementally:
+**Decision:** Growth rewards are organized in a dependency tree with 3 tiers. Each tier unlocks the next. Branches fork at tier 2, creating build identity through player-driven specialization. Categories help us design and balance, but the player just picks what sounds good.
 
-**A. New abilities** (expand what you can do)
-- Repair, Brace (moved from defaults)
-- Future: new abilities not yet designed (e.g., Focus, Redirect)
-- Cost: 2 strain each
+**Structure: 3 branches × 3 tiers, with forks at tier 2**
 
-**B. Push cost reductions** (same actions, cheaper)
-- "Strike Mastery" — Strike push cost: 1 → 0
-- "Shield Mastery" — Shield push cost: 1 → 0
-- "Barrage Mastery" — Barrage push cost: 1 → 0
-- Cost: 3 strain each (high cost because the payoff is permanent and compounding)
+```
+REPAIR BRANCH                BRACE BRANCH               OFFENSE BRANCH
+     │                            │                     ╱      │      ╲
+Tier 1: Learn Repair (2)    Tier 1: Learn Brace (2)   Strike  Shield  Barrage
+     │                            │                   Mastery Mastery Mastery
+   ╱   ╲                       ╱   ╲                  (3)     (3)     (3)
+  ╱     ╲                     ╱     ╲                  │               │
+Repair+ Drain Strike    Brace+  Reactive Shield  Piercing Strike  Scatter Barrage
+ (2)      (2)            (2)       (2)               (3)              (3)
+  │        │              │         │                 │                │
+Desperate Lifeline    Calm Brace  Fortify        Executioner     Chain Reaction
+Repair(3)  (3)          (3)        (3)              (3)              (3)
+```
 
-**C. Slot mutations** (same slot, different behavior — deferred)
-- Not in first implementation. Requires more design work.
-- Example: Strike → Piercing Strike (ignores block, lower base damage)
-- Deferred to a follow-up change.
+**Tier 1: New verbs** (cost: 2 strain) — what can I do?
+- Learn Repair, Learn Brace, Slot Masteries
+- These are the foundation. You need them before you can specialize.
 
-For the first pass: abilities (A) and cost reductions (B) only. Mutations (C) are the next layer of depth.
+**Tier 2: Forks** (cost: 2 strain) — how do I want to do it?
+- Each tier 1 reward unlocks TWO tier 2 options. You pick one per combat.
+- This is where builds start diverging. Two players who both learned Repair go different directions.
+
+**Tier 3: Identity** (cost: 3 strain) — who am I becoming?
+- Conditional rewards that change your relationship with strain.
+- These define the playstyle and create the moments where two players play the same fight differently.
+
+**Reward catalog:**
+
+| Reward | Branch | Tier | Cost | Requires | Effect |
+|--------|--------|------|------|----------|--------|
+| Learn Repair | Repair | 1 | 2 | — | Unlock Repair ability (heal 4 HP, 1 strain/use) |
+| Learn Brace | Brace | 1 | 2 | — | Unlock Brace ability (reduce incoming dmg by 3/hit, 1 strain/use) |
+| Strike Mastery | Offense | 1 | 3 | — | Strike push cost → 0 |
+| Shield Mastery | Offense | 1 | 3 | — | Shield push cost → 0 |
+| Barrage Mastery | Offense | 1 | 3 | — | Barrage push cost → 0 |
+| Repair+ | Repair | 2 | 2 | Repair | Repair heals 7 instead of 4 |
+| Drain Strike | Repair | 2 | 2 | Repair | Strike heals you for half damage dealt |
+| Brace+ | Brace | 2 | 2 | Brace | Brace reduces 5 instead of 3 |
+| Reactive Shield | Brace | 2 | 2 | Brace | Shield fires after enemy turn (block not wasted) |
+| Piercing Strike | Offense | 2 | 3 | Strike Mastery | Strike ignores enemy block |
+| Scatter Barrage | Offense | 2 | 3 | Barrage Mastery | Barrage hits random enemies multiple times |
+| Desperate Repair | Repair | 3 | 3 | Repair+ | Strain 15+: Repair heals 8 instead of 4/7 |
+| Lifeline | Repair | 3 | 3 | Drain Strike | Strain 12+: Vent also heals 4 HP |
+| Calm Brace | Brace | 3 | 3 | Brace+ | Strain 8 or below: Brace reduces 6 instead of 3/5 |
+| Fortify | Brace | 3 | 3 | Reactive Shield | Unused block at end of turn converts to HP healing |
+| Executioner | Offense | 3 | 3 | Piercing Strike | Bonus damage to enemies below 30% HP |
+| Chain Reaction | Offense | 3 | 3 | Scatter Barrage | Killing an enemy triggers a bonus Barrage |
+
+**Design categories (for balance, not player-facing):**
+
+| Category | Relationship to strain | Rewards that point here |
+|----------|----------------------|------------------------|
+| High-strain | Thrives under pressure | Desperate Repair, Lifeline |
+| Low-strain | Controls pressure | Calm Brace, Fortify |
+| Aggressive | Eliminates pressure sources | Drain Strike, Piercing Strike, Executioner, Chain Reaction |
+| Endurance | Absorbs pressure | Reactive Shield, Repair+, Brace+, Fortify |
+
+These categories are ingredients, not archetypes. A build mixes across them. "Drain Strike + Desperate Repair + Strike Mastery" = high-strain berserker. "Calm Brace + Reactive Shield + Patience" = low-strain wall. Identity emerges from the combination.
+
+**Total pool: 17 rewards.** With 8 combats offering one growth each, and strain costs limiting how many a player can take, a typical run acquires 5-7 growth rewards. That's enough to go deep in one branch and shallow in another, but never everything. Different runs = different builds.
 
 ### 4. Comfort reward types
 
@@ -141,7 +187,10 @@ This is the "falling behind" feeling — not a punishment mechanic, just the nat
 
 ## Open Questions
 
-- **Exact strain costs for each growth reward** — needs playtesting. Starting point: abilities cost 2, masteries cost 3.
-- **Should Vent be improvable?** (e.g., "Vent Mastery: recover 6 instead of 4") — possible growth reward but may be too niche.
+- **Strain costs per tier** — current proposal: tier 1 = 2, tier 2 = 2-3, tier 3 = 3. Needs playtesting.
+- **Should Vent be improvable?** (e.g., "Patience: Vent recovers 6 instead of 4") — fits low-strain identity. May add as a Brace-adjacent branch.
 - **Boss tuning** — how much growth is "enough"? Depends on boss design, deferred.
-- **Can the player see what growth rewards are available before choosing?** Or is it a surprise each time? Leaning toward: you see what's offered, but not the full pool.
+- **Reward offering** — does the player see one growth option (drawn from available pool) or choose between two? Single option keeps it simple. Two options add more agency but dilute the growth/comfort tension.
+- **Tier 2 fork presentation** — when both tier 2 options are available, does the game offer one randomly, or let the player see both? Seeing both makes the fork explicit. Random makes it feel like discovery.
+- **High-strain vs low-strain balance** — we must avoid the heat problem (one side always better). Strain 20 forfeit is the natural check on high-strain builds. Low-strain builds need their own advantage that isn't just "safer." Information advantage (Clarity) and efficiency (Fortify) are candidates.
+- **Shield Mastery has no tier 2/3 yet** — needs a branch. Candidates: something that makes Shield interact with strain or allies.
