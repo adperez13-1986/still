@@ -181,7 +181,7 @@ export interface StrainCombatState {
 export function initStrainCombat(
   enemies: EnemyInstance[],
   currentStrain: number,
-  growth: GrowthState = { abilities: [], masteries: [] },
+  growth: GrowthState = { rewards: [] },
 ): StrainCombatState {
   return {
     phase: 'planning',
