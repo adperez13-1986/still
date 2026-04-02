@@ -248,6 +248,32 @@ export function isVenting(state: StrainCombatState): boolean {
   return state.activeAbilities.includes('vent')
 }
 
+/** Overextension penalty: +2 strain when using ALL available actions */
+export const OVEREXTEND_PENALTY = 2
+
+/** Count total available actions (pushable slots + available abilities excluding vent) */
+function countAvailableActions(state: StrainCombatState): number {
+  // 3 pushable slots + non-vent abilities that are available in this combat
+  const abilityCount = STRAIN_ABILITIES.filter(a => a.id !== 'vent' &&
+    (DEFAULT_ABILITIES.includes(a.id) || state.growthRewards.includes(a.id))
+  ).length
+  return STRAIN_SLOTS.length + abilityCount
+}
+
+/** Count how many actions the player is using this turn */
+function countActiveActions(state: StrainCombatState): number {
+  const pushCount = STRAIN_SLOTS.filter(s => state.pushedSlots[s.id]).length
+  const abilityCount = state.activeAbilities.filter(id => id !== 'vent').length
+  return pushCount + abilityCount
+}
+
+/** Is the player overextending (using all available actions)? */
+export function isOverextending(state: StrainCombatState): boolean {
+  const available = countAvailableActions(state)
+  if (available < 4) return false // need at least 4 available for overextension to matter
+  return countActiveActions(state) >= available
+}
+
 /** Calculate total strain cost of current push selections + active abilities */
 export function projectedStrainCost(state: StrainCombatState): number {
   // Venting reduces strain and skips attacks — pushes are ignored
@@ -264,7 +290,8 @@ export function projectedStrainCost(state: StrainCombatState): number {
   const abilityCost = STRAIN_ABILITIES.reduce((sum, ability) => {
     return sum + (state.activeAbilities.includes(ability.id) ? ability.strainCost : 0)
   }, 0)
-  return pushCost + abilityCost
+  const overextend = isOverextending(state) ? OVEREXTEND_PENALTY : 0
+  return pushCost + abilityCost + overextend
 }
 
 /** Strain value after current push selections are confirmed */

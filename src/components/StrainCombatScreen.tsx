@@ -1,6 +1,6 @@
 import { useRunStore } from '../store/runStore'
 import { ALL_ENEMIES } from '../data/enemies'
-import { STRAIN_SLOTS, STRAIN_DECAY_BETWEEN_COMBATS, VENT_STRAIN_RECOVERY, getEnemyIntent, projectedStrain, wouldForfeit, isVenting, getAvailableAbilities, getAvailableGrowthRewards, pickComfortReward } from '../game/strainCombat'
+import { STRAIN_SLOTS, STRAIN_DECAY_BETWEEN_COMBATS, VENT_STRAIN_RECOVERY, OVEREXTEND_PENALTY, getEnemyIntent, projectedStrain, wouldForfeit, isVenting, isOverextending, getAvailableAbilities, getAvailableGrowthRewards, pickComfortReward } from '../game/strainCombat'
 import type { StrainSlot, StrainCombatEvent } from '../game/strainCombat'
 import type { EnemyInstance } from '../game/types'
 
@@ -452,6 +452,16 @@ export default function StrainCombatScreen() {
           )
         })}
       </div>
+
+      {/* Overextend Warning */}
+      {isOverextending(sc) && isPlanning && !willForfeit && (
+        <div style={{
+          textAlign: 'center', color: '#f39c12', fontSize: 13,
+          padding: 8, background: '#f39c1211', borderRadius: 6, margin: '8px 0',
+        }}>
+          Overextending: +{OVEREXTEND_PENALTY} strain for using all actions
+        </div>
+      )}
 
       {/* Forfeit Warning */}
       {willForfeit && isPlanning && (
