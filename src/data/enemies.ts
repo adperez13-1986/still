@@ -490,6 +490,18 @@ export const SECTOR1_ENCOUNTERS: Encounter[] = [
   { enemies: ['wandering-drone', 'wandering-drone'] },     // Two attackers, simple but doubles damage
   { enemies: ['hollow-repeater', 'glitch-node'] },         // Both escalate with Str buffs
   { enemies: ['drifting-frame', 'fracture-mite'] },        // Vulnerable + chip
+  // Reactive enemies — solo (test one mechanic)
+  { enemies: ['thorn-sentinel'] },                          // Punishes pushing
+  { enemies: ['feedback-drone'] },                          // Must deal damage every turn
+  { enemies: ['strain-siphon'] },                           // Punishes high strain
+  { enemies: ['overload-core'] },                           // Kill fast or mitigate blast
+  { enemies: ['fracture-host'] },                           // Spawns fragments on death
+  { enemies: ['echo-shell', 'wandering-drone'] },           // Mirror + basic attacker
+  // Reactive dilemma pairs
+  { enemies: ['thorn-sentinel', 'feedback-drone'] },        // Push = retaliation, don't push = scaler grows
+  { enemies: ['strain-siphon', 'overload-core'] },          // High strain punished + must burst or tank 28
+  { enemies: ['echo-shell', 'feedback-drone'] },            // Mirror copies your offense, scaler punishes holding back
+  { enemies: ['fracture-host', 'thorn-sentinel'] },         // Kill host = fragments + punisher retaliates pushes
 ]
 
 export const SECTOR1_ELITE_ENCOUNTERS: Encounter[] = [
@@ -517,12 +529,92 @@ export const SECTOR2_ELITE_ENCOUNTERS: Encounter[] = [
   { enemies: ['meltdown-core'] },
 ]
 
+// ─── Reactive Enemies ────────────────────────────────────────────────────────
+
+const thornSentinel: EnemyDefinition = {
+  id: 'thorn-sentinel',
+  name: 'Thorn Sentinel',
+  maxHealth: 45,
+  intentPattern: [
+    { type: 'Retaliate', value: 0, valuePerPush: 3 },
+    { type: 'Attack', value: 10 },
+    { type: 'Block', value: 6 },
+  ],
+  dropPool: [{ type: 'shards', amount: 12, weight: 1 }],
+}
+
+const feedbackDrone: EnemyDefinition = {
+  id: 'feedback-drone',
+  name: 'Feedback Drone',
+  maxHealth: 35,
+  intentPattern: [
+    { type: 'ConditionalBuff', value: 3, status: 'Strength', statusStacks: 3, condition: 'undamaged', fallbackValue: 8 },
+    { type: 'Attack', value: 8 },
+  ],
+  dropPool: [{ type: 'shards', amount: 10, weight: 1 }],
+}
+
+const strainSiphon: EnemyDefinition = {
+  id: 'strain-siphon',
+  name: 'Strain Siphon',
+  maxHealth: 40,
+  intentPattern: [
+    { type: 'StrainScale', value: 8, strainDivisor: 5 },
+    { type: 'Block', value: 5 },
+    { type: 'StrainScale', value: 10, strainDivisor: 5 },
+  ],
+  dropPool: [{ type: 'shards', amount: 11, weight: 1 }],
+}
+
+const overloadCore: EnemyDefinition = {
+  id: 'overload-core',
+  name: 'Overload Core',
+  maxHealth: 50,
+  intentPattern: [
+    { type: 'Charge', value: 0, chargeTime: 2, blastValue: 28 },
+  ],
+  dropPool: [{ type: 'shards', amount: 14, weight: 1 }],
+}
+
+const fractureFragment: EnemyDefinition = {
+  id: 'fracture-fragment',
+  name: 'Fracture Fragment',
+  maxHealth: 12,
+  intentPattern: [
+    { type: 'Attack', value: 6 },
+  ],
+  dropPool: [],
+}
+
+const fractureHost: EnemyDefinition = {
+  id: 'fracture-host',
+  name: 'Fracture Host',
+  maxHealth: 30,
+  intentPattern: [
+    { type: 'Attack', value: 7 },
+    { type: 'Attack', value: 7 },
+  ],
+  dropPool: [{ type: 'shards', amount: 10, weight: 1 }],
+  onDeath: { type: 'spawn', enemyId: 'fracture-fragment', count: 2 },
+}
+
+const echoShell: EnemyDefinition = {
+  id: 'echo-shell',
+  name: 'Echo Shell',
+  maxHealth: 20,
+  intentPattern: [
+    { type: 'CopyAction', value: 0 },
+  ],
+  dropPool: [{ type: 'shards', amount: 8, weight: 1 }],
+}
+
 // ─── Exports ─────────────────────────────────────────────────────────────────
 
 export const SECTOR1_ENEMIES: EnemyDefinition[] = [
   wanderingDrone, rustGuard, corrodedSentry, fractureMite, ironCrawler,
   glitchNode, sentinelShard, hollowRepeater, driftingFrame, echoConstruct,
   thermalScanner, signalJammer,
+  thornSentinel, feedbackDrone, strainSiphon, overloadCore, fractureHost, echoShell,
 ]
 
 export const SECTOR1_ELITES: EnemyDefinition[] = [
@@ -546,5 +638,6 @@ export const ALL_ENEMIES: Record<string, EnemyDefinition> = Object.fromEntries(
   [
     ...SECTOR1_ENEMIES, ...SECTOR1_ELITES, SECTOR1_BOSS,
     ...SECTOR2_ENEMIES, ...SECTOR2_ELITES, SECTOR2_BOSS,
+    fractureFragment, // spawned by Fracture Host, not in encounter pools
   ].map((e) => [e.id, e])
 )

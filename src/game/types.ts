@@ -149,6 +149,7 @@ export interface BehavioralPartDefinition {
 // ─── Enemies ─────────────────────────────────────────────────────────────────
 
 export type IntentType = 'Attack' | 'Block' | 'Buff' | 'Debuff' | 'AttackDebuff' | 'DisableSlot' | 'Scan'
+  | 'Retaliate' | 'StrainScale' | 'CopyAction' | 'Charge' | 'ConditionalBuff'
 
 export interface Intent {
   type: IntentType
@@ -157,6 +158,13 @@ export interface Intent {
   status?: StatusEffectType
   statusStacks?: number
   targetSlot?: BodySlot // for DisableSlot: which slot to disable
+  // Reactive intent fields
+  valuePerPush?: number // Retaliate: damage per pushed slot
+  strainDivisor?: number // StrainScale: bonus = floor(strain / divisor)
+  chargeTime?: number // Charge: turns to charge before blast
+  blastValue?: number // Charge: damage on blast turn
+  condition?: 'undamaged' // ConditionalBuff: when to buff
+  fallbackValue?: number // ConditionalBuff: attack value if condition not met
 }
 
 export interface IntentPattern {
@@ -182,6 +190,7 @@ export interface EnemyDefinition {
   isElite?: boolean
   isBoss?: boolean
   flavorText?: string
+  onDeath?: { type: 'spawn'; enemyId: string; count: number }
 }
 
 export interface EnemyInstance {
@@ -193,6 +202,9 @@ export interface EnemyInstance {
   intentIndex: number
   statusEffects: StatusEffect[]
   isDefeated: boolean
+  chargeCounter?: number // Charge intent: turns remaining
+  damagedThisTurn?: boolean // ConditionalBuff: track if hit this turn
+  isFragment?: boolean // spawned by Splitter — no rewards on death
 }
 
 // ─── Maze / Rooms ─────────────────────────────────────────────────────────────

@@ -358,7 +358,7 @@ export function executeStrainTurn(
 
   // 3. Fire slots in order: A → B → C (skipped when venting)
   //    Reactive Shield: block persists between turns (not reset at end)
-  const enemies = combat.enemies.map(e => ({ ...e }))
+  const enemies = combat.enemies.map(e => ({ ...e, damagedThisTurn: false }))
   const hasReactiveShield = gr.includes('reactive-shield')
   const hasPiercing = gr.includes('piercing-strike')
   const hasDrainStrike = gr.includes('drain-strike')
@@ -377,7 +377,32 @@ export function executeStrainTurn(
       actualDamage = baseDmg - blocked
     }
     target.currentHealth = Math.max(0, target.currentHealth - actualDamage)
-    if (target.currentHealth <= 0) target.isDefeated = true
+    if (actualDamage > 0) target.damagedThisTurn = true
+    if (target.currentHealth <= 0) {
+      target.isDefeated = true
+      // On-death spawn trigger
+      const targetDef = ALL_ENEMIES[target.definitionId]
+      if (targetDef?.onDeath?.type === 'spawn') {
+        const spawnDef = ALL_ENEMIES[targetDef.onDeath.enemyId]
+        if (spawnDef) {
+          for (let s = 0; s < targetDef.onDeath.count; s++) {
+            const fragment = {
+              instanceId: `${targetDef.onDeath.enemyId}-${Date.now()}-${s}`,
+              definitionId: targetDef.onDeath.enemyId,
+              currentHealth: spawnDef.maxHealth,
+              maxHealth: spawnDef.maxHealth,
+              block: 0,
+              intentIndex: 0,
+              statusEffects: [] as import('./types').StatusEffect[],
+              isDefeated: false,
+              isFragment: true,
+              damagedThisTurn: false,
+            }
+            enemies.push(fragment)
+          }
+        }
+      }
+    }
     combat.combatLog.push({
       type: 'slotFire', slotId, slotLabel, damage: actualDamage, enemyId: target.instanceId,
     })
@@ -448,6 +473,27 @@ export function executeStrainTurn(
 
   // 5. Enemy turn
   combat.phase = 'enemyTurn'
+  const pushCount = STRAIN_SLOTS.filter(s => combat.pushedSlots[s.id]).length
+
+  /** Deal enemy damage to player, applying brace reduction and block */
+  function enemyDealDamage(dmg: number, enemy: EnemyInstance, def: { name: string }, intentType: IntentType) {
+    const reduced = Math.min(combat.damageReduction, dmg)
+    dmg -= reduced
+    const blocked = Math.min(combat.block, dmg)
+    combat.block -= blocked
+    const actual = dmg - blocked
+    hp -= actual
+    combat.combatLog.push({
+      type: 'enemyAction',
+      enemyId: enemy.instanceId,
+      enemyName: def.name,
+      intentType,
+      damage: actual,
+      blocked,
+      reduced: reduced > 0 ? reduced : undefined,
+    })
+  }
+
   for (const enemy of combat.enemies) {
     if (enemy.isDefeated) continue
 
@@ -460,52 +506,88 @@ export function executeStrainTurn(
     if (intent.type === 'Attack' || intent.type === 'AttackDebuff') {
       const hits = intent.hits || 1
       for (let h = 0; h < hits; h++) {
-        let dmg = intent.value
-        // Apply Brace damage reduction per hit
-        const reduced = Math.min(combat.damageReduction, dmg)
-        dmg -= reduced
-        const blocked = Math.min(combat.block, dmg)
-        combat.block -= blocked
-        const actual = dmg - blocked
-        hp -= actual
-        combat.combatLog.push({
-          type: 'enemyAction',
-          enemyId: enemy.instanceId,
-          enemyName: def.name,
-          intentType: intent.type,
-          damage: actual,
-          blocked,
-          reduced: reduced > 0 ? reduced : undefined,
-        })
+        enemyDealDamage(intent.value, enemy, def, intent.type)
       }
+
+    } else if (intent.type === 'Retaliate') {
+      const retDmg = (intent.valuePerPush ?? intent.value) * pushCount
+      if (retDmg > 0) {
+        enemyDealDamage(retDmg, enemy, def, 'Retaliate')
+      } else {
+        combat.combatLog.push({ type: 'enemyAction', enemyId: enemy.instanceId, enemyName: def.name, intentType: 'Retaliate', damage: 0 })
+      }
+
+    } else if (intent.type === 'StrainScale') {
+      const bonus = Math.floor(combat.strain / (intent.strainDivisor ?? 5))
+      enemyDealDamage(intent.value + bonus, enemy, def, 'StrainScale')
+
+    } else if (intent.type === 'CopyAction') {
+      // Find highest-value player action from this turn's combat log
+      let bestValue = 0
+      let bestType: 'damage' | 'block' | 'heal' | null = null
+      for (const event of combat.combatLog) {
+        if (event.type === 'slotFire' && event.damage != null && event.damage > bestValue) {
+          bestValue = event.damage; bestType = 'damage'
+        }
+        if (event.type === 'slotFire' && event.block != null && event.block > bestValue) {
+          bestValue = event.block; bestType = 'block'
+        }
+        if (event.type === 'ability' && event.heal != null && event.heal > bestValue) {
+          bestValue = event.heal; bestType = 'heal'
+        }
+      }
+      if (bestType === 'damage') {
+        enemyDealDamage(bestValue, enemy, def, 'CopyAction')
+      } else if (bestType === 'block') {
+        enemy.block += bestValue
+        combat.combatLog.push({ type: 'enemyAction', enemyId: enemy.instanceId, enemyName: def.name, intentType: 'CopyAction', block: bestValue })
+      } else if (bestType === 'heal') {
+        enemy.currentHealth = Math.min(enemy.maxHealth, enemy.currentHealth + bestValue)
+        combat.combatLog.push({ type: 'enemyAction', enemyId: enemy.instanceId, enemyName: def.name, intentType: 'CopyAction' })
+      } else {
+        combat.combatLog.push({ type: 'enemyAction', enemyId: enemy.instanceId, enemyName: def.name, intentType: 'CopyAction' })
+      }
+
+    } else if (intent.type === 'Charge') {
+      if (enemy.chargeCounter === undefined) enemy.chargeCounter = intent.chargeTime ?? 2
+      if (enemy.chargeCounter > 0) {
+        enemy.chargeCounter--
+        combat.combatLog.push({ type: 'enemyAction', enemyId: enemy.instanceId, enemyName: def.name, intentType: 'Charge' })
+      } else {
+        enemyDealDamage(intent.blastValue ?? intent.value, enemy, def, 'Charge')
+        enemy.chargeCounter = intent.chargeTime ?? 2
+      }
+
+    } else if (intent.type === 'ConditionalBuff') {
+      if (!enemy.damagedThisTurn) {
+        // Condition met — buff
+        const stacks = intent.statusStacks ?? intent.value
+        enemy.statusEffects = enemy.statusEffects || []
+        const existing = enemy.statusEffects.find(s => s.type === (intent.status ?? 'Strength'))
+        if (existing) { existing.stacks += stacks } else {
+          enemy.statusEffects.push({ type: intent.status ?? 'Strength' as any, stacks })
+        }
+        combat.combatLog.push({ type: 'enemyAction', enemyId: enemy.instanceId, enemyName: def.name, intentType: 'ConditionalBuff' })
+      } else {
+        // Condition not met — fallback attack
+        enemyDealDamage(intent.fallbackValue ?? intent.value, enemy, def, 'Attack')
+      }
+
     } else if (intent.type === 'Block') {
       enemy.block += intent.value
-      combat.combatLog.push({
-        type: 'enemyAction',
-        enemyId: enemy.instanceId,
-        enemyName: def.name,
-        intentType: 'Block',
-        block: intent.value,
-      })
+      combat.combatLog.push({ type: 'enemyAction', enemyId: enemy.instanceId, enemyName: def.name, intentType: 'Block', block: intent.value })
+
     } else if (intent.type === 'Buff') {
-      // Simplified: just add block as a stand-in for buff
       enemy.block += intent.value
-      combat.combatLog.push({
-        type: 'enemyAction',
-        enemyId: enemy.instanceId,
-        enemyName: def.name,
-        intentType: 'Buff',
-      })
+      combat.combatLog.push({ type: 'enemyAction', enemyId: enemy.instanceId, enemyName: def.name, intentType: 'Buff' })
+
     } else {
-      // Scan, Debuff, DisableSlot — skip for prototype
-      combat.combatLog.push({
-        type: 'enemyAction',
-        enemyId: enemy.instanceId,
-        enemyName: def.name,
-        intentType: intent.type,
-      })
+      combat.combatLog.push({ type: 'enemyAction', enemyId: enemy.instanceId, enemyName: def.name, intentType: intent.type })
     }
   }
+
+  // Update enemies (including any spawned fragments)
+  combat.enemies = enemies
 
   // 6. Fortify: convert remaining block to HP healing
   if (gr.includes('fortify') && combat.block > 0) {

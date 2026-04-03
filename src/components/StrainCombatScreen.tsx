@@ -138,13 +138,26 @@ function EnemyDisplay({ enemy, selected, onClick }: { enemy: EnemyInstance; sele
         <div style={{
           fontSize: 13,
           padding: '4px 8px',
-          background: intent.type === 'Attack' || intent.type === 'AttackDebuff' ? '#c0392b33' : '#2d3436',
+          background: intent.type === 'Attack' || intent.type === 'AttackDebuff' || intent.type === 'Retaliate' || intent.type === 'StrainScale' || intent.type === 'CopyAction' ? '#c0392b33'
+            : intent.type === 'Charge' && enemy.chargeCounter === 0 ? '#c0392b33'
+            : '#2d3436',
           borderRadius: 4,
-          color: intent.type === 'Attack' || intent.type === 'AttackDebuff' ? '#e74c3c' : '#aaa',
+          color: intent.type === 'Attack' || intent.type === 'AttackDebuff' || intent.type === 'Retaliate' || intent.type === 'StrainScale' ? '#e74c3c'
+            : intent.type === 'Charge' && enemy.chargeCounter === 0 ? '#e74c3c'
+            : '#aaa',
         }}>
           {intent.type === 'Attack' || intent.type === 'AttackDebuff'
             ? `⚔️ ${intent.value}${intent.hits && intent.hits > 1 ? ` ×${intent.hits}` : ''}`
             : intent.type === 'Block' ? `🛡️ ${intent.value}`
+            : intent.type === 'Retaliate' ? `⚔️ ${intent.valuePerPush ?? intent.value} × pushes`
+            : intent.type === 'StrainScale' ? `⚔️ ${intent.value} (+strain)`
+            : intent.type === 'CopyAction' ? '🪞 Mirrors you'
+            : intent.type === 'Charge' ? (
+              enemy.chargeCounter != null && enemy.chargeCounter > 0
+                ? `⚡ Charging... ${enemy.chargeCounter}`
+                : `💥 BLAST ${intent.blastValue ?? intent.value}`
+            )
+            : intent.type === 'ConditionalBuff' ? `⬆️ +${intent.statusStacks ?? intent.value} Str if undamaged`
             : intent.type}
         </div>
       )}
