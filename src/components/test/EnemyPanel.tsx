@@ -14,6 +14,7 @@ function intentLabel(intent: Intent): string {
     case 'AttackDebuff': return `Atk ${intent.value} + ${intent.status ?? ''}`
     case 'DisableSlot': return `Disable ${intent.targetSlot ?? '?'}`
     case 'Scan': return 'Scanning...'
+    default: return intent.type
   }
 }
 
@@ -31,6 +32,7 @@ function intentColor(intent: Intent): string {
       return '#9b59b6'
     case 'Scan':
       return '#a29bfe'
+    default: return '#aaa'
   }
 }
 
