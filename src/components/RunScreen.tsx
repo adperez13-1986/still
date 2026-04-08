@@ -44,7 +44,8 @@ function pickEnemiesForRoom(room: GridRoom, sector: number, _combatsCleared: num
   // ~20% of combat rooms are elite encounters, but not in the first 3 combats
   const canBeElite = _combatsCleared >= 3
   // Reactive encounters are the primary pool after early fights
-  const reactivePool = sector >= 2 ? [] : SECTOR1_REACTIVE_ENCOUNTERS
+  // Reactive encounters available in all sectors
+  const reactivePool = SECTOR1_REACTIVE_ENCOUNTERS
   const pool = canBeElite && Math.random() < 0.2 ? eliteEncounters
     : reactivePool.length > 0 ? reactivePool
     : encounters
