@@ -550,11 +550,11 @@ export const SECTOR2_ELITE_ENCOUNTERS: Encounter[] = [
 const thornSentinel: EnemyDefinition = {
   id: 'thorn-sentinel',
   name: 'Thorn Sentinel',
-  maxHealth: 45,
+  maxHealth: 65,
   intentPattern: [
-    { type: 'Retaliate', value: 0, valuePerPush: 3 },
-    { type: 'Attack', value: 10 },
-    { type: 'Block', value: 6 },
+    { type: 'Retaliate', value: 0, valuePerPush: 4 },
+    { type: 'Attack', value: 13 },
+    { type: 'Block', value: 8 },
   ],
   dropPool: [{ type: 'shards', amount: 12, weight: 1 }],
 }
@@ -562,10 +562,10 @@ const thornSentinel: EnemyDefinition = {
 const feedbackDrone: EnemyDefinition = {
   id: 'feedback-drone',
   name: 'Feedback Drone',
-  maxHealth: 35,
+  maxHealth: 50,
   intentPattern: [
-    { type: 'ConditionalBuff', value: 3, status: 'Strength', statusStacks: 3, condition: 'undamaged', fallbackValue: 8 },
-    { type: 'Attack', value: 8 },
+    { type: 'ConditionalBuff', value: 4, status: 'Strength', statusStacks: 4, condition: 'undamaged', fallbackValue: 10 },
+    { type: 'Attack', value: 11 },
   ],
   dropPool: [{ type: 'shards', amount: 10, weight: 1 }],
 }
@@ -573,11 +573,11 @@ const feedbackDrone: EnemyDefinition = {
 const strainSiphon: EnemyDefinition = {
   id: 'strain-siphon',
   name: 'Strain Siphon',
-  maxHealth: 40,
+  maxHealth: 55,
   intentPattern: [
-    { type: 'StrainScale', value: 8, strainDivisor: 5 },
-    { type: 'Block', value: 5 },
-    { type: 'StrainScale', value: 10, strainDivisor: 5 },
+    { type: 'StrainScale', value: 10, strainDivisor: 4 },
+    { type: 'Block', value: 7 },
+    { type: 'StrainScale', value: 12, strainDivisor: 4 },
   ],
   dropPool: [{ type: 'shards', amount: 11, weight: 1 }],
 }
@@ -585,9 +585,9 @@ const strainSiphon: EnemyDefinition = {
 const overloadCore: EnemyDefinition = {
   id: 'overload-core',
   name: 'Overload Core',
-  maxHealth: 50,
+  maxHealth: 70,
   intentPattern: [
-    { type: 'Charge', value: 0, chargeTime: 2, blastValue: 28 },
+    { type: 'Charge', value: 0, chargeTime: 2, blastValue: 35 },
   ],
   dropPool: [{ type: 'shards', amount: 14, weight: 1 }],
 }
@@ -595,9 +595,9 @@ const overloadCore: EnemyDefinition = {
 const fractureFragment: EnemyDefinition = {
   id: 'fracture-fragment',
   name: 'Fracture Fragment',
-  maxHealth: 12,
+  maxHealth: 18,
   intentPattern: [
-    { type: 'Attack', value: 6 },
+    { type: 'Attack', value: 8 },
   ],
   dropPool: [],
 }
@@ -605,10 +605,10 @@ const fractureFragment: EnemyDefinition = {
 const fractureHost: EnemyDefinition = {
   id: 'fracture-host',
   name: 'Fracture Host',
-  maxHealth: 30,
+  maxHealth: 42,
   intentPattern: [
-    { type: 'Attack', value: 7 },
-    { type: 'Attack', value: 7 },
+    { type: 'Attack', value: 9 },
+    { type: 'Attack', value: 9 },
   ],
   dropPool: [{ type: 'shards', amount: 10, weight: 1 }],
   onDeath: { type: 'spawn', enemyId: 'fracture-fragment', count: 2 },
@@ -617,7 +617,7 @@ const fractureHost: EnemyDefinition = {
 const echoShell: EnemyDefinition = {
   id: 'echo-shell',
   name: 'Echo Shell',
-  maxHealth: 20,
+  maxHealth: 28,
   intentPattern: [
     { type: 'CopyAction', value: 0 },
   ],
@@ -629,10 +629,10 @@ const echoShell: EnemyDefinition = {
 const voidLeech: EnemyDefinition = {
   id: 'void-leech',
   name: 'Void Leech',
-  maxHealth: 42,
+  maxHealth: 58,
   intentPattern: [
+    { type: 'Leech', value: 13 },
     { type: 'Leech', value: 10 },
-    { type: 'Leech', value: 8 },
   ],
   dropPool: [{ type: 'shards', amount: 11, weight: 1 }],
 }
@@ -640,9 +640,9 @@ const voidLeech: EnemyDefinition = {
 const strainParasite: EnemyDefinition = {
   id: 'strain-parasite',
   name: 'Strain Parasite',
-  maxHealth: 15,
+  maxHealth: 22,
   intentPattern: [
-    { type: 'StrainTick', value: 1 },
+    { type: 'StrainTick', value: 2 },
   ],
   dropPool: [{ type: 'shards', amount: 6, weight: 1 }],
 }
@@ -650,11 +650,11 @@ const strainParasite: EnemyDefinition = {
 const furyCore: EnemyDefinition = {
   id: 'fury-core',
   name: 'Fury Core',
-  maxHealth: 48,
+  maxHealth: 65,
   intentPattern: [
-    { type: 'Enrage', value: 6 },
-    { type: 'Enrage', value: 6 },
-    { type: 'Block', value: 5 },
+    { type: 'Enrage', value: 8 },
+    { type: 'Enrage', value: 8 },
+    { type: 'Block', value: 6 },
   ],
   dropPool: [{ type: 'shards', amount: 12, weight: 1 }],
 }
@@ -662,9 +662,9 @@ const furyCore: EnemyDefinition = {
 const wardPylon: EnemyDefinition = {
   id: 'ward-pylon',
   name: 'Ward Pylon',
-  maxHealth: 35,
+  maxHealth: 48,
   intentPattern: [
-    { type: 'ShieldAllies', value: 5 },
+    { type: 'ShieldAllies', value: 7 },
   ],
   dropPool: [{ type: 'shards', amount: 10, weight: 1 }],
 }
@@ -672,11 +672,11 @@ const wardPylon: EnemyDefinition = {
 const ragingHull: EnemyDefinition = {
   id: 'raging-hull',
   name: 'Raging Hull',
-  maxHealth: 50,
+  maxHealth: 68,
   intentPattern: [
-    { type: 'BerserkerAttack', value: 6 },
-    { type: 'BerserkerAttack', value: 6 },
-    { type: 'Block', value: 4 },
+    { type: 'BerserkerAttack', value: 8 },
+    { type: 'BerserkerAttack', value: 8 },
+    { type: 'Block', value: 5 },
   ],
   dropPool: [{ type: 'shards', amount: 13, weight: 1 }],
 }
@@ -684,10 +684,10 @@ const ragingHull: EnemyDefinition = {
 const phaseWraith: EnemyDefinition = {
   id: 'phase-wraith',
   name: 'Phase Wraith',
-  maxHealth: 38,
+  maxHealth: 52,
   intentPattern: [
-    { type: 'PhaseShift', value: 9 },
-    { type: 'PhaseShift', value: 9 },
+    { type: 'PhaseShift', value: 12 },
+    { type: 'PhaseShift', value: 12 },
   ],
   dropPool: [{ type: 'shards', amount: 10, weight: 1 }],
 }
@@ -695,10 +695,10 @@ const phaseWraith: EnemyDefinition = {
 const drainFrame: EnemyDefinition = {
   id: 'drain-frame',
   name: 'Drain Frame',
-  maxHealth: 32,
+  maxHealth: 45,
   intentPattern: [
     { type: 'StealBlock', value: 0 },
-    { type: 'Attack', value: 12 },
+    { type: 'Attack', value: 15 },
   ],
   dropPool: [{ type: 'shards', amount: 10, weight: 1 }],
 }
@@ -706,9 +706,9 @@ const drainFrame: EnemyDefinition = {
 const martyrShell: EnemyDefinition = {
   id: 'martyr-shell',
   name: 'Martyr Shell',
-  maxHealth: 22,
+  maxHealth: 30,
   intentPattern: [
-    { type: 'MartyrHeal', value: 5 },
+    { type: 'MartyrHeal', value: 7 },
     { type: 'Block', value: 4 },
   ],
   dropPool: [{ type: 'shards', amount: 8, weight: 1 }],
