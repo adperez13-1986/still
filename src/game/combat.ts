@@ -25,6 +25,10 @@ export function makeEnemyInstance(def: EnemyDefinition, combatsCleared = 0, rng:
   // HP scaling: bosses stay at base HP, regular enemies scale +10% per combat cleared
   const hpMultiplier = def.isBoss ? 1.0 : 1 + combatsCleared * 0.10
   const scaledHealth = Math.floor(def.maxHealth * hpMultiplier)
+  // Check if enemy uses reactive mechanics that need initialized state
+  const hasEnrage = def.intentPattern.some(i => i.type === 'Enrage')
+  const hasPhaseShift = def.intentPattern.some(i => i.type === 'PhaseShift')
+  const hasCharge = def.intentPattern.some(i => i.type === 'Charge')
   return {
     instanceId: `${def.id}-${rng().toString(36).slice(2)}`,
     definitionId: def.id,
@@ -34,6 +38,9 @@ export function makeEnemyInstance(def: EnemyDefinition, combatsCleared = 0, rng:
     intentIndex: 0,
     statusEffects: [],
     isDefeated: false,
+    ...(hasEnrage && { enrageStacks: 0 }),
+    ...(hasPhaseShift && { isPhased: false }),
+    ...(hasCharge && { chargeCounter: def.intentPattern.find(i => i.type === 'Charge')?.chargeTime ?? 2 }),
   }
 }
 
