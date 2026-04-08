@@ -490,14 +490,17 @@ export const SECTOR1_ENCOUNTERS: Encounter[] = [
   { enemies: ['wandering-drone', 'wandering-drone'] },     // Two attackers, simple but doubles damage
   { enemies: ['hollow-repeater', 'glitch-node'] },         // Both escalate with Str buffs
   { enemies: ['drifting-frame', 'fracture-mite'] },        // Vulnerable + chip
-  // Reactive enemies — solo (test one mechanic)
+]
+
+export const SECTOR1_REACTIVE_ENCOUNTERS: Encounter[] = [
+  // Solo reactive (test one mechanic)
   { enemies: ['thorn-sentinel'] },                          // Punishes pushing
   { enemies: ['feedback-drone'] },                          // Must deal damage every turn
   { enemies: ['strain-siphon'] },                           // Punishes high strain
   { enemies: ['overload-core'] },                           // Kill fast or mitigate blast
   { enemies: ['fracture-host'] },                           // Spawns fragments on death
   { enemies: ['echo-shell', 'wandering-drone'] },           // Mirror + basic attacker
-  // Reactive dilemma pairs
+  // Dilemma pairs
   { enemies: ['thorn-sentinel', 'feedback-drone'] },        // Push = retaliation, don't push = scaler grows
   { enemies: ['strain-siphon', 'overload-core'] },          // High strain punished + must burst or tank 28
   { enemies: ['echo-shell', 'feedback-drone'] },            // Mirror copies your offense, scaler punishes holding back

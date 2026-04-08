@@ -16,7 +16,7 @@ import { generateGridMaze, findPath } from '../game/mapGen'
 import { makeEnemyInstance, makeCardInstance } from '../game/combat'
 import {
   SECTOR1_BOSS, SECTOR2_BOSS,
-  SECTOR1_ENCOUNTERS, SECTOR1_ELITE_ENCOUNTERS,
+  SECTOR1_ENCOUNTERS, SECTOR1_ELITE_ENCOUNTERS, SECTOR1_REACTIVE_ENCOUNTERS,
   SECTOR2_ENCOUNTERS, SECTOR2_ELITE_ENCOUNTERS,
   ALL_ENEMIES,
 } from '../data/enemies'
@@ -43,7 +43,12 @@ function pickEnemiesForRoom(room: GridRoom, sector: number, _combatsCleared: num
   }
   // ~20% of combat rooms are elite encounters, but not in the first 3 combats
   const canBeElite = _combatsCleared >= 3
-  const pool = canBeElite && Math.random() < 0.2 ? eliteEncounters : encounters
+  // 50% chance for reactive encounters after early fights
+  const reactivePool = sector >= 2 ? [] : SECTOR1_REACTIVE_ENCOUNTERS
+  const useReactive = reactivePool.length > 0 && Math.random() < 0.5
+  const pool = canBeElite && Math.random() < 0.2 ? eliteEncounters
+    : useReactive ? reactivePool
+    : encounters
   const encounter = pool[Math.floor(Math.random() * pool.length)]
   return encounter.enemies.map(id => {
     const def = ALL_ENEMIES[id]
