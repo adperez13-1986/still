@@ -138,12 +138,14 @@ function EnemyDisplay({ enemy, selected, onClick }: { enemy: EnemyInstance; sele
         <div style={{
           fontSize: 13,
           padding: '4px 8px',
-          background: intent.type === 'Attack' || intent.type === 'AttackDebuff' || intent.type === 'Retaliate' || intent.type === 'StrainScale' || intent.type === 'CopyAction' ? '#c0392b33'
+          background: ['Attack','AttackDebuff','Retaliate','StrainScale','CopyAction','Leech','Enrage','BerserkerAttack','PhaseShift','MartyrHeal'].includes(intent.type) ? '#c0392b33'
             : intent.type === 'Charge' && enemy.chargeCounter === 0 ? '#c0392b33'
+            : intent.type === 'StrainTick' ? '#e67e2233'
             : '#2d3436',
           borderRadius: 4,
-          color: intent.type === 'Attack' || intent.type === 'AttackDebuff' || intent.type === 'Retaliate' || intent.type === 'StrainScale' ? '#e74c3c'
+          color: ['Attack','AttackDebuff','Retaliate','StrainScale','Leech','Enrage','BerserkerAttack','PhaseShift','MartyrHeal'].includes(intent.type) ? '#e74c3c'
             : intent.type === 'Charge' && enemy.chargeCounter === 0 ? '#e74c3c'
+            : intent.type === 'StrainTick' ? '#e67e22'
             : '#aaa',
         }}>
           {intent.type === 'Attack' || intent.type === 'AttackDebuff'
@@ -158,6 +160,14 @@ function EnemyDisplay({ enemy, selected, onClick }: { enemy: EnemyInstance; sele
                 : `💥 BLAST ${intent.blastValue ?? intent.value}`
             )
             : intent.type === 'ConditionalBuff' ? `⬆️ +${intent.statusStacks ?? intent.value} Str if undamaged`
+            : intent.type === 'Leech' ? `🩸 ${intent.value} (heals self)`
+            : intent.type === 'StrainTick' ? `😰 +${intent.value} strain/turn`
+            : intent.type === 'Enrage' ? `🔥 ${intent.value}${enemy.enrageStacks ? ` +${enemy.enrageStacks}` : ''}`
+            : intent.type === 'ShieldAllies' ? `🛡️ +${intent.value} to allies`
+            : intent.type === 'BerserkerAttack' ? `⚔️ ${intent.value}${enemy.currentHealth < enemy.maxHealth * 0.5 ? ' (ENRAGED)' : ''}`
+            : intent.type === 'PhaseShift' ? `${enemy.isPhased ? '🔵 Armored' : '🔴 Vulnerable'} ⚔️ ${intent.value}`
+            : intent.type === 'StealBlock' ? '🔒 Steals your block'
+            : intent.type === 'MartyrHeal' ? `⚔️ ${intent.value} (heals allies on death)`
             : intent.type}
         </div>
       )}

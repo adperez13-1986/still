@@ -505,6 +505,19 @@ export const SECTOR1_REACTIVE_ENCOUNTERS: Encounter[] = [
   { enemies: ['strain-siphon', 'overload-core'] },          // High strain punished + must burst or tank 28
   { enemies: ['echo-shell', 'feedback-drone'] },            // Mirror copies your offense, scaler punishes holding back
   { enemies: ['fracture-host', 'thorn-sentinel'] },         // Kill host = fragments + punisher retaliates pushes
+  // Solo reactive — wave 2
+  { enemies: ['void-leech'] },                              // Heals from damage dealt — block matters
+  { enemies: ['fury-core'] },                               // Gets stronger each hit
+  { enemies: ['raging-hull'] },                             // Hits harder at low HP
+  { enemies: ['phase-wraith'] },                            // Alternates vulnerable/armored
+  // Dilemma pairs — wave 2
+  { enemies: ['void-leech', 'strain-parasite'] },           // Block the leech or kill the parasite (strain ticking)
+  { enemies: ['ward-pylon', 'raging-hull'] },               // Pylon shields berserker — kill pylon first or berserker escalates
+  { enemies: ['fury-core', 'echo-shell'] },                 // Hitting fury enrages it, mirror copies your hits
+  { enemies: ['drain-frame', 'overload-core'] },            // Block stolen then charger blasts
+  { enemies: ['martyr-shell', 'feedback-drone'] },          // Kill martyr = heals scaler, ignore martyr = it attacks
+  { enemies: ['phase-wraith', 'strain-parasite'] },         // Time your hits on wraith while strain ticks up
+  { enemies: ['raging-hull', 'void-leech'] },               // Chip berserker = it rages, leech heals from your damage
 ]
 
 export const SECTOR1_ELITE_ENCOUNTERS: Encounter[] = [
@@ -611,6 +624,97 @@ const echoShell: EnemyDefinition = {
   dropPool: [{ type: 'shards', amount: 8, weight: 1 }],
 }
 
+// ─── Reactive Enemies Wave 2 ─────────────────────────────────────────────────
+
+const voidLeech: EnemyDefinition = {
+  id: 'void-leech',
+  name: 'Void Leech',
+  maxHealth: 42,
+  intentPattern: [
+    { type: 'Leech', value: 10 },
+    { type: 'Leech', value: 8 },
+  ],
+  dropPool: [{ type: 'shards', amount: 11, weight: 1 }],
+}
+
+const strainParasite: EnemyDefinition = {
+  id: 'strain-parasite',
+  name: 'Strain Parasite',
+  maxHealth: 15,
+  intentPattern: [
+    { type: 'StrainTick', value: 1 },
+  ],
+  dropPool: [{ type: 'shards', amount: 6, weight: 1 }],
+}
+
+const furyCore: EnemyDefinition = {
+  id: 'fury-core',
+  name: 'Fury Core',
+  maxHealth: 48,
+  intentPattern: [
+    { type: 'Enrage', value: 6 },
+    { type: 'Enrage', value: 6 },
+    { type: 'Block', value: 5 },
+  ],
+  dropPool: [{ type: 'shards', amount: 12, weight: 1 }],
+}
+
+const wardPylon: EnemyDefinition = {
+  id: 'ward-pylon',
+  name: 'Ward Pylon',
+  maxHealth: 35,
+  intentPattern: [
+    { type: 'ShieldAllies', value: 5 },
+  ],
+  dropPool: [{ type: 'shards', amount: 10, weight: 1 }],
+}
+
+const ragingHull: EnemyDefinition = {
+  id: 'raging-hull',
+  name: 'Raging Hull',
+  maxHealth: 50,
+  intentPattern: [
+    { type: 'BerserkerAttack', value: 6 },
+    { type: 'BerserkerAttack', value: 6 },
+    { type: 'Block', value: 4 },
+  ],
+  dropPool: [{ type: 'shards', amount: 13, weight: 1 }],
+}
+
+const phaseWraith: EnemyDefinition = {
+  id: 'phase-wraith',
+  name: 'Phase Wraith',
+  maxHealth: 38,
+  intentPattern: [
+    { type: 'PhaseShift', value: 9 },
+    { type: 'PhaseShift', value: 9 },
+  ],
+  dropPool: [{ type: 'shards', amount: 10, weight: 1 }],
+}
+
+const drainFrame: EnemyDefinition = {
+  id: 'drain-frame',
+  name: 'Drain Frame',
+  maxHealth: 32,
+  intentPattern: [
+    { type: 'StealBlock', value: 0 },
+    { type: 'Attack', value: 12 },
+  ],
+  dropPool: [{ type: 'shards', amount: 10, weight: 1 }],
+}
+
+const martyrShell: EnemyDefinition = {
+  id: 'martyr-shell',
+  name: 'Martyr Shell',
+  maxHealth: 22,
+  intentPattern: [
+    { type: 'MartyrHeal', value: 5 },
+    { type: 'Block', value: 4 },
+  ],
+  dropPool: [{ type: 'shards', amount: 8, weight: 1 }],
+  onDeath: { type: 'healAllies' },
+}
+
 // ─── Exports ─────────────────────────────────────────────────────────────────
 
 export const SECTOR1_ENEMIES: EnemyDefinition[] = [
@@ -618,6 +722,7 @@ export const SECTOR1_ENEMIES: EnemyDefinition[] = [
   glitchNode, sentinelShard, hollowRepeater, driftingFrame, echoConstruct,
   thermalScanner, signalJammer,
   thornSentinel, feedbackDrone, strainSiphon, overloadCore, fractureHost, echoShell,
+  voidLeech, strainParasite, furyCore, wardPylon, ragingHull, phaseWraith, drainFrame, martyrShell,
 ]
 
 export const SECTOR1_ELITES: EnemyDefinition[] = [

@@ -150,6 +150,7 @@ export interface BehavioralPartDefinition {
 
 export type IntentType = 'Attack' | 'Block' | 'Buff' | 'Debuff' | 'AttackDebuff' | 'DisableSlot' | 'Scan'
   | 'Retaliate' | 'StrainScale' | 'CopyAction' | 'Charge' | 'ConditionalBuff'
+  | 'Leech' | 'StrainTick' | 'Enrage' | 'ShieldAllies' | 'BerserkerAttack' | 'PhaseShift' | 'StealBlock' | 'MartyrHeal'
 
 export interface Intent {
   type: IntentType
@@ -190,7 +191,7 @@ export interface EnemyDefinition {
   isElite?: boolean
   isBoss?: boolean
   flavorText?: string
-  onDeath?: { type: 'spawn'; enemyId: string; count: number }
+  onDeath?: { type: 'spawn'; enemyId: string; count: number } | { type: 'healAllies' }
 }
 
 export interface EnemyInstance {
@@ -205,6 +206,8 @@ export interface EnemyInstance {
   chargeCounter?: number // Charge intent: turns remaining
   damagedThisTurn?: boolean // ConditionalBuff: track if hit this turn
   isFragment?: boolean // spawned by Splitter — no rewards on death
+  enrageStacks?: number // Enrage: +2 damage per hit taken
+  isPhased?: boolean // PhaseShift: alternates vulnerable/armored
 }
 
 // ─── Maze / Rooms ─────────────────────────────────────────────────────────────

@@ -368,37 +368,55 @@ export function executeStrainTurn(
 
   /** Apply damage to a single enemy, return actual damage dealt */
   function dealDamage(target: EnemyInstance, baseDmg: number, piercing: boolean, slotId: 'A' | 'B' | 'C', slotLabel: string): number {
+    // PhaseShift: armored phase halves damage, vulnerable phase doubles
+    let modDmg = baseDmg
+    if (target.isPhased !== undefined) {
+      modDmg = target.isPhased ? Math.floor(baseDmg * 0.5) : baseDmg * 2
+    }
     let actualDamage: number
     if (piercing) {
-      actualDamage = baseDmg
+      actualDamage = modDmg
     } else {
-      const blocked = Math.min(target.block, baseDmg)
+      const blocked = Math.min(target.block, modDmg)
       target.block -= blocked
-      actualDamage = baseDmg - blocked
+      actualDamage = modDmg - blocked
     }
     target.currentHealth = Math.max(0, target.currentHealth - actualDamage)
-    if (actualDamage > 0) target.damagedThisTurn = true
+    if (actualDamage > 0) {
+      target.damagedThisTurn = true
+      // Enrage: each hit adds +2 permanent damage
+      if (target.enrageStacks !== undefined) {
+        target.enrageStacks += 2
+      }
+    }
     if (target.currentHealth <= 0) {
       target.isDefeated = true
-      // On-death spawn trigger
       const targetDef = ALL_ENEMIES[target.definitionId]
-      if (targetDef?.onDeath?.type === 'spawn') {
-        const spawnDef = ALL_ENEMIES[targetDef.onDeath.enemyId]
-        if (spawnDef) {
-          for (let s = 0; s < targetDef.onDeath.count; s++) {
-            const fragment = {
-              instanceId: `${targetDef.onDeath.enemyId}-${Date.now()}-${s}`,
-              definitionId: targetDef.onDeath.enemyId,
-              currentHealth: spawnDef.maxHealth,
-              maxHealth: spawnDef.maxHealth,
-              block: 0,
-              intentIndex: 0,
-              statusEffects: [] as import('./types').StatusEffect[],
-              isDefeated: false,
-              isFragment: true,
-              damagedThisTurn: false,
+      if (targetDef?.onDeath) {
+        if (targetDef.onDeath.type === 'spawn') {
+          const spawnDef = ALL_ENEMIES[targetDef.onDeath.enemyId]
+          if (spawnDef) {
+            for (let s = 0; s < targetDef.onDeath.count; s++) {
+              enemies.push({
+                instanceId: `${targetDef.onDeath.enemyId}-${Date.now()}-${s}`,
+                definitionId: targetDef.onDeath.enemyId,
+                currentHealth: spawnDef.maxHealth,
+                maxHealth: spawnDef.maxHealth,
+                block: 0,
+                intentIndex: 0,
+                statusEffects: [] as import('./types').StatusEffect[],
+                isDefeated: false,
+                isFragment: true,
+                damagedThisTurn: false,
+              })
             }
-            enemies.push(fragment)
+          }
+        } else if (targetDef.onDeath.type === 'healAllies') {
+          // Martyr: heal all other enemies to full
+          for (const ally of enemies) {
+            if (!ally.isDefeated && ally.instanceId !== target.instanceId) {
+              ally.currentHealth = ally.maxHealth
+            }
           }
         }
       }
@@ -572,6 +590,58 @@ export function executeStrainTurn(
         // Condition not met — fallback attack
         enemyDealDamage(intent.fallbackValue ?? intent.value, enemy, def, 'Attack')
       }
+
+    } else if (intent.type === 'Leech') {
+      // Attack and heal for damage dealt to player
+      const dmgBefore = hp
+      enemyDealDamage(intent.value, enemy, def, 'Leech')
+      const dealt = dmgBefore - hp
+      if (dealt > 0) {
+        enemy.currentHealth = Math.min(enemy.maxHealth, enemy.currentHealth + dealt)
+      }
+
+    } else if (intent.type === 'StrainTick') {
+      // Add strain to player each turn
+      combat.strain = Math.min(combat.strain + intent.value, combat.maxStrain)
+      combat.combatLog.push({ type: 'enemyAction', enemyId: enemy.instanceId, enemyName: def.name, intentType: 'StrainTick' })
+
+    } else if (intent.type === 'Enrage') {
+      // Attack with base + enrage stacks
+      const enrageDmg = intent.value + (enemy.enrageStacks ?? 0)
+      enemyDealDamage(enrageDmg, enemy, def, 'Enrage')
+
+    } else if (intent.type === 'ShieldAllies') {
+      // Give all OTHER alive enemies block
+      for (const ally of combat.enemies) {
+        if (!ally.isDefeated && ally.instanceId !== enemy.instanceId) {
+          ally.block += intent.value
+        }
+      }
+      combat.combatLog.push({ type: 'enemyAction', enemyId: enemy.instanceId, enemyName: def.name, intentType: 'ShieldAllies', block: intent.value })
+
+    } else if (intent.type === 'BerserkerAttack') {
+      // Damage scales inversely with HP %
+      const hpPct = enemy.currentHealth / enemy.maxHealth
+      const multiplier = hpPct > 0.5 ? 1 : hpPct > 0.25 ? 2 : 3
+      enemyDealDamage(intent.value * multiplier, enemy, def, 'BerserkerAttack')
+
+    } else if (intent.type === 'PhaseShift') {
+      // Toggle phase and attack
+      enemy.isPhased = !(enemy.isPhased ?? false)
+      enemyDealDamage(intent.value, enemy, def, 'PhaseShift')
+
+    } else if (intent.type === 'StealBlock') {
+      // Steal player's block
+      const stolen = combat.block
+      if (stolen > 0) {
+        combat.block = 0
+        enemy.block += stolen
+      }
+      combat.combatLog.push({ type: 'enemyAction', enemyId: enemy.instanceId, enemyName: def.name, intentType: 'StealBlock', block: stolen })
+
+    } else if (intent.type === 'MartyrHeal') {
+      // Just attacks normally — the on-death heal is handled in dealDamage
+      enemyDealDamage(intent.value, enemy, def, 'MartyrHeal')
 
     } else if (intent.type === 'Block') {
       enemy.block += intent.value
