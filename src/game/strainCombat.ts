@@ -66,38 +66,38 @@ export interface GrowthReward {
 }
 
 export const GROWTH_TREE: GrowthReward[] = [
-  // Tier 1 — new verbs
-  { id: 'repair',    label: 'Learn: Repair',    description: 'Heal 4 HP (1 strain/use)',               strainCost: 2, tier: 1, branch: 'repair',  requires: null },
-  { id: 'brace',     label: 'Learn: Brace',     description: 'Reduce damage by 3/hit (1 strain/use)',  strainCost: 2, tier: 1, branch: 'brace',   requires: null },
+  // Tier 1 — new verbs (cost: 3)
+  { id: 'repair',    label: 'Learn: Repair',    description: 'Heal 4 HP (1 strain/use)',               strainCost: 3, tier: 1, branch: 'repair',  requires: null },
+  { id: 'brace',     label: 'Learn: Brace',     description: 'Reduce damage by 3/hit (1 strain/use)',  strainCost: 3, tier: 1, branch: 'brace',   requires: null },
   { id: 'mastery-A', label: 'Strike Mastery',    description: 'Pushed Strike deals +3 bonus damage',     strainCost: 3, tier: 1, branch: 'offense', requires: null },
   { id: 'mastery-B', label: 'Shield Mastery',    description: 'Pushed Shield grants +3 bonus block',    strainCost: 3, tier: 1, branch: 'offense', requires: null },
   { id: 'mastery-C', label: 'Barrage Mastery',   description: 'Pushed Barrage deals +2 bonus per target', strainCost: 3, tier: 1, branch: 'offense', requires: null },
-  // Tier 2 — forks
-  { id: 'repair-plus',     label: 'Repair+',          description: 'Repair heals 7 instead of 4',                strainCost: 2, tier: 2, branch: 'repair',  requires: 'repair' },
-  { id: 'drain-strike',    label: 'Drain Strike',     description: 'Strike heals you for half damage dealt',     strainCost: 2, tier: 2, branch: 'repair',  requires: 'repair' },
-  { id: 'brace-plus',      label: 'Brace+',           description: 'Brace reduces 5 instead of 3',              strainCost: 2, tier: 2, branch: 'brace',   requires: 'brace' },
-  { id: 'reactive-shield', label: 'Reactive Shield',  description: 'Block persists between turns',               strainCost: 2, tier: 2, branch: 'brace',   requires: 'brace' },
-  { id: 'patience',        label: 'Patience',         description: 'Vent recovers 6 strain instead of 4',       strainCost: 2, tier: 2, branch: 'brace',   requires: 'brace' },
-  { id: 'piercing-strike', label: 'Piercing Strike',  description: 'Strike ignores enemy block',                 strainCost: 3, tier: 2, branch: 'offense', requires: 'mastery-A' },
-  { id: 'heavy-strike',    label: 'Heavy Strike',     description: 'Push Strike deals +5 but costs +1 extra strain', strainCost: 3, tier: 2, branch: 'offense', requires: 'mastery-A' },
-  { id: 'scatter-barrage', label: 'Scatter Barrage',  description: 'Barrage hits 3 random targets',              strainCost: 3, tier: 2, branch: 'offense', requires: 'mastery-C' },
-  { id: 'shockwave',       label: 'Shockwave',        description: 'Pushed Barrage removes 3 block from all enemies', strainCost: 3, tier: 2, branch: 'offense', requires: 'mastery-C' },
-  { id: 'reflect',         label: 'Reflect',          description: 'When you block damage, deal 2 back to attacker', strainCost: 3, tier: 2, branch: 'offense', requires: 'mastery-B' },
-  { id: 'absorb',          label: 'Absorb',           description: 'Blocking damage reduces strain by 1 (once/turn)', strainCost: 3, tier: 2, branch: 'offense', requires: 'mastery-B' },
-  // Tier 3 — identity
-  { id: 'desperate-repair', label: 'Desperate Repair', description: 'Strain 15+: Repair heals 8',               strainCost: 3, tier: 3, branch: 'repair',  requires: 'repair-plus' },
-  { id: 'lifeline',         label: 'Lifeline',         description: 'Strain 12+: Vent also heals 4 HP',         strainCost: 3, tier: 3, branch: 'repair',  requires: 'drain-strike' },
-  { id: 'siphon',           label: 'Siphon',           description: 'Killing with Strike refunds 1 strain',     strainCost: 3, tier: 3, branch: 'repair',  requires: 'drain-strike' },
-  { id: 'calm-brace',       label: 'Calm Brace',       description: 'Strain ≤8: Brace reduces 6',               strainCost: 3, tier: 3, branch: 'brace',   requires: 'brace-plus' },
-  { id: 'fortify',          label: 'Fortify',          description: 'Unused block converts to HP healing',       strainCost: 3, tier: 3, branch: 'brace',   requires: 'reactive-shield' },
-  { id: 'bulwark',          label: 'Bulwark',          description: 'Persistent block grows +1 each turn',       strainCost: 3, tier: 3, branch: 'brace',   requires: 'reactive-shield' },
-  { id: 'second-wind',      label: 'Second Wind',      description: 'After Vent, next turn all base values +2', strainCost: 3, tier: 3, branch: 'brace',   requires: 'patience' },
-  { id: 'executioner',      label: 'Executioner',      description: 'Bonus damage to enemies below 30% HP',      strainCost: 3, tier: 3, branch: 'offense', requires: 'piercing-strike' },
-  { id: 'momentum',         label: 'Momentum',         description: 'Killing with Strike: next push costs 0',    strainCost: 3, tier: 3, branch: 'offense', requires: 'heavy-strike' },
-  { id: 'chain-reaction',   label: 'Chain Reaction',   description: 'Kill during Barrage triggers bonus Barrage', strainCost: 3, tier: 3, branch: 'offense', requires: 'scatter-barrage' },
-  { id: 'tremor',           label: 'Tremor',           description: 'Barrage hitting 3+ enemies deals +2 per enemy', strainCost: 3, tier: 3, branch: 'offense', requires: 'shockwave' },
-  { id: 'thorns-aura',      label: 'Thorns Aura',      description: 'Deal 3 damage to every enemy that attacks you', strainCost: 3, tier: 3, branch: 'offense', requires: 'reflect' },
-  { id: 'inner-peace',      label: 'Inner Peace',      description: 'Strain ≤10: Shield also heals 3 HP',        strainCost: 3, tier: 3, branch: 'offense', requires: 'absorb' },
+  // Tier 2 — forks (cost: 4)
+  { id: 'repair-plus',     label: 'Repair+',          description: 'Repair heals 7 instead of 4',                strainCost: 4, tier: 2, branch: 'repair',  requires: 'repair' },
+  { id: 'drain-strike',    label: 'Drain Strike',     description: 'Strike heals you for half damage dealt',     strainCost: 4, tier: 2, branch: 'repair',  requires: 'repair' },
+  { id: 'brace-plus',      label: 'Brace+',           description: 'Brace reduces 5 instead of 3',              strainCost: 4, tier: 2, branch: 'brace',   requires: 'brace' },
+  { id: 'reactive-shield', label: 'Reactive Shield',  description: 'Block persists between turns',               strainCost: 4, tier: 2, branch: 'brace',   requires: 'brace' },
+  { id: 'patience',        label: 'Patience',         description: 'Vent recovers 6 strain instead of 4',       strainCost: 4, tier: 2, branch: 'brace',   requires: 'brace' },
+  { id: 'piercing-strike', label: 'Piercing Strike',  description: 'Strike ignores enemy block',                 strainCost: 4, tier: 2, branch: 'offense', requires: 'mastery-A' },
+  { id: 'heavy-strike',    label: 'Heavy Strike',     description: 'Push Strike deals +5 but costs +1 extra strain', strainCost: 4, tier: 2, branch: 'offense', requires: 'mastery-A' },
+  { id: 'scatter-barrage', label: 'Scatter Barrage',  description: 'Barrage hits 3 random targets',              strainCost: 4, tier: 2, branch: 'offense', requires: 'mastery-C' },
+  { id: 'shockwave',       label: 'Shockwave',        description: 'Pushed Barrage removes 3 block from all enemies', strainCost: 4, tier: 2, branch: 'offense', requires: 'mastery-C' },
+  { id: 'reflect',         label: 'Reflect',          description: 'When you block damage, deal 2 back to attacker', strainCost: 4, tier: 2, branch: 'offense', requires: 'mastery-B' },
+  { id: 'absorb',          label: 'Absorb',           description: 'Blocking damage reduces strain by 1 (once/turn)', strainCost: 4, tier: 2, branch: 'offense', requires: 'mastery-B' },
+  // Tier 3 — identity (cost: 5)
+  { id: 'desperate-repair', label: 'Desperate Repair', description: 'Strain 15+: Repair heals 8',               strainCost: 5, tier: 3, branch: 'repair',  requires: 'repair-plus' },
+  { id: 'lifeline',         label: 'Lifeline',         description: 'Strain 12+: Vent also heals 4 HP',         strainCost: 5, tier: 3, branch: 'repair',  requires: 'drain-strike' },
+  { id: 'siphon',           label: 'Siphon',           description: 'Killing with Strike refunds 1 strain',     strainCost: 5, tier: 3, branch: 'repair',  requires: 'drain-strike' },
+  { id: 'calm-brace',       label: 'Calm Brace',       description: 'Strain ≤8: Brace reduces 6',               strainCost: 5, tier: 3, branch: 'brace',   requires: 'brace-plus' },
+  { id: 'fortify',          label: 'Fortify',          description: 'Unused block converts to HP healing',       strainCost: 5, tier: 3, branch: 'brace',   requires: 'reactive-shield' },
+  { id: 'bulwark',          label: 'Bulwark',          description: 'Persistent block grows +1 each turn',       strainCost: 5, tier: 3, branch: 'brace',   requires: 'reactive-shield' },
+  { id: 'second-wind',      label: 'Second Wind',      description: 'After Vent, next turn all base values +2', strainCost: 5, tier: 3, branch: 'brace',   requires: 'patience' },
+  { id: 'executioner',      label: 'Executioner',      description: 'Bonus damage to enemies below 30% HP',      strainCost: 5, tier: 3, branch: 'offense', requires: 'piercing-strike' },
+  { id: 'momentum',         label: 'Momentum',         description: 'Killing with Strike: next push costs 0',    strainCost: 5, tier: 3, branch: 'offense', requires: 'heavy-strike' },
+  { id: 'chain-reaction',   label: 'Chain Reaction',   description: 'Kill during Barrage triggers bonus Barrage', strainCost: 5, tier: 3, branch: 'offense', requires: 'scatter-barrage' },
+  { id: 'tremor',           label: 'Tremor',           description: 'Barrage hitting 3+ enemies deals +2 per enemy', strainCost: 5, tier: 3, branch: 'offense', requires: 'shockwave' },
+  { id: 'thorns-aura',      label: 'Thorns Aura',      description: 'Deal 3 damage to every enemy that attacks you', strainCost: 5, tier: 3, branch: 'offense', requires: 'reflect' },
+  { id: 'inner-peace',      label: 'Inner Peace',      description: 'Strain ≤10: Shield also heals 3 HP',        strainCost: 5, tier: 3, branch: 'offense', requires: 'absorb' },
 ]
 
 // ─── Comfort Rewards ──────────────────────────────────────────────────────
