@@ -526,10 +526,7 @@ export default function StrainCombatScreen() {
   // Check if Vent exists in any slot
   const hasVent = sc.slotActions.some(id => id && ALL_ACTIONS[id]?.isVent)
 
-  // Count pushes and links for cost breakdown
   const pushCount = sc.pushedSlots.filter((p, i) => p && sc.slotActions[i]).length
-  const linkCount = (sc.pushedSlots[0] && sc.pushedSlots[1] && sc.pairASynergy ? 1 : 0)
-    + (sc.pushedSlots[2] && sc.pushedSlots[3] && sc.pairBSynergy ? 1 : 0)
 
   return (
     <div style={{
@@ -596,7 +593,7 @@ export default function StrainCombatScreen() {
           </div>
           {sc.pushedSlots[0] && sc.pushedSlots[1] && sc.pairASynergy && !sc.ventActive && (
             <div style={{ fontSize: 11, color: '#f39c12', textAlign: 'center', marginTop: 3, opacity: 0.8 }}>
-              {sc.pairASynergy.description} (+1 link tax)
+              {sc.pairASynergy.description} (+1 strain on activation)
             </div>
           )}
         </div>
@@ -632,7 +629,7 @@ export default function StrainCombatScreen() {
           </div>
           {sc.pushedSlots[2] && sc.pushedSlots[3] && sc.pairBSynergy && !sc.ventActive && (
             <div style={{ fontSize: 11, color: '#f39c12', textAlign: 'center', marginTop: 3, opacity: 0.8 }}>
-              {sc.pairBSynergy.description} (+1 link tax)
+              {sc.pairBSynergy.description} (+1 strain on activation)
             </div>
           )}
         </div>
@@ -669,9 +666,9 @@ export default function StrainCombatScreen() {
       )}
 
       {/* Strain Cost Breakdown */}
-      {isPlanning && !sc.ventActive && (pushCount > 0 || linkCount > 0) && (
+      {isPlanning && !sc.ventActive && pushCount > 0 && (
         <div style={{ textAlign: 'center', fontSize: 13, color: '#aaa', margin: '4px 0' }}>
-          +{strainCost} strain ({pushCount} push{pushCount !== 1 ? 'es' : ''}{linkCount > 0 ? ` + ${linkCount} link${linkCount !== 1 ? 's' : ''}` : ''})
+          +{strainCost} strain ({pushCount} push{pushCount !== 1 ? 'es' : ''})
         </div>
       )}
 

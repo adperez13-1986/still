@@ -117,13 +117,10 @@ export function projectedStrainCost(state: StrainCombatState): number {
     return -VENT_STRAIN_RECOVERY
   }
   let cost = 0
-  // Individual push costs
+  // Individual push costs only — link tax is charged when synergy actually activates
   for (let i = 0; i < 5; i++) {
     if (state.pushedSlots[i] && state.slotActions[i]) cost += 1
   }
-  // Link tax: +1 if both in a pair are pushed AND synergy exists
-  if (state.pushedSlots[0] && state.pushedSlots[1] && state.pairASynergy) cost += 1
-  if (state.pushedSlots[2] && state.pushedSlots[3] && state.pairBSynergy) cost += 1
   return cost
 }
 
@@ -472,7 +469,9 @@ function resolveSynergy(
   enemies: EnemyInstance[],
   hp: number,
 ): number {
-  combat.combatLog.push({ type: 'synergy', synergyName: synergy.name })
+  // Link tax: +1 strain charged when synergy actually fires
+  combat.strain = Math.min(combat.strain + 1, combat.maxStrain)
+  combat.combatLog.push({ type: 'synergy', synergyName: synergy.name, strainChange: 1 })
 
   switch (synergy.id as SynergyId) {
     case 'drain': {
