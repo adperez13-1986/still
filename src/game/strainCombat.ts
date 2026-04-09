@@ -226,42 +226,44 @@ export function executeStrainTurn(
     return actual
   }
 
-  if (!combat.ventActive) {
-    // Fire each slot in order
-    for (let i = 0; i < 5; i++) {
-      const actionId = combat.slotActions[i]
-      if (!actionId) continue
-      const def = ALL_ACTIONS[actionId]
-      if (!def || def.isVent) continue
+  // Fire each slot in order — venting skips damage actions only
+  for (let i = 0; i < 5; i++) {
+    const actionId = combat.slotActions[i]
+    if (!actionId) continue
+    const def = ALL_ACTIONS[actionId]
+    if (!def || def.isVent) continue
 
-      const value = getActionValue(combat, i)
+    const value = getActionValue(combat, i)
+    const isDamage = def.type === 'damage_single' || def.type === 'damage_all'
 
-      if (def.type === 'damage_single') {
-        const target = enemies.find(e => e.instanceId === combat.selectedTargetId && !e.isDefeated)
-          || enemies.find(e => !e.isDefeated)
-        if (target) {
-          const hits = def.hits ?? 1
-          for (let h = 0; h < hits; h++) {
-            dealDamage(target, value, i, def.name)
-          }
-        }
-      } else if (def.type === 'damage_all') {
+    // Skip damage actions when venting
+    if (combat.ventActive && isDamage) continue
+
+    if (def.type === 'damage_single') {
+      const target = enemies.find(e => e.instanceId === combat.selectedTargetId && !e.isDefeated)
+        || enemies.find(e => !e.isDefeated)
+      if (target) {
         const hits = def.hits ?? 1
         for (let h = 0; h < hits; h++) {
-          const alive = enemies.filter(e => !e.isDefeated)
-          if (def.hits && def.hits > 1) {
-            // Random targeting for multi-hit AoE (Pulse)
-            if (alive.length > 0) {
-              const target = alive[Math.floor(Math.random() * alive.length)]
-              dealDamage(target, value, i, def.name)
-            }
-          } else {
-            for (const enemy of alive) {
-              dealDamage(enemy, value, i, def.name)
-            }
+          dealDamage(target, value, i, def.name)
+        }
+      }
+    } else if (def.type === 'damage_all') {
+      const hits = def.hits ?? 1
+      for (let h = 0; h < hits; h++) {
+        const alive = enemies.filter(e => !e.isDefeated)
+        if (def.hits && def.hits > 1) {
+          if (alive.length > 0) {
+            const target = alive[Math.floor(Math.random() * alive.length)]
+            dealDamage(target, value, i, def.name)
+          }
+        } else {
+          for (const enemy of alive) {
+            dealDamage(enemy, value, i, def.name)
           }
         }
-      } else if (def.type === 'block') {
+      }
+    } else if (def.type === 'block') {
         combat.block += value
         combat.combatLog.push({ type: 'slotFire', slotIndex: i, slotLabel: def.name, block: value })
       } else if (def.type === 'heal') {
@@ -302,29 +304,30 @@ export function executeStrainTurn(
       }
 
       // Resolve pair synergy after slot 1 (end of Pair A) and slot 3 (end of Pair B)
-      if (i === 1 && combat.pushedSlots[0] && combat.pushedSlots[1] && combat.pairASynergy) {
-        hp = resolveSynergy(combat, combat.pairASynergy, 0, 1, enemies, hp)
-      }
-      if (i === 3 && combat.pushedSlots[2] && combat.pushedSlots[3] && combat.pairBSynergy) {
-        hp = resolveSynergy(combat, combat.pairBSynergy, 2, 3, enemies, hp)
+      // Synergies only fire when not venting (both must be pushed)
+      if (!combat.ventActive) {
+        if (i === 1 && combat.pushedSlots[0] && combat.pushedSlots[1] && combat.pairASynergy) {
+          hp = resolveSynergy(combat, combat.pairASynergy, 0, 1, enemies, hp)
+        }
+        if (i === 3 && combat.pushedSlots[2] && combat.pushedSlots[3] && combat.pairBSynergy) {
+          hp = resolveSynergy(combat, combat.pairBSynergy, 2, 3, enemies, hp)
+        }
       }
     }
-  } else {
-    // Venting — check Second Wind for paired slot
-    for (let pairStart of [0, 2]) {
+
+  // Vent recovery + Second Wind (after slots fire)
+  if (combat.ventActive) {
+    // Second Wind: linked action gets +3 base next turn
+    for (const pairStart of [0, 2]) {
       const ventIdx = combat.slotActions[pairStart] && ALL_ACTIONS[combat.slotActions[pairStart]!]?.isVent ? pairStart
         : combat.slotActions[pairStart + 1] && ALL_ACTIONS[combat.slotActions[pairStart + 1]!]?.isVent ? pairStart + 1
         : -1
       if (ventIdx >= 0) {
         const linkedIdx = ventIdx === pairStart ? pairStart + 1 : pairStart
         if (combat.slotActions[linkedIdx]) {
-          combat.secondWindBonus = 3 // applies next turn
+          combat.secondWindBonus = 3
         }
       }
-    }
-    // Solo vent
-    if (combat.slotActions[4] && ALL_ACTIONS[combat.slotActions[4]!]?.isVent) {
-      // Solo vent, no link
     }
     combat.combatLog.push({ type: 'slotFire', slotLabel: 'Vent', strainChange: -VENT_STRAIN_RECOVERY })
   }

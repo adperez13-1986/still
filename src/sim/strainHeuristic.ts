@@ -1,9 +1,9 @@
 /**
  * Strain Combat Heuristic AI
  *
- * Updated for unified action slot system (5 slots, 2 pairs + 1 solo).
- * Decides which slots to push, whether to vent, and which enemy to target.
- * Link tax is now charged on synergy activation, not upfront.
+ * Unified action slot system (5 slots, 2 pairs + 1 solo).
+ * Optimized for multi-combat runs: conservative strain management,
+ * push only when the value justifies the permanent strain cost.
  */
 
 import type { EnemyInstance } from '../game/types'
@@ -52,6 +52,11 @@ function estimateThreat(enemies: EnemyInstance[]): number {
   return total
 }
 
+/** Total remaining enemy HP */
+function totalEnemyHp(enemies: EnemyInstance[]): number {
+  return enemies.filter(e => !e.isDefeated).reduce((s, e) => s + e.currentHealth + e.block, 0)
+}
+
 /** Pick best target */
 function pickTarget(enemies: EnemyInstance[]): string | null {
   const alive = enemies.filter(e => !e.isDefeated)
@@ -70,16 +75,7 @@ function pickTarget(enemies: EnemyInstance[]): string | null {
   return alive[0].instanceId
 }
 
-/** Check if any retaliator is about to fire */
-function hasRetaliator(enemies: EnemyInstance[]): boolean {
-  return enemies.some(e => {
-    if (e.isDefeated) return false
-    const intent = getEnemyIntent(e)
-    return intent?.type === 'Retaliate'
-  })
-}
-
-/** Main heuristic: decide pushes, vent, target */
+/** Main heuristic */
 export function planStrainTurn(
   combat: StrainCombatState,
   health: number,
@@ -89,7 +85,7 @@ export function planStrainTurn(
   const maxStrain = combat.maxStrain
   const threat = estimateThreat(combat.enemies)
   const aliveCount = combat.enemies.filter(e => !e.isDefeated).length
-  const retaliate = hasRetaliator(combat.enemies)
+  const enemyHp = totalEnemyHp(combat.enemies)
 
   const decision: StrainDecision = {
     pushedSlots: [false, false, false, false, false],
@@ -97,27 +93,32 @@ export function planStrainTurn(
     targetEnemyId: pickTarget(combat.enemies),
   }
 
-  // Vent if strain is very high
-  if (strain >= 16) {
+  // Vent aggressively to keep strain manageable across a full run
+  // Vent if strain is high enough that recovery is worth a turn
+  const ventThreshold = health > maxHealth * 0.6 ? 8 : 12
+  if (strain >= ventThreshold && threat <= 10) {
     decision.vent = true
     return decision
   }
-  // Vent if strain is high and threat is manageable
-  if (strain >= 12 && threat <= 8) {
+  // Emergency vent if strain is critical
+  if (strain >= 15) {
     decision.vent = true
     return decision
   }
 
-  // Budget: push cost only (link tax is conditional now, charged on activation)
-  // Leave 4 buffer: 3 for safety + 1 for potential synergy activation
-  const strainBudget = maxStrain - strain - 4
+  // Strain budget: be conservative — want to end combat around strain 6-10
+  // so next combat starts at 4-8 after decay
+  const pushBudget = Math.min(
+    3, // never push more than 3 per turn
+    Math.max(0, Math.floor((maxStrain - strain - 6) / 2)) // leave room for future turns
+  )
 
-  if (strainBudget <= 0) {
-    // No budget — don't push anything, base values only
+  if (pushBudget <= 0) {
+    // No budget — rely on base values, maybe vent next turn
     return decision
   }
 
-  // Score each slot by situational value
+  // Score each slot
   const slotScores: { index: number; score: number }[] = []
 
   for (let i = 0; i < 5; i++) {
@@ -126,43 +127,37 @@ export function planStrainTurn(
     const action = ALL_ACTIONS[actionId]
     if (!action || action.isVent) continue
 
-    let score = 0
     const pushGain = action.pushedValue - action.baseValue
+    let score = 0
 
-    if (action.type === 'damage_single') {
-      score = pushGain * 2 // offensive value
-      if (retaliate) score *= 0.3 // penalize against retaliators
-    } else if (action.type === 'damage_all') {
-      score = pushGain * aliveCount // more enemies = more value
-      if (retaliate) score *= 0.3
+    if (action.type === 'damage_single' || action.type === 'damage_all') {
+      // Push damage when enemies are close to dying (get the kill)
+      const canKill = enemyHp < (action.pushedValue * (action.type === 'damage_all' ? aliveCount : 1)) * 2
+      score = canKill ? pushGain * 3 : pushGain * 1
     } else if (action.type === 'block') {
-      score = threat > 5 ? pushGain * 1.5 : pushGain * 0.5
+      score = threat > 8 ? pushGain * 2 : 0 // only push block against real threats
     } else if (action.type === 'heal') {
-      score = health < maxHealth * 0.5 ? pushGain * 2 : pushGain * 0.3
+      score = health < maxHealth * 0.5 ? pushGain * 2 : 0
     } else if (action.type === 'reduce') {
-      score = threat > 10 ? pushGain * 2 : pushGain * 0.5
+      score = threat > 12 ? pushGain * 2 : 0
     } else {
-      score = pushGain > 0 ? pushGain : 1 // buff/debuff/utility: modest value
+      score = pushGain > 0 ? pushGain : 0.5
     }
 
-    slotScores.push({ index: i, score })
+    if (score > 0) slotScores.push({ index: i, score })
   }
 
-  // Sort by value descending, push the best ones within budget
+  // Push the best slots within budget
   slotScores.sort((a, b) => b.score - a.score)
-
   let spent = 0
   for (const { index } of slotScores) {
-    if (spent + 1 > strainBudget) break
+    if (spent >= pushBudget) break
     decision.pushedSlots[index] = true
-    spent += 1
+    spent++
   }
 
-  // Final safety: verify total push cost won't forfeit
-  let totalCost = 0
-  for (let i = 0; i < 5; i++) {
-    if (decision.pushedSlots[i] && combat.slotActions[i]) totalCost += 1
-  }
+  // Final safety
+  let totalCost = decision.pushedSlots.filter((p, i) => p && combat.slotActions[i]).length
   if (strain + totalCost >= maxStrain) {
     decision.pushedSlots = [false, false, false, false, false]
   }
