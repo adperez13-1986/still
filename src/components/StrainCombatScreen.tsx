@@ -74,7 +74,7 @@ function StrainMeter({ current, projected, max }: { current: number; projected: 
     <div style={{ margin: '12px 0' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, fontSize: 14 }}>
         <span style={{ fontWeight: 600 }}>STRAIN</span>
-        <span>{current}{projected !== current ? ` \u2192 ${projected}` : ''} / {max}</span>
+        <span>{current}{projected !== current ? ` → ${projected}` : ''} / {max}</span>
       </div>
       <div style={{ height: 20, background: '#2d3436', borderRadius: 4, overflow: 'hidden', position: 'relative' }}>
         {projected > current && (
@@ -230,7 +230,7 @@ function CombatLog({ log }: { log: StrainCombatEvent[] }) {
             <span>{event.slotLabel}: <span style={{ color: '#2ecc71' }}>{event.strainChange} strain</span></span>
           )}
           {event.type === 'synergy' && (
-            <span style={{ color: '#f39c12' }}>\u2728 {event.synergyName} activated</span>
+            <span style={{ color: '#f39c12' }}>{'✨'} {event.synergyName} activated</span>
           )}
           {event.type === 'enemyAction' && event.damage != null && (
             <span>
@@ -300,20 +300,20 @@ function SlotPlacement({
               }}
             >
               <div>
-                <div style={{ fontSize: 11, color: '#888' }}>{pairLabels[i]} \u2022 Slot {i + 1}</div>
+                <div style={{ fontSize: 11, color: '#888' }}>{pairLabels[i]} {'·'} Slot {i + 1}</div>
                 <div style={{ fontSize: 14, fontWeight: 600 }}>
                   {existing ? `Replace ${existing.name}` : 'Fill empty slot'}
                 </div>
                 {synergy && (
                   <div style={{ fontSize: 11, color: '#f39c12', marginTop: 2 }}>
-                    Synergy: {synergy.name} \u2014 {synergy.description}
+                    Synergy: {synergy.name} — {synergy.description}
                   </div>
                 )}
                 {!synergy && pairedIdx >= 0 && (
                   <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>No synergy</div>
                 )}
               </div>
-              <div style={{ fontSize: 12, color: '#636e72' }}>\u2192</div>
+              <div style={{ fontSize: 12, color: '#636e72' }}>→</div>
             </button>
           )
         })}
@@ -477,7 +477,7 @@ export default function StrainCombatScreen() {
                 </div>
                 <div style={{ fontSize: 11, color: '#aaa', marginBottom: 8 }}>{action.description}</div>
                 <div style={{ fontSize: 13, color: tooExpensive ? '#555' : '#e67e22' }}>
-                  +{cost} strain \u2192 {run.strain + cost}
+                  +{cost} strain → {run.strain + cost}
                 </div>
               </button>
             )
