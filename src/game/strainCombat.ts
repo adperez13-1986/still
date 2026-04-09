@@ -69,9 +69,9 @@ export const GROWTH_TREE: GrowthReward[] = [
   // Tier 1 — new verbs
   { id: 'repair',    label: 'Learn: Repair',    description: 'Heal 4 HP (1 strain/use)',               strainCost: 2, tier: 1, branch: 'repair',  requires: null },
   { id: 'brace',     label: 'Learn: Brace',     description: 'Reduce damage by 3/hit (1 strain/use)',  strainCost: 2, tier: 1, branch: 'brace',   requires: null },
-  { id: 'mastery-A', label: 'Strike Mastery',    description: 'Push Strike for free',                   strainCost: 3, tier: 1, branch: 'offense', requires: null },
-  { id: 'mastery-B', label: 'Shield Mastery',    description: 'Push Shield for free',                   strainCost: 3, tier: 1, branch: 'offense', requires: null },
-  { id: 'mastery-C', label: 'Barrage Mastery',   description: 'Push Barrage for free',                  strainCost: 3, tier: 1, branch: 'offense', requires: null },
+  { id: 'mastery-A', label: 'Strike Mastery',    description: 'Pushed Strike deals +3 bonus damage',     strainCost: 3, tier: 1, branch: 'offense', requires: null },
+  { id: 'mastery-B', label: 'Shield Mastery',    description: 'Pushed Shield grants +3 bonus block',    strainCost: 3, tier: 1, branch: 'offense', requires: null },
+  { id: 'mastery-C', label: 'Barrage Mastery',   description: 'Pushed Barrage deals +2 bonus per target', strainCost: 3, tier: 1, branch: 'offense', requires: null },
   // Tier 2 — forks
   { id: 'repair-plus',     label: 'Repair+',          description: 'Repair heals 7 instead of 4',                strainCost: 2, tier: 2, branch: 'repair',  requires: 'repair' },
   { id: 'drain-strike',    label: 'Drain Strike',     description: 'Strike heals you for half damage dealt',     strainCost: 2, tier: 2, branch: 'repair',  requires: 'repair' },
@@ -117,9 +117,9 @@ export function getAvailableAbilities(growth: GrowthState): StrainAbility[] {
   return STRAIN_ABILITIES.filter(a => unlocked.includes(a.id))
 }
 
-/** Get effective push cost for a slot, accounting for masteries */
-export function getEffectivePushCost(slot: StrainSlot, growth: GrowthState): number {
-  return hasReward(growth, `mastery-${slot.id}`) ? 0 : slot.pushCost
+/** Get effective push cost for a slot — always base cost, masteries add bonus effects instead */
+export function getEffectivePushCost(slot: StrainSlot, _growth: GrowthState): number {
+  return slot.pushCost
 }
 
 /** Get available growth rewards: prerequisites met, not acquired, affordable */
@@ -430,7 +430,11 @@ export function executeStrainTurn(
   if (!venting) {
     for (const slot of STRAIN_SLOTS) {
       const pushed = combat.pushedSlots[slot.id]
-      const value = pushed ? slot.pushedValue : slot.baseValue
+      let value = pushed ? slot.pushedValue : slot.baseValue
+      // Mastery bonuses — only when pushed
+      if (pushed && slot.id === 'A' && gr.includes('mastery-A')) value += 3
+      if (pushed && slot.id === 'B' && gr.includes('mastery-B')) value += 3
+      if (pushed && slot.id === 'C' && gr.includes('mastery-C')) value += 2
 
       if (slot.type === 'damage_single') {
         const target = enemies.find(e => e.instanceId === combat.selectedTargetId && !e.isDefeated)

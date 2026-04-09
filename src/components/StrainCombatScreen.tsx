@@ -55,14 +55,15 @@ function StrainMeter({ current, projected, max }: { current: number; projected: 
 
 // ─── Slot Card ───────────────────────────────────────────────────────────
 
-function SlotCard({ slot, pushed, onToggle, disabled, effectivePushCost }: {
+function SlotCard({ slot, pushed, onToggle, disabled, masteryBonus }: {
   slot: StrainSlot
   pushed: boolean
   onToggle: () => void
   disabled: boolean
-  effectivePushCost: number
+  masteryBonus: number
 }) {
-  const value = pushed ? slot.pushedValue : slot.baseValue
+  const baseValue = pushed ? slot.pushedValue : slot.baseValue
+  const value = pushed && masteryBonus > 0 ? baseValue + masteryBonus : baseValue
   const typeLabel = slot.type === 'damage_single' ? 'DMG'
     : slot.type === 'block' ? 'BLK'
     : 'DMG ALL'
@@ -90,13 +91,13 @@ function SlotCard({ slot, pushed, onToggle, disabled, effectivePushCost }: {
       </div>
       <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>{typeLabel}</div>
       {pushed && (
-        <div style={{ fontSize: 11, color: effectivePushCost === 0 ? '#2ecc71' : '#e67e22', marginTop: 6 }}>
-          {effectivePushCost === 0 ? 'MASTERED (free)' : `PUSHED (+${effectivePushCost} strain)`}
+        <div style={{ fontSize: 11, color: masteryBonus > 0 ? '#2ecc71' : '#e67e22', marginTop: 6 }}>
+          PUSHED (+{slot.pushCost} strain){masteryBonus > 0 ? ` +${masteryBonus} mastery` : ''}
         </div>
       )}
       {!pushed && (
         <div style={{ fontSize: 11, color: '#636e72', marginTop: 6 }}>
-          {effectivePushCost === 0 ? 'tap to push (free)' : 'tap to push'}
+          tap to push
         </div>
       )}
     </button>
@@ -445,7 +446,10 @@ export default function StrainCombatScreen() {
               pushed={!venting && sc.pushedSlots[slot.id]}
               onToggle={() => run.toggleStrainPush(slot.id)}
               disabled={!isPlanning || venting}
-              effectivePushCost={sc.pushCosts[slot.id]}
+              masteryBonus={slot.id === 'A' && sc.growthRewards.includes('mastery-A') ? 3
+                : slot.id === 'B' && sc.growthRewards.includes('mastery-B') ? 3
+                : slot.id === 'C' && sc.growthRewards.includes('mastery-C') ? 2
+                : 0}
             />
           )
         })}
