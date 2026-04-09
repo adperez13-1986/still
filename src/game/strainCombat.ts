@@ -1,174 +1,40 @@
 /**
- * Strain Combat Prototype
+ * Unified Action Slot Combat System
  *
- * Self-contained combat system for testing the strain meter feel.
- * 3 hardcoded slots, push mechanic, strain accumulates permanently.
- * No cards, no deck, no equipment lookups.
+ * 5 action slots: 2 linked pairs + 1 solo.
+ * Push any slot for 1 strain. Push both in a pair for 3 (link tax).
+ * Synergies emerge from type combinations in linked pairs.
+ * Strain accumulates permanently — the core tension.
  */
 
-import type { EnemyInstance, Intent, IntentType } from './types'
+import type { EnemyInstance, Intent, IntentType, SlotLayout, ActionType, SynergyId } from './types'
 import { ALL_ENEMIES } from '../data/enemies'
+import { ALL_ACTIONS, getSynergyForPair } from '../data/actions'
+import type { SynergyEffect } from '../data/actions'
 
 // ─── Constants ────────────────────────────────────────────────────────────
 
-/** Strain recovered passively between combats */
 export const STRAIN_DECAY_BETWEEN_COMBATS = 2
-
-/** Strain recovered when venting (skip all attacks for a turn) */
 export const VENT_STRAIN_RECOVERY = 4
 
-// ─── Slot Definitions ──────────────────────────────────────────────────────
-
-export interface StrainSlot {
-  id: 'A' | 'B' | 'C'
-  label: string
-  baseValue: number
-  pushedValue: number
-  pushCost: number
-  type: 'damage_single' | 'block' | 'damage_all'
-}
-
-export const STRAIN_SLOTS: StrainSlot[] = [
-  { id: 'A', label: 'Strike',  baseValue: 6, pushedValue: 9, pushCost: 1, type: 'damage_single' },
-  { id: 'B', label: 'Shield',  baseValue: 5, pushedValue: 7, pushCost: 1, type: 'block' },
-  { id: 'C', label: 'Barrage', baseValue: 4, pushedValue: 6, pushCost: 1, type: 'damage_all' },
-]
-
-// ─── Abilities ─────────────────────────────────────────────────────────────
-
-export interface StrainAbility {
-  id: string
-  label: string
-  description: string
-  strainCost: number
-}
-
-/** All abilities that can exist in combat. Only those in growth.abilities (+ vent) are shown. */
-export const STRAIN_ABILITIES: StrainAbility[] = [
-  { id: 'repair', label: 'Repair', description: 'Heal 4 HP', strainCost: 1 },
-  { id: 'brace', label: 'Brace', description: 'Reduce incoming damage by 3 per hit', strainCost: 1 },
-  { id: 'vent', label: 'Vent', description: `Release ${4} strain. Skip all attacks this turn.`, strainCost: 0 },
-]
-
-/** Default ability always available. Repair and Brace must be earned via growth rewards. */
-export const DEFAULT_ABILITIES = ['vent']
-
-// ─── Growth Rewards — Branching Tree ─────────────────────────────────────
-
-export interface GrowthReward {
-  id: string
-  label: string
-  description: string
-  strainCost: number
-  tier: 1 | 2 | 3
-  branch: 'repair' | 'brace' | 'offense'
-  requires: string | null
-}
-
-export const GROWTH_TREE: GrowthReward[] = [
-  // Tier 1 — new verbs (cost: 3)
-  { id: 'repair',    label: 'Learn: Repair',    description: 'Heal 4 HP (1 strain/use)',               strainCost: 3, tier: 1, branch: 'repair',  requires: null },
-  { id: 'brace',     label: 'Learn: Brace',     description: 'Reduce damage by 3/hit (1 strain/use)',  strainCost: 3, tier: 1, branch: 'brace',   requires: null },
-  { id: 'mastery-A', label: 'Strike Mastery',    description: 'Pushed Strike deals +3 bonus damage',     strainCost: 3, tier: 1, branch: 'offense', requires: null },
-  { id: 'mastery-B', label: 'Shield Mastery',    description: 'Pushed Shield grants +3 bonus block',    strainCost: 3, tier: 1, branch: 'offense', requires: null },
-  { id: 'mastery-C', label: 'Barrage Mastery',   description: 'Pushed Barrage deals +2 bonus per target', strainCost: 3, tier: 1, branch: 'offense', requires: null },
-  // Tier 2 — forks (cost: 4)
-  { id: 'repair-plus',     label: 'Repair+',          description: 'Repair heals 7 instead of 4',                strainCost: 4, tier: 2, branch: 'repair',  requires: 'repair' },
-  { id: 'drain-strike',    label: 'Drain Strike',     description: 'Strike heals you for half damage dealt',     strainCost: 4, tier: 2, branch: 'repair',  requires: 'repair' },
-  { id: 'brace-plus',      label: 'Brace+',           description: 'Brace reduces 5 instead of 3',              strainCost: 4, tier: 2, branch: 'brace',   requires: 'brace' },
-  { id: 'reactive-shield', label: 'Reactive Shield',  description: 'Block persists between turns',               strainCost: 4, tier: 2, branch: 'brace',   requires: 'brace' },
-  { id: 'patience',        label: 'Patience',         description: 'Vent recovers 6 strain instead of 4',       strainCost: 4, tier: 2, branch: 'brace',   requires: 'brace' },
-  { id: 'piercing-strike', label: 'Piercing Strike',  description: 'Strike ignores enemy block',                 strainCost: 4, tier: 2, branch: 'offense', requires: 'mastery-A' },
-  { id: 'heavy-strike',    label: 'Heavy Strike',     description: 'Push Strike deals +5 but costs +1 extra strain', strainCost: 4, tier: 2, branch: 'offense', requires: 'mastery-A' },
-  { id: 'scatter-barrage', label: 'Scatter Barrage',  description: 'Barrage hits 3 random targets',              strainCost: 4, tier: 2, branch: 'offense', requires: 'mastery-C' },
-  { id: 'shockwave',       label: 'Shockwave',        description: 'Pushed Barrage removes 3 block from all enemies', strainCost: 4, tier: 2, branch: 'offense', requires: 'mastery-C' },
-  { id: 'reflect',         label: 'Reflect',          description: 'When you block damage, deal 2 back to attacker', strainCost: 4, tier: 2, branch: 'offense', requires: 'mastery-B' },
-  { id: 'absorb',          label: 'Absorb',           description: 'Blocking damage reduces strain by 1 (once/turn)', strainCost: 4, tier: 2, branch: 'offense', requires: 'mastery-B' },
-  // Tier 3 — identity (cost: 5)
-  { id: 'desperate-repair', label: 'Desperate Repair', description: 'Strain 15+: Repair heals 8',               strainCost: 5, tier: 3, branch: 'repair',  requires: 'repair-plus' },
-  { id: 'lifeline',         label: 'Lifeline',         description: 'Strain 12+: Vent also heals 4 HP',         strainCost: 5, tier: 3, branch: 'repair',  requires: 'drain-strike' },
-  { id: 'siphon',           label: 'Siphon',           description: 'Killing with Strike refunds 1 strain',     strainCost: 5, tier: 3, branch: 'repair',  requires: 'drain-strike' },
-  { id: 'calm-brace',       label: 'Calm Brace',       description: 'Strain ≤8: Brace reduces 6',               strainCost: 5, tier: 3, branch: 'brace',   requires: 'brace-plus' },
-  { id: 'fortify',          label: 'Fortify',          description: 'Unused block converts to HP healing',       strainCost: 5, tier: 3, branch: 'brace',   requires: 'reactive-shield' },
-  { id: 'bulwark',          label: 'Bulwark',          description: 'Persistent block grows +1 each turn',       strainCost: 5, tier: 3, branch: 'brace',   requires: 'reactive-shield' },
-  { id: 'second-wind',      label: 'Second Wind',      description: 'After Vent, next turn all base values +2', strainCost: 5, tier: 3, branch: 'brace',   requires: 'patience' },
-  { id: 'executioner',      label: 'Executioner',      description: 'Bonus damage to enemies below 30% HP',      strainCost: 5, tier: 3, branch: 'offense', requires: 'piercing-strike' },
-  { id: 'momentum',         label: 'Momentum',         description: 'Killing with Strike: next push costs 0',    strainCost: 5, tier: 3, branch: 'offense', requires: 'heavy-strike' },
-  { id: 'chain-reaction',   label: 'Chain Reaction',   description: 'Kill during Barrage triggers bonus Barrage', strainCost: 5, tier: 3, branch: 'offense', requires: 'scatter-barrage' },
-  { id: 'tremor',           label: 'Tremor',           description: 'Barrage hitting 3+ enemies deals +2 per enemy', strainCost: 5, tier: 3, branch: 'offense', requires: 'shockwave' },
-  { id: 'thorns-aura',      label: 'Thorns Aura',      description: 'Deal 3 damage to every enemy that attacks you', strainCost: 5, tier: 3, branch: 'offense', requires: 'reflect' },
-  { id: 'inner-peace',      label: 'Inner Peace',      description: 'Strain ≤10: Shield also heals 3 HP',        strainCost: 5, tier: 3, branch: 'offense', requires: 'absorb' },
-]
-
-// ─── Comfort Rewards ──────────────────────────────────────────────────────
-
-export interface ComfortReward {
-  id: string
-  label: string
-  description: string
-}
-
-export const COMFORT_HEAL: ComfortReward = { id: 'heal', label: 'Heal', description: 'Restore 8 HP' }
-export const COMFORT_RELIEF: ComfortReward = { id: 'relief', label: 'Relief', description: 'Reduce strain by 4' }
-export const COMFORT_COMPANION: ComfortReward = { id: 'companion', label: 'A quiet moment', description: 'Reduce strain by 2' }
-
-// ─── Growth Helpers ───────────────────────────────────────────────────────
-
-export interface GrowthState {
-  rewards: string[]
-}
-
-/** Check if a reward ID has been acquired */
-export function hasReward(growth: GrowthState, id: string): boolean {
-  return growth.rewards.includes(id)
-}
-
-/** Get abilities available in combat based on growth state */
-export function getAvailableAbilities(growth: GrowthState): StrainAbility[] {
-  const unlocked = [...DEFAULT_ABILITIES, ...growth.rewards.filter(id => id === 'repair' || id === 'brace')]
-  return STRAIN_ABILITIES.filter(a => unlocked.includes(a.id))
-}
-
-/** Get effective push cost for a slot — always base cost, masteries add bonus effects instead */
-export function getEffectivePushCost(slot: StrainSlot, _growth: GrowthState): number {
-  return slot.pushCost
-}
-
-/** Get available growth rewards: prerequisites met, not acquired, affordable */
-export function getAvailableGrowthRewards(growth: GrowthState, currentStrain: number): GrowthReward[] {
-  return GROWTH_TREE.filter(r => {
-    if (growth.rewards.includes(r.id)) return false
-    if (r.requires && !growth.rewards.includes(r.requires)) return false
-    if (currentStrain + r.strainCost >= 20) return false
-    return true
-  })
-}
-
-/** Pick the right comfort reward based on player state */
-export function pickComfortReward(health: number, maxHealth: number, strain: number): ComfortReward {
-  if (health < maxHealth * 0.5) return COMFORT_HEAL
-  if (strain >= 10) return COMFORT_RELIEF
-  return COMFORT_COMPANION
-}
-
-// ─── Combat State ──────────────────────────────────────────────────────────
+// ─── Combat State ─────────────────────────────────────────────────────────
 
 export type StrainCombatPhase = 'planning' | 'executing' | 'enemyTurn' | 'reward' | 'forfeit' | 'finished'
 
 export interface StrainCombatEvent {
-  type: 'slotFire' | 'enemyAction' | 'forfeit' | 'ability'
-  slotId?: 'A' | 'B' | 'C'
+  type: 'slotFire' | 'enemyAction' | 'forfeit' | 'synergy'
+  slotIndex?: number
   slotLabel?: string
   damage?: number
   block?: number
   heal?: number
+  strainChange?: number
   enemyId?: string
   enemyName?: string
   intentType?: IntentType
   blocked?: number
   reduced?: number
-  abilityId?: string
-  abilityLabel?: string
+  synergyName?: string
 }
 
 export interface StrainCombatState {
@@ -178,25 +44,31 @@ export interface StrainCombatState {
   maxStrain: number
   block: number
   damageReduction: number
-  pushedSlots: Record<'A' | 'B' | 'C', boolean>
-  pushCosts: Record<'A' | 'B' | 'C', number>
-  activeAbilities: string[]
+  reflectPct: number
+  // 5 action slots
+  slotActions: [string | null, string | null, string | null, string | null, string | null]
+  pushedSlots: [boolean, boolean, boolean, boolean, boolean]
+  // Synergy info (computed at init)
+  pairASynergy: SynergyEffect | null
+  pairBSynergy: SynergyEffect | null
+  // Vent
+  ventActive: boolean
+  // Targeting
   selectedTargetId: string | null
+  // Turn tracking
   roundNumber: number
   combatLog: StrainCombatEvent[]
-  /** Growth rewards acquired — copied at combat init, used for effect resolution */
-  growthRewards: string[]
-  secondWindActive?: boolean // Second Wind: base values +2 this turn
-  momentumFreeNext?: boolean // Momentum: next push costs 0
-  absorbUsedThisTurn?: boolean // Absorb: strain reduction once per turn
+  // Buffs
+  secondWindBonus: number // +N base value this turn from Second Wind
+  mendHealRemaining: number // heal over turns remaining
 }
 
-// ─── Init ──────────────────────────────────────────────────────────────────
+// ─── Init ─────────────────────────────────────────────────────────────────
 
 export function initStrainCombat(
   enemies: EnemyInstance[],
   currentStrain: number,
-  growth: GrowthState = { rewards: [] },
+  slotLayout: SlotLayout,
 ): StrainCombatState {
   return {
     phase: 'planning',
@@ -205,218 +77,130 @@ export function initStrainCombat(
     maxStrain: 20,
     block: 0,
     damageReduction: 0,
-    pushedSlots: { A: false, B: false, C: false },
-    pushCosts: {
-      A: getEffectivePushCost(STRAIN_SLOTS[0], growth),
-      B: getEffectivePushCost(STRAIN_SLOTS[1], growth),
-      C: getEffectivePushCost(STRAIN_SLOTS[2], growth),
-    },
-    activeAbilities: [],
+    reflectPct: 0,
+    slotActions: [...slotLayout.slots],
+    pushedSlots: [false, false, false, false, false],
+    pairASynergy: getSynergyForPair(slotLayout.slots[0], slotLayout.slots[1]),
+    pairBSynergy: getSynergyForPair(slotLayout.slots[2], slotLayout.slots[3]),
+    ventActive: false,
     selectedTargetId: enemies.find(e => !e.isDefeated)?.instanceId ?? null,
     roundNumber: 1,
     combatLog: [],
-    growthRewards: growth.rewards,
+    secondWindBonus: 0,
+    mendHealRemaining: 0,
   }
 }
 
-// ─── Ability Toggle ────────────────────────────────────────────────────────
+// ─── Toggle Helpers ───────────────────────────────────────────────────────
 
-export function toggleAbility(
-  state: StrainCombatState,
-  abilityId: string,
-): StrainCombatState {
-  const active = state.activeAbilities.includes(abilityId)
-  return {
-    ...state,
-    activeAbilities: active
-      ? state.activeAbilities.filter(id => id !== abilityId)
-      : [...state.activeAbilities, abilityId],
-  }
+export function toggleSlotPush(state: StrainCombatState, index: number): StrainCombatState {
+  const action = state.slotActions[index]
+  if (!action) return state
+  const def = ALL_ACTIONS[action]
+  if (def?.isVent) return state // Vent can't be pushed
+  const next = { ...state, pushedSlots: [...state.pushedSlots] as StrainCombatState['pushedSlots'] }
+  next.pushedSlots[index] = !next.pushedSlots[index]
+  return next
 }
 
-// ─── Target Selection ──────────────────────────────────────────────────
+export function toggleVent(state: StrainCombatState): StrainCombatState {
+  return { ...state, ventActive: !state.ventActive }
+}
 
-export function selectTarget(
-  state: StrainCombatState,
-  enemyInstanceId: string,
-): StrainCombatState {
+export function selectTarget(state: StrainCombatState, enemyInstanceId: string): StrainCombatState {
   return { ...state, selectedTargetId: enemyInstanceId }
 }
 
-// ─── Push Toggle ───────────────────────────────────────────────────────────
+// ─── Cost Calculation ─────────────────────────────────────────────────────
 
-export function togglePush(
-  state: StrainCombatState,
-  slotId: 'A' | 'B' | 'C',
-): StrainCombatState {
-  return {
-    ...state,
-    pushedSlots: {
-      ...state.pushedSlots,
-      [slotId]: !state.pushedSlots[slotId],
-    },
-  }
-}
-
-/** Is vent currently toggled on? */
-export function isVenting(state: StrainCombatState): boolean {
-  return state.activeAbilities.includes('vent')
-}
-
-/** Overextension penalty: +2 strain when using ALL available actions */
-export const OVEREXTEND_PENALTY = 2
-
-/** Count total available actions (pushable slots + available abilities excluding vent) */
-function countAvailableActions(state: StrainCombatState): number {
-  // 3 pushable slots + non-vent abilities that are available in this combat
-  const abilityCount = STRAIN_ABILITIES.filter(a => a.id !== 'vent' &&
-    (DEFAULT_ABILITIES.includes(a.id) || state.growthRewards.includes(a.id))
-  ).length
-  return STRAIN_SLOTS.length + abilityCount
-}
-
-/** Count how many actions the player is using this turn */
-function countActiveActions(state: StrainCombatState): number {
-  const pushCount = STRAIN_SLOTS.filter(s => state.pushedSlots[s.id]).length
-  const abilityCount = state.activeAbilities.filter(id => id !== 'vent').length
-  return pushCount + abilityCount
-}
-
-/** Is the player overextending (using all available actions)? */
-export function isOverextending(state: StrainCombatState): boolean {
-  const available = countAvailableActions(state)
-  if (available < 4) return false // need at least 4 available for overextension to matter
-  return countActiveActions(state) >= available
-}
-
-/** Calculate total strain cost of current push selections + active abilities */
 export function projectedStrainCost(state: StrainCombatState): number {
-  // Venting reduces strain and skips attacks — pushes are ignored
-  if (isVenting(state)) {
-    const abilityCost = STRAIN_ABILITIES.reduce((sum, ability) => {
-      if (ability.id === 'vent') return sum
-      return sum + (state.activeAbilities.includes(ability.id) ? ability.strainCost : 0)
-    }, 0)
-    const ventRecovery = state.growthRewards.includes('patience') ? 6 : VENT_STRAIN_RECOVERY
-    return abilityCost - ventRecovery
+  if (state.ventActive) {
+    return -VENT_STRAIN_RECOVERY
   }
-  const pushCost = STRAIN_SLOTS.reduce((sum, slot) => {
-    if (!state.pushedSlots[slot.id]) return sum
-    let cost = state.pushCosts[slot.id]
-    // Momentum: next push free (one-time)
-    if (state.momentumFreeNext && slot.id === 'A') cost = 0
-    // Heavy Strike: +1 extra strain on Strike push
-    if (slot.id === 'A' && state.growthRewards.includes('heavy-strike')) cost += 1
-    return sum + cost
-  }, 0)
-  const abilityCost = STRAIN_ABILITIES.reduce((sum, ability) => {
-    return sum + (state.activeAbilities.includes(ability.id) ? ability.strainCost : 0)
-  }, 0)
-  const overextend = isOverextending(state) ? OVEREXTEND_PENALTY : 0
-  return pushCost + abilityCost + overextend
+  let cost = 0
+  // Individual push costs
+  for (let i = 0; i < 5; i++) {
+    if (state.pushedSlots[i] && state.slotActions[i]) cost += 1
+  }
+  // Link tax: +1 if both in a pair are pushed AND synergy exists
+  if (state.pushedSlots[0] && state.pushedSlots[1] && state.pairASynergy) cost += 1
+  if (state.pushedSlots[2] && state.pushedSlots[3] && state.pairBSynergy) cost += 1
+  return cost
 }
 
-/** Strain value after current push selections are confirmed */
 export function projectedStrain(state: StrainCombatState): number {
   return Math.max(0, state.strain + projectedStrainCost(state))
 }
 
-/** Would current selections trigger forfeit? */
 export function wouldForfeit(state: StrainCombatState): boolean {
   return projectedStrain(state) >= state.maxStrain
 }
 
-// ─── Execute Turn ──────────────────────────────────────────────────────────
+/** Count pushed slots (for enemy Retaliate) */
+export function countPushedSlots(state: StrainCombatState): number {
+  return state.pushedSlots.filter((p, i) => p && state.slotActions[i]).length
+}
+
+// ─── Action Resolution Helpers ────────────────────────────────────────────
+
+function getActionValue(state: StrainCombatState, index: number): number {
+  const actionId = state.slotActions[index]
+  if (!actionId) return 0
+  const def = ALL_ACTIONS[actionId]
+  if (!def) return 0
+  const base = state.pushedSlots[index] ? def.pushedValue : def.baseValue
+  return base + state.secondWindBonus
+}
+
+// ─── Execute Turn ─────────────────────────────────────────────────────────
 
 export function executeStrainTurn(
   state: StrainCombatState,
   health: number,
 ): { combat: StrainCombatState; health: number } {
-  let combat = { ...state, combatLog: [] as StrainCombatEvent[], phase: 'executing' as StrainCombatPhase }
+  let combat: StrainCombatState = { ...state, combatLog: [], phase: 'executing' }
   let hp = health
 
-  // 1. Deduct strain for pushed slots (or recover if venting)
-  const venting = isVenting(combat)
+  // 1. Strain cost
   const strainCost = projectedStrainCost(combat)
   combat.strain = Math.max(0, Math.min(combat.strain + strainCost, combat.maxStrain))
 
   // 2. Check forfeit
   if (combat.strain >= combat.maxStrain) {
-    combat.strain = 14 // drops to 70% of max after forfeit
+    combat.strain = 14
     combat.phase = 'forfeit'
     combat.combatLog.push({ type: 'forfeit' })
     return { combat, health: hp }
   }
 
-  // 2.5. Resolve abilities (with growth reward modifiers)
-  const gr = combat.growthRewards
-  combat.damageReduction = 0
-  for (const abilityId of combat.activeAbilities) {
-    const ability = STRAIN_ABILITIES.find(a => a.id === abilityId)
-    if (!ability) continue
-
-    if (ability.id === 'repair') {
-      let healAmt = 4
-      if (gr.includes('repair-plus')) healAmt = 7
-      if (gr.includes('desperate-repair') && combat.strain >= 15) healAmt = 8
-      hp = Math.min(hp + healAmt, 70)
-      combat.combatLog.push({ type: 'ability', abilityId: 'repair', abilityLabel: 'Repair', heal: healAmt })
-    } else if (ability.id === 'brace') {
-      let reduction = 3
-      if (gr.includes('brace-plus')) reduction = 5
-      if (gr.includes('calm-brace') && combat.strain <= 8) reduction = 6
-      combat.damageReduction = reduction
-      combat.combatLog.push({ type: 'ability', abilityId: 'brace', abilityLabel: 'Brace' })
-    } else if (ability.id === 'vent') {
-      // Lifeline: Vent also heals 4 HP at high strain (checked before strain drops)
-      if (gr.includes('lifeline') && combat.strain >= 12) {
-        hp = Math.min(hp + 4, 70)
-        combat.combatLog.push({ type: 'ability', abilityId: 'vent', abilityLabel: 'Vent + Lifeline', heal: 4 })
-      } else {
-        combat.combatLog.push({ type: 'ability', abilityId: 'vent', abilityLabel: 'Vent' })
-      }
-      // Second Wind: next turn base values +2
-      if (gr.includes('second-wind')) {
-        combat.secondWindActive = true
-      }
-    }
+  // 3. Mend heal-over-time
+  if (combat.mendHealRemaining > 0) {
+    hp = Math.min(hp + combat.mendHealRemaining, 70)
+    combat.combatLog.push({ type: 'slotFire', slotLabel: 'Mend', heal: combat.mendHealRemaining })
+    combat.mendHealRemaining = 0
   }
 
-  // 3. Fire slots in order: A → B → C (skipped when venting)
-  //    Reactive Shield: block persists between turns (not reset at end)
+  // 4. Fire slots (skipped if venting)
   const enemies = combat.enemies.map(e => ({ ...e, damagedThisTurn: false }))
-  const hasReactiveShield = gr.includes('reactive-shield')
-  const hasPiercing = gr.includes('piercing-strike')
-  const hasDrainStrike = gr.includes('drain-strike')
-  const hasExecutioner = gr.includes('executioner')
-  const hasScatter = gr.includes('scatter-barrage')
-  const hasChainReaction = gr.includes('chain-reaction')
 
-  /** Apply damage to a single enemy, return actual damage dealt */
-  function dealDamage(target: EnemyInstance, baseDmg: number, piercing: boolean, slotId: 'A' | 'B' | 'C', slotLabel: string): number {
-    // PhaseShift: armored phase halves damage, vulnerable phase doubles
+  /** Deal damage to an enemy */
+  function dealDamage(target: EnemyInstance, baseDmg: number, slotIndex: number, label: string): number {
+    // PhaseShift
     let modDmg = baseDmg
     if (target.isPhased !== undefined) {
       modDmg = target.isPhased ? Math.floor(baseDmg * 0.5) : baseDmg * 2
     }
-    let actualDamage: number
-    if (piercing) {
-      actualDamage = modDmg
-    } else {
-      const blocked = Math.min(target.block, modDmg)
-      target.block -= blocked
-      actualDamage = modDmg - blocked
-    }
-    target.currentHealth = Math.max(0, target.currentHealth - actualDamage)
-    if (actualDamage > 0) {
+    const blocked = Math.min(target.block, modDmg)
+    target.block -= blocked
+    const actual = modDmg - blocked
+    target.currentHealth = Math.max(0, target.currentHealth - actual)
+    if (actual > 0) {
       target.damagedThisTurn = true
-      // Enrage: each hit adds +2 permanent damage
-      if (target.enrageStacks !== undefined) {
-        target.enrageStacks += 2
-      }
+      if (target.enrageStacks !== undefined) target.enrageStacks += 2
     }
     if (target.currentHealth <= 0) {
       target.isDefeated = true
+      // On-death triggers
       const targetDef = ALL_ENEMIES[target.definitionId]
       if (targetDef?.onDeath) {
         if (targetDef.onDeath.type === 'spawn') {
@@ -428,17 +212,12 @@ export function executeStrainTurn(
                 definitionId: targetDef.onDeath.enemyId,
                 currentHealth: spawnDef.maxHealth,
                 maxHealth: spawnDef.maxHealth,
-                block: 0,
-                intentIndex: 0,
-                statusEffects: [] as import('./types').StatusEffect[],
-                isDefeated: false,
-                isFragment: true,
-                damagedThisTurn: false,
+                block: 0, intentIndex: 0, statusEffects: [],
+                isDefeated: false, isFragment: true, damagedThisTurn: false,
               })
             }
           }
         } else if (targetDef.onDeath.type === 'healAllies') {
-          // Martyr: heal all other enemies to full
           for (const ally of enemies) {
             if (!ally.isDefeated && ally.instanceId !== target.instanceId) {
               ally.currentHealth = ally.maxHealth
@@ -447,115 +226,125 @@ export function executeStrainTurn(
         }
       }
     }
-    combat.combatLog.push({
-      type: 'slotFire', slotId, slotLabel, damage: actualDamage, enemyId: target.instanceId,
-    })
-    return actualDamage
+    combat.combatLog.push({ type: 'slotFire', slotIndex, slotLabel: label, damage: actual, enemyId: target.instanceId })
+    return actual
   }
 
-  if (!venting) {
-    for (const slot of STRAIN_SLOTS) {
-      const pushed = combat.pushedSlots[slot.id]
-      let value = pushed ? slot.pushedValue : slot.baseValue
-      // Second Wind: base values +2 (applies to both pushed and unpushed)
-      if (combat.secondWindActive) value += 2
-      // Mastery bonuses — only when pushed
-      if (pushed && slot.id === 'A' && gr.includes('mastery-A')) value += 3
-      if (pushed && slot.id === 'B' && gr.includes('mastery-B')) value += 3
-      if (pushed && slot.id === 'C' && gr.includes('mastery-C')) value += 2
-      // Heavy Strike: +5 damage when pushed (on top of mastery)
-      if (pushed && slot.id === 'A' && gr.includes('heavy-strike')) value += 5
+  if (!combat.ventActive) {
+    // Fire each slot in order
+    for (let i = 0; i < 5; i++) {
+      const actionId = combat.slotActions[i]
+      if (!actionId) continue
+      const def = ALL_ACTIONS[actionId]
+      if (!def || def.isVent) continue
 
-      if (slot.type === 'damage_single') {
+      const value = getActionValue(combat, i)
+
+      if (def.type === 'damage_single') {
         const target = enemies.find(e => e.instanceId === combat.selectedTargetId && !e.isDefeated)
           || enemies.find(e => !e.isDefeated)
         if (target) {
-          // Executioner: bonus damage to low-HP enemies
-          let dmg = value
-          if (hasExecutioner && target.currentHealth < target.maxHealth * 0.3) {
-            dmg += 4
-          }
-          const actual = dealDamage(target, dmg, hasPiercing, slot.id, slot.label)
-          // Drain Strike: heal for half damage dealt
-          if (hasDrainStrike && actual > 0) {
-            const drainHeal = Math.floor(actual / 2)
-            hp = Math.min(hp + drainHeal, 70)
-            combat.combatLog.push({ type: 'ability', abilityId: 'drain-strike', abilityLabel: 'Drain', heal: drainHeal })
-          }
-          // Siphon: kill refunds 1 strain
-          if (gr.includes('siphon') && target.isDefeated) {
-            combat.strain = Math.max(0, combat.strain - 1)
-          }
-          // Momentum: kill grants free next push
-          if (gr.includes('momentum') && target.isDefeated) {
-            combat.momentumFreeNext = true
+          const hits = def.hits ?? 1
+          for (let h = 0; h < hits; h++) {
+            dealDamage(target, value, i, def.name)
           }
         }
-      } else if (slot.type === 'block') {
-        combat.block += value
-        combat.combatLog.push({ type: 'slotFire', slotId: slot.id, slotLabel: slot.label, block: value })
-        // Inner Peace: at low strain, Shield also heals 3
-        if (gr.includes('inner-peace') && combat.strain <= 10) {
-          hp = Math.min(hp + 3, 70)
-          combat.combatLog.push({ type: 'ability', abilityId: 'inner-peace', abilityLabel: 'Inner Peace', heal: 3 })
-        }
-      } else if (slot.type === 'damage_all') {
-        if (hasScatter) {
-          // Scatter Barrage: 3 hits on random alive enemies
-          for (let hit = 0; hit < 3; hit++) {
-            const alive = enemies.filter(e => !e.isDefeated)
-            if (alive.length === 0) break
-            const target = alive[Math.floor(Math.random() * alive.length)]
-            dealDamage(target, value, false, slot.id, slot.label)
-          }
-        } else {
-          for (const enemy of enemies) {
-            if (enemy.isDefeated) continue
-            dealDamage(enemy, value, false, slot.id, slot.label)
-          }
-        }
-        // Shockwave: pushed Barrage removes 3 block from all enemies
-        if (pushed && gr.includes('shockwave')) {
-          for (const enemy of enemies) {
-            if (!enemy.isDefeated) enemy.block = Math.max(0, enemy.block - 3)
-          }
-        }
-        // Tremor: +2 damage per enemy if 3+ alive
-        if (gr.includes('tremor')) {
-          const aliveForTremor = enemies.filter(e => !e.isDefeated)
-          if (aliveForTremor.length >= 3) {
-            for (const enemy of aliveForTremor) {
-              dealDamage(enemy, 2, false, slot.id, 'Tremor')
+      } else if (def.type === 'damage_all') {
+        const hits = def.hits ?? 1
+        for (let h = 0; h < hits; h++) {
+          const alive = enemies.filter(e => !e.isDefeated)
+          if (def.hits && def.hits > 1) {
+            // Random targeting for multi-hit AoE (Pulse)
+            if (alive.length > 0) {
+              const target = alive[Math.floor(Math.random() * alive.length)]
+              dealDamage(target, value, i, def.name)
             }
-          }
-        }
-        // Chain Reaction: if any enemy was killed during this Barrage, fire bonus Barrage
-        if (hasChainReaction) {
-          const newlyDead = enemies.filter(e => e.isDefeated && e.currentHealth <= 0)
-          if (newlyDead.length > 0) {
-            const alive = enemies.filter(e => !e.isDefeated)
+          } else {
             for (const enemy of alive) {
-              dealDamage(enemy, value, false, slot.id, 'Chain Reaction')
+              dealDamage(enemy, value, i, def.name)
             }
           }
+        }
+      } else if (def.type === 'block') {
+        combat.block += value
+        combat.combatLog.push({ type: 'slotFire', slotIndex: i, slotLabel: def.name, block: value })
+      } else if (def.type === 'heal') {
+        if (def.healOverTurns) {
+          // Mend: split heal over turns
+          const now = Math.floor(value / def.healOverTurns)
+          const later = value - now
+          hp = Math.min(hp + now, 70)
+          combat.mendHealRemaining += later
+          combat.combatLog.push({ type: 'slotFire', slotIndex: i, slotLabel: def.name, heal: now })
+        } else {
+          hp = Math.min(hp + value, 70)
+          combat.combatLog.push({ type: 'slotFire', slotIndex: i, slotLabel: def.name, heal: value })
+        }
+      } else if (def.type === 'reduce') {
+        combat.damageReduction = value
+        combat.combatLog.push({ type: 'slotFire', slotIndex: i, slotLabel: def.name })
+      } else if (def.type === 'reflect') {
+        combat.reflectPct = state.pushedSlots[i] ? (def.reflectPct ?? 40) + 20 : (def.reflectPct ?? 40)
+        combat.combatLog.push({ type: 'slotFire', slotIndex: i, slotLabel: def.name })
+      } else if (def.type === 'buff') {
+        // Patience: linked action gains base value next turn — handled at end of turn
+        // Overclock: linked action fires twice — handled in synergy resolution
+        combat.combatLog.push({ type: 'slotFire', slotIndex: i, slotLabel: def.name })
+      } else if (def.type === 'debuff') {
+        // Weaken: reduce enemy damage (simplified — apply to all enemies for now)
+        combat.combatLog.push({ type: 'slotFire', slotIndex: i, slotLabel: def.name })
+      } else if (def.type === 'convert') {
+        // Absorb: convert block to strain reduction
+        const converted = Math.min(combat.block, value)
+        combat.block -= converted
+        const strainReduced = Math.floor(converted / 2)
+        combat.strain = Math.max(0, combat.strain - strainReduced)
+        combat.combatLog.push({ type: 'slotFire', slotIndex: i, slotLabel: def.name, strainChange: -strainReduced })
+      } else if (def.type === 'utility') {
+        // Taunt: force enemies to target player (block matters) — passive effect for this turn
+        combat.combatLog.push({ type: 'slotFire', slotIndex: i, slotLabel: def.name })
+      }
+
+      // Resolve pair synergy after slot 1 (end of Pair A) and slot 3 (end of Pair B)
+      if (i === 1 && combat.pushedSlots[0] && combat.pushedSlots[1] && combat.pairASynergy) {
+        hp = resolveSynergy(combat, combat.pairASynergy, 0, 1, enemies, hp)
+      }
+      if (i === 3 && combat.pushedSlots[2] && combat.pushedSlots[3] && combat.pairBSynergy) {
+        hp = resolveSynergy(combat, combat.pairBSynergy, 2, 3, enemies, hp)
+      }
+    }
+  } else {
+    // Venting — check Second Wind for paired slot
+    for (let pairStart of [0, 2]) {
+      const ventIdx = combat.slotActions[pairStart] && ALL_ACTIONS[combat.slotActions[pairStart]!]?.isVent ? pairStart
+        : combat.slotActions[pairStart + 1] && ALL_ACTIONS[combat.slotActions[pairStart + 1]!]?.isVent ? pairStart + 1
+        : -1
+      if (ventIdx >= 0) {
+        const linkedIdx = ventIdx === pairStart ? pairStart + 1 : pairStart
+        if (combat.slotActions[linkedIdx]) {
+          combat.secondWindBonus = 3 // applies next turn
         }
       }
     }
+    // Solo vent
+    if (combat.slotActions[4] && ALL_ACTIONS[combat.slotActions[4]!]?.isVent) {
+      // Solo vent, no link
+    }
+    combat.combatLog.push({ type: 'slotFire', slotLabel: 'Vent', strainChange: -VENT_STRAIN_RECOVERY })
   }
 
   combat.enemies = enemies
 
-  // 4. Check win
+  // 5. Check win
   if (enemies.every(e => e.isDefeated)) {
     combat.phase = 'reward'
     return { combat, health: hp }
   }
 
-  // 5. Enemy turn
+  // 6. Enemy turn
   combat.phase = 'enemyTurn'
-  const pushCount = STRAIN_SLOTS.filter(s => combat.pushedSlots[s.id]).length
+  const pushCount = countPushedSlots(combat)
 
-  /** Deal enemy damage to player, applying brace reduction and block */
   function enemyDealDamage(dmg: number, enemy: EnemyInstance, def: { name: string }, intentType: IntentType) {
     const reduced = Math.min(combat.damageReduction, dmg)
     dmg -= reduced
@@ -564,184 +353,91 @@ export function executeStrainTurn(
     const actual = dmg - blocked
     hp -= actual
     combat.combatLog.push({
-      type: 'enemyAction',
-      enemyId: enemy.instanceId,
-      enemyName: def.name,
-      intentType,
-      damage: actual,
-      blocked,
+      type: 'enemyAction', enemyId: enemy.instanceId, enemyName: def.name,
+      intentType, damage: actual, blocked,
       reduced: reduced > 0 ? reduced : undefined,
     })
-    // Reflect: deal 2 back to attacker when you block any damage
-    if (blocked > 0 && gr.includes('reflect')) {
-      enemy.currentHealth = Math.max(0, enemy.currentHealth - 2)
-      if (enemy.currentHealth <= 0) enemy.isDefeated = true
-    }
-    // Absorb: blocking reduces strain by 1 (once per turn)
-    if (blocked > 0 && gr.includes('absorb') && !combat.absorbUsedThisTurn) {
-      combat.strain = Math.max(0, combat.strain - 1)
-      combat.absorbUsedThisTurn = true
-    }
-    // Thorns Aura: deal 3 to every enemy that attacks
-    if (actual >= 0 && gr.includes('thorns-aura')) {
-      enemy.currentHealth = Math.max(0, enemy.currentHealth - 3)
-      if (enemy.currentHealth <= 0) enemy.isDefeated = true
+    // Reflect
+    if (combat.reflectPct > 0 && actual > 0) {
+      const reflected = Math.floor(actual * combat.reflectPct / 100)
+      if (reflected > 0) {
+        enemy.currentHealth = Math.max(0, enemy.currentHealth - reflected)
+        if (enemy.currentHealth <= 0) enemy.isDefeated = true
+      }
     }
   }
 
   for (const enemy of combat.enemies) {
     if (enemy.isDefeated) continue
-
     const def = ALL_ENEMIES[enemy.definitionId]
     if (!def) continue
-
     const intent = def.intentPattern[enemy.intentIndex % def.intentPattern.length]
     enemy.intentIndex++
 
     if (intent.type === 'Attack' || intent.type === 'AttackDebuff') {
       const hits = intent.hits || 1
-      for (let h = 0; h < hits; h++) {
-        enemyDealDamage(intent.value, enemy, def, intent.type)
-      }
-
+      for (let h = 0; h < hits; h++) enemyDealDamage(intent.value, enemy, def, intent.type)
     } else if (intent.type === 'Retaliate') {
       const retDmg = (intent.valuePerPush ?? intent.value) * pushCount
-      if (retDmg > 0) {
-        enemyDealDamage(retDmg, enemy, def, 'Retaliate')
-      } else {
-        combat.combatLog.push({ type: 'enemyAction', enemyId: enemy.instanceId, enemyName: def.name, intentType: 'Retaliate', damage: 0 })
-      }
-
+      if (retDmg > 0) enemyDealDamage(retDmg, enemy, def, 'Retaliate')
+      else combat.combatLog.push({ type: 'enemyAction', enemyId: enemy.instanceId, enemyName: def.name, intentType: 'Retaliate', damage: 0 })
     } else if (intent.type === 'StrainScale') {
       const bonus = Math.floor(combat.strain / (intent.strainDivisor ?? 5))
       enemyDealDamage(intent.value + bonus, enemy, def, 'StrainScale')
-
     } else if (intent.type === 'CopyAction') {
-      // Find highest-value player action from this turn's combat log
-      let bestValue = 0
-      let bestType: 'damage' | 'block' | 'heal' | null = null
+      let bestValue = 0; let bestType: 'damage' | 'block' | 'heal' | null = null
       for (const event of combat.combatLog) {
-        if (event.type === 'slotFire' && event.damage != null && event.damage > bestValue) {
-          bestValue = event.damage; bestType = 'damage'
-        }
-        if (event.type === 'slotFire' && event.block != null && event.block > bestValue) {
-          bestValue = event.block; bestType = 'block'
-        }
-        if (event.type === 'ability' && event.heal != null && event.heal > bestValue) {
-          bestValue = event.heal; bestType = 'heal'
-        }
+        if (event.type === 'slotFire' && event.damage != null && event.damage > bestValue) { bestValue = event.damage; bestType = 'damage' }
+        if (event.type === 'slotFire' && event.block != null && event.block > bestValue) { bestValue = event.block; bestType = 'block' }
+        if (event.type === 'slotFire' && event.heal != null && event.heal > bestValue) { bestValue = event.heal; bestType = 'heal' }
       }
-      if (bestType === 'damage') {
-        enemyDealDamage(bestValue, enemy, def, 'CopyAction')
-      } else if (bestType === 'block') {
-        enemy.block += bestValue
-        combat.combatLog.push({ type: 'enemyAction', enemyId: enemy.instanceId, enemyName: def.name, intentType: 'CopyAction', block: bestValue })
-      } else if (bestType === 'heal') {
-        enemy.currentHealth = Math.min(enemy.maxHealth, enemy.currentHealth + bestValue)
-        combat.combatLog.push({ type: 'enemyAction', enemyId: enemy.instanceId, enemyName: def.name, intentType: 'CopyAction' })
-      } else {
-        combat.combatLog.push({ type: 'enemyAction', enemyId: enemy.instanceId, enemyName: def.name, intentType: 'CopyAction' })
-      }
-
+      if (bestType === 'damage') enemyDealDamage(bestValue, enemy, def, 'CopyAction')
+      else if (bestType === 'block') { enemy.block += bestValue; combat.combatLog.push({ type: 'enemyAction', enemyId: enemy.instanceId, enemyName: def.name, intentType: 'CopyAction', block: bestValue }) }
+      else combat.combatLog.push({ type: 'enemyAction', enemyId: enemy.instanceId, enemyName: def.name, intentType: 'CopyAction' })
     } else if (intent.type === 'Charge') {
       if (enemy.chargeCounter === undefined) enemy.chargeCounter = intent.chargeTime ?? 2
-      if (enemy.chargeCounter > 0) {
-        enemy.chargeCounter--
-        combat.combatLog.push({ type: 'enemyAction', enemyId: enemy.instanceId, enemyName: def.name, intentType: 'Charge' })
-      } else {
-        enemyDealDamage(intent.blastValue ?? intent.value, enemy, def, 'Charge')
-        enemy.chargeCounter = intent.chargeTime ?? 2
-      }
-
+      if (enemy.chargeCounter > 0) { enemy.chargeCounter--; combat.combatLog.push({ type: 'enemyAction', enemyId: enemy.instanceId, enemyName: def.name, intentType: 'Charge' }) }
+      else { enemyDealDamage(intent.blastValue ?? intent.value, enemy, def, 'Charge'); enemy.chargeCounter = intent.chargeTime ?? 2 }
     } else if (intent.type === 'ConditionalBuff') {
       if (!enemy.damagedThisTurn) {
-        // Condition met — buff
         const stacks = intent.statusStacks ?? intent.value
-        enemy.statusEffects = enemy.statusEffects || []
         const existing = enemy.statusEffects.find(s => s.type === (intent.status ?? 'Strength'))
-        if (existing) { existing.stacks += stacks } else {
-          enemy.statusEffects.push({ type: intent.status ?? 'Strength' as any, stacks })
-        }
+        if (existing) existing.stacks += stacks
+        else enemy.statusEffects.push({ type: intent.status as any ?? 'Strength', stacks })
         combat.combatLog.push({ type: 'enemyAction', enemyId: enemy.instanceId, enemyName: def.name, intentType: 'ConditionalBuff' })
-      } else {
-        // Condition not met — fallback attack
-        enemyDealDamage(intent.fallbackValue ?? intent.value, enemy, def, 'Attack')
-      }
-
+      } else { enemyDealDamage(intent.fallbackValue ?? intent.value, enemy, def, 'Attack') }
     } else if (intent.type === 'Leech') {
-      // Attack and heal for damage dealt to player
-      const dmgBefore = hp
-      enemyDealDamage(intent.value, enemy, def, 'Leech')
-      const dealt = dmgBefore - hp
-      if (dealt > 0) {
-        enemy.currentHealth = Math.min(enemy.maxHealth, enemy.currentHealth + dealt)
-      }
-
+      const before = hp; enemyDealDamage(intent.value, enemy, def, 'Leech')
+      const dealt = before - hp; if (dealt > 0) enemy.currentHealth = Math.min(enemy.maxHealth, enemy.currentHealth + dealt)
     } else if (intent.type === 'StrainTick') {
-      // Add strain to player each turn
       combat.strain = Math.min(combat.strain + intent.value, combat.maxStrain)
       combat.combatLog.push({ type: 'enemyAction', enemyId: enemy.instanceId, enemyName: def.name, intentType: 'StrainTick' })
-
     } else if (intent.type === 'Enrage') {
-      // Attack with base + enrage stacks
-      const enrageDmg = intent.value + (enemy.enrageStacks ?? 0)
-      enemyDealDamage(enrageDmg, enemy, def, 'Enrage')
-
+      enemyDealDamage(intent.value + (enemy.enrageStacks ?? 0), enemy, def, 'Enrage')
     } else if (intent.type === 'ShieldAllies') {
-      // Give all OTHER alive enemies block
-      for (const ally of combat.enemies) {
-        if (!ally.isDefeated && ally.instanceId !== enemy.instanceId) {
-          ally.block += intent.value
-        }
-      }
+      for (const ally of combat.enemies) { if (!ally.isDefeated && ally.instanceId !== enemy.instanceId) ally.block += intent.value }
       combat.combatLog.push({ type: 'enemyAction', enemyId: enemy.instanceId, enemyName: def.name, intentType: 'ShieldAllies', block: intent.value })
-
     } else if (intent.type === 'BerserkerAttack') {
-      // Damage scales inversely with HP %
       const hpPct = enemy.currentHealth / enemy.maxHealth
-      const multiplier = hpPct > 0.5 ? 1 : hpPct > 0.25 ? 2 : 3
-      enemyDealDamage(intent.value * multiplier, enemy, def, 'BerserkerAttack')
-
+      const mult = hpPct > 0.5 ? 1 : hpPct > 0.25 ? 2 : 3
+      enemyDealDamage(intent.value * mult, enemy, def, 'BerserkerAttack')
     } else if (intent.type === 'PhaseShift') {
-      // Toggle phase and attack
-      enemy.isPhased = !(enemy.isPhased ?? false)
-      enemyDealDamage(intent.value, enemy, def, 'PhaseShift')
-
+      enemy.isPhased = !(enemy.isPhased ?? false); enemyDealDamage(intent.value, enemy, def, 'PhaseShift')
     } else if (intent.type === 'StealBlock') {
-      // Steal player's block
-      const stolen = combat.block
-      if (stolen > 0) {
-        combat.block = 0
-        enemy.block += stolen
-      }
+      const stolen = combat.block; if (stolen > 0) { combat.block = 0; enemy.block += stolen }
       combat.combatLog.push({ type: 'enemyAction', enemyId: enemy.instanceId, enemyName: def.name, intentType: 'StealBlock', block: stolen })
-
     } else if (intent.type === 'MartyrHeal') {
-      // Just attacks normally — the on-death heal is handled in dealDamage
       enemyDealDamage(intent.value, enemy, def, 'MartyrHeal')
-
     } else if (intent.type === 'Block') {
-      enemy.block += intent.value
-      combat.combatLog.push({ type: 'enemyAction', enemyId: enemy.instanceId, enemyName: def.name, intentType: 'Block', block: intent.value })
-
+      enemy.block += intent.value; combat.combatLog.push({ type: 'enemyAction', enemyId: enemy.instanceId, enemyName: def.name, intentType: 'Block', block: intent.value })
     } else if (intent.type === 'Buff') {
-      enemy.block += intent.value
-      combat.combatLog.push({ type: 'enemyAction', enemyId: enemy.instanceId, enemyName: def.name, intentType: 'Buff' })
-
+      enemy.block += intent.value; combat.combatLog.push({ type: 'enemyAction', enemyId: enemy.instanceId, enemyName: def.name, intentType: 'Buff' })
     } else {
       combat.combatLog.push({ type: 'enemyAction', enemyId: enemy.instanceId, enemyName: def.name, intentType: intent.type })
     }
   }
 
-  // Update enemies (including any spawned fragments)
   combat.enemies = enemies
-
-  // 6. Fortify: convert remaining block to HP healing
-  if (gr.includes('fortify') && combat.block > 0) {
-    const fortifyHeal = combat.block
-    hp = Math.min(hp + fortifyHeal, 70)
-    combat.combatLog.push({ type: 'ability', abilityId: 'fortify', abilityLabel: 'Fortify', heal: fortifyHeal })
-  }
 
   // 7. Check loss
   if (hp <= 0) {
@@ -749,40 +445,161 @@ export function executeStrainTurn(
     return { combat, health: 0 }
   }
 
-  // 8. Start next turn
-  // Reactive Shield block persists — it was gained after enemy attacks
-  if (!hasReactiveShield) {
-    combat.block = 0 // player block resets
-  } else if (gr.includes('bulwark') && combat.block > 0) {
-    // Bulwark: persistent block grows +1 each turn
-    combat.block += 1
-  }
-  for (const enemy of combat.enemies) {
-    if (!enemy.isDefeated) enemy.block = 0 // enemy block resets
-  }
-  combat.damageReduction = 0 // brace resets
-  combat.pushedSlots = { A: false, B: false, C: false }
-  combat.activeAbilities = [] // abilities reset
-  combat.absorbUsedThisTurn = false // absorb resets
-  // Second Wind consumed — it lasted one turn
-  if (combat.secondWindActive && !venting) combat.secondWindActive = false
-  // Momentum consumed on next push
-  if (combat.momentumFreeNext && !venting) combat.momentumFreeNext = false
-  // Auto-retarget if current target is dead
+  // 8. Next turn reset
+  combat.block = 0
+  for (const enemy of combat.enemies) { if (!enemy.isDefeated) enemy.block = 0 }
+  combat.damageReduction = 0
+  combat.reflectPct = 0
+  combat.pushedSlots = [false, false, false, false, false]
+  combat.ventActive = false
+  // Second Wind: consumed after one turn
+  if (combat.secondWindBonus > 0 && !state.ventActive) combat.secondWindBonus = 0
+  // Auto-retarget
   const currentTarget = combat.enemies.find(e => e.instanceId === combat.selectedTargetId && !e.isDefeated)
-  if (!currentTarget) {
-    combat.selectedTargetId = combat.enemies.find(e => !e.isDefeated)?.instanceId ?? null
-  }
+  if (!currentTarget) combat.selectedTargetId = combat.enemies.find(e => !e.isDefeated)?.instanceId ?? null
   combat.roundNumber++
   combat.phase = 'planning'
 
   return { combat, health: hp }
 }
 
-// ─── Helper: get current enemy intent for display ──────────────────────────
+// ─── Synergy Resolution ───────────────────────────────────────────────────
+
+function resolveSynergy(
+  combat: StrainCombatState,
+  synergy: SynergyEffect,
+  idxA: number,
+  idxB: number,
+  enemies: EnemyInstance[],
+  hp: number,
+): number {
+  combat.combatLog.push({ type: 'synergy', synergyName: synergy.name })
+
+  switch (synergy.id as SynergyId) {
+    case 'drain': {
+      // Damage slot heals 30%
+      const dmgEvents = combat.combatLog.filter(e => e.type === 'slotFire' && (e.slotIndex === idxA || e.slotIndex === idxB) && e.damage)
+      const totalDmg = dmgEvents.reduce((s, e) => s + (e.damage ?? 0), 0)
+      const heal = Math.floor(totalDmg * 0.3)
+      if (heal > 0) hp = Math.min(hp + heal, 70)
+      break
+    }
+    case 'cleave': {
+      // Single target damage also hits others at 50%
+      const dmgEvents = combat.combatLog.filter(e => e.type === 'slotFire' && (e.slotIndex === idxA || e.slotIndex === idxB) && e.damage && e.enemyId)
+      for (const event of dmgEvents) {
+        const splash = Math.floor((event.damage ?? 0) * 0.5)
+        if (splash > 0) {
+          for (const enemy of enemies) {
+            if (!enemy.isDefeated && enemy.instanceId !== event.enemyId) {
+              enemy.currentHealth = Math.max(0, enemy.currentHealth - splash)
+              if (enemy.currentHealth <= 0) enemy.isDefeated = true
+            }
+          }
+        }
+      }
+      break
+    }
+    case 'counter': {
+      // If block absorbed a full attack, damage fires again — resolved during enemy turn, not here
+      // Mark for enemy turn resolution
+      (combat as any)._counterArmed = true
+      break
+    }
+    case 'focus': {
+      // Already fired both damage actions — the "focus" is that they both hit same target
+      // Bonus: combined damage gets +3
+      const target = enemies.find(e => e.instanceId === combat.selectedTargetId && !e.isDefeated)
+        || enemies.find(e => !e.isDefeated)
+      if (target) {
+        target.currentHealth = Math.max(0, target.currentHealth - 3)
+        if (target.currentHealth <= 0) target.isDefeated = true
+      }
+      break
+    }
+    case 'fortify': {
+      // Excess block → healing (resolved at end of enemy turn)
+      (combat as any)._fortifyActive = true
+      break
+    }
+    case 'bastion': {
+      // Block and reduction stack — already both applied, this is a confirmation
+      break
+    }
+    case 'bolster': {
+      // Block doubled
+      combat.block *= 2
+      break
+    }
+    case 'recycle': {
+      // Block → strain reduction (resolved at end of enemy turn)
+      (combat as any)._recycleActive = true
+      break
+    }
+    case 'thorns': {
+      // Damage reduction deals 2 back — handled in enemyDealDamage via damageReduction
+      (combat as any)._thornsActive = true
+      break
+    }
+    case 'empower': {
+      // Buff doubles on damage action — already in getActionValue logic
+      break
+    }
+    case 'exploit': {
+      // +50% to debuffed — mark for damage calc
+      break
+    }
+    case 'suppress': {
+      // AoE applies debuff — simplified: reduce all enemy damage by 2 for this turn
+      break
+    }
+    case 'barrage': {
+      // Hits doubled — fire AoE again
+      for (const enemy of enemies) {
+        if (enemy.isDefeated) continue
+        const val = getActionValue(combat, idxA) || getActionValue(combat, idxB)
+        enemy.currentHealth = Math.max(0, enemy.currentHealth - val)
+        if (enemy.currentHealth <= 0) enemy.isDefeated = true
+      }
+      break
+    }
+    case 'regenerate': {
+      // Heal over 2 turns — store remaining
+      const healVal = getActionValue(combat, idxA) || getActionValue(combat, idxB)
+      combat.mendHealRemaining += Math.floor(healVal / 2)
+      break
+    }
+    case 'transfuse': {
+      // Heal also reduces strain by 2
+      combat.strain = Math.max(0, combat.strain - 2)
+      break
+    }
+    case 'second-wind': {
+      // +3 base next turn — already handled in vent section
+      break
+    }
+    case 'mirror-strike': {
+      // Reflect +50% — boost reflectPct
+      combat.reflectPct = Math.floor(combat.reflectPct * 1.5)
+      break
+    }
+    case 'focused-aggro': {
+      // Counter on every hit — handled in enemy turn
+      (combat as any)._focusedAggroActive = true
+      break
+    }
+  }
+
+  return hp
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────
 
 export function getEnemyIntent(enemy: EnemyInstance): Intent | null {
   const def = ALL_ENEMIES[enemy.definitionId]
   if (!def) return null
   return def.intentPattern[enemy.intentIndex % def.intentPattern.length]
 }
+
+/** Re-export for compatibility */
+export { getSynergyForPair } from '../data/actions'

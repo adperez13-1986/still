@@ -303,6 +303,44 @@ export interface RunState {
   strain: number
   strainCombat: import('./strainCombat').StrainCombatState | null
   growth: { rewards: string[] }
+  // Unified action slots
+  slotLayout: SlotLayout
+  acquiredActions: string[] // action definition IDs found this run (for tracking pool)
+}
+
+// ─── Unified Action Slots ───────────────────────────────────────────────────
+
+export type ActionType = 'damage_single' | 'damage_all' | 'block' | 'heal' | 'reduce' | 'reflect' | 'recovery' | 'buff' | 'debuff' | 'convert' | 'utility'
+
+export interface ActionDefinition {
+  id: string
+  name: string
+  type: ActionType
+  baseValue: number
+  pushedValue: number
+  description: string
+  // Special fields
+  hits?: number // multi-hit
+  perHit?: boolean // value applies per hit (reduce)
+  persistent?: boolean // block persists (Barrier)
+  healOverTurns?: number // heal over N turns (Mend)
+  reflectPct?: number // reflect percentage (Redirect)
+  isVent?: boolean // special vent behavior
+  takeCost?: number // strain cost to acquire as growth reward
+}
+
+export interface SlotLayout {
+  slots: [string | null, string | null, string | null, string | null, string | null] // action IDs
+  // slots[0]+[1] = Pair A, slots[2]+[3] = Pair B, slots[4] = Solo
+}
+
+export type SynergyId = 'counter' | 'drain' | 'cleave' | 'focus' | 'thorns' | 'empower' | 'exploit' | 'fortify' | 'bastion' | 'bolster' | 'recycle' | 'suppress' | 'barrage' | 'regenerate' | 'transfuse' | 'second-wind' | 'mirror-strike' | 'focused-aggro'
+
+export interface SynergyEffect {
+  id: SynergyId
+  name: string
+  description: string
+  types: [ActionType, ActionType] // the type combo that triggers this
 }
 
 // ─── Part Archive ────────────────────────────────────────────────────────────
