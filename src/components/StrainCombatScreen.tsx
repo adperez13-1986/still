@@ -1,3 +1,5 @@
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useRunStore } from '../store/runStore'
 import { ALL_ENEMIES } from '../data/enemies'
 import { STRAIN_SLOTS, STRAIN_DECAY_BETWEEN_COMBATS, VENT_STRAIN_RECOVERY, OVEREXTEND_PENALTY, getEnemyIntent, projectedStrain, wouldForfeit, isVenting, isOverextending, getAvailableAbilities, getAvailableGrowthRewards, pickComfortReward } from '../game/strainCombat'
@@ -231,8 +233,41 @@ function CombatLog({ log }: { log: StrainCombatEvent[] }) {
 // ─── Main Screen ─────────────────────────────────────────────────────────
 
 export default function StrainCombatScreen() {
+  const navigate = useNavigate()
   const run = useRunStore()
+  const [runVictory, setRunVictory] = useState(false)
   const sc = run.strainCombat
+
+  // S3 victory screen
+  if (runVictory) {
+    return (
+      <div style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        justifyContent: 'center', height: '100vh', background: '#0d0d1a', color: '#fff',
+        padding: 24,
+      }}>
+        <div style={{ fontSize: 32, fontWeight: 300, marginBottom: 16, color: '#2ecc71' }}>
+          You made it.
+        </div>
+        <div style={{ fontSize: 14, color: '#888', marginBottom: 24 }}>
+          Strain: {run.strain} / 20
+        </div>
+        <button
+          onClick={() => {
+            useRunStore.getState().endRun()
+            navigate('/')
+          }}
+          style={{
+            padding: '12px 32px', background: '#2d3436', border: '1px solid #2ecc7144',
+            borderRadius: 6, color: '#2ecc71', fontSize: 16, cursor: 'pointer',
+          }}
+        >
+          Home
+        </button>
+      </div>
+    )
+  }
+
   if (!sc) return null
 
   const projected = projectedStrain(sc)
@@ -253,8 +288,13 @@ export default function StrainCombatScreen() {
       // Check if this was the boss — advance sector
       if (state.map) {
         const tile = state.map.grid[state.map.playerY][state.map.playerX]
-        if (tile?.type === 'Boss' && state.sector < 3) {
-          state.advanceSector()
+        if (tile?.type === 'Boss') {
+          if (state.sector < 3) {
+            state.advanceSector()
+          } else {
+            // S3 boss defeated — run complete!
+            setRunVictory(true)
+          }
         }
       }
     }
@@ -380,11 +420,8 @@ export default function StrainCombatScreen() {
         </div>
         <button
           onClick={() => {
-            useRunStore.setState((s) => ({
-              ...s,
-              strainCombat: null,
-              active: false,
-            }))
+            useRunStore.getState().endRun()
+            navigate('/')
           }}
           style={{
             padding: '12px 32px', background: '#2d3436', border: '1px solid #e74c3c44',
