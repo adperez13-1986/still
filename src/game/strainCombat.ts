@@ -77,15 +77,27 @@ export const GROWTH_TREE: GrowthReward[] = [
   { id: 'drain-strike',    label: 'Drain Strike',     description: 'Strike heals you for half damage dealt',     strainCost: 2, tier: 2, branch: 'repair',  requires: 'repair' },
   { id: 'brace-plus',      label: 'Brace+',           description: 'Brace reduces 5 instead of 3',              strainCost: 2, tier: 2, branch: 'brace',   requires: 'brace' },
   { id: 'reactive-shield', label: 'Reactive Shield',  description: 'Block persists between turns',               strainCost: 2, tier: 2, branch: 'brace',   requires: 'brace' },
+  { id: 'patience',        label: 'Patience',         description: 'Vent recovers 6 strain instead of 4',       strainCost: 2, tier: 2, branch: 'brace',   requires: 'brace' },
   { id: 'piercing-strike', label: 'Piercing Strike',  description: 'Strike ignores enemy block',                 strainCost: 3, tier: 2, branch: 'offense', requires: 'mastery-A' },
+  { id: 'heavy-strike',    label: 'Heavy Strike',     description: 'Push Strike deals +5 but costs +1 extra strain', strainCost: 3, tier: 2, branch: 'offense', requires: 'mastery-A' },
   { id: 'scatter-barrage', label: 'Scatter Barrage',  description: 'Barrage hits 3 random targets',              strainCost: 3, tier: 2, branch: 'offense', requires: 'mastery-C' },
+  { id: 'shockwave',       label: 'Shockwave',        description: 'Pushed Barrage removes 3 block from all enemies', strainCost: 3, tier: 2, branch: 'offense', requires: 'mastery-C' },
+  { id: 'reflect',         label: 'Reflect',          description: 'When you block damage, deal 2 back to attacker', strainCost: 3, tier: 2, branch: 'offense', requires: 'mastery-B' },
+  { id: 'absorb',          label: 'Absorb',           description: 'Blocking damage reduces strain by 1 (once/turn)', strainCost: 3, tier: 2, branch: 'offense', requires: 'mastery-B' },
   // Tier 3 — identity
   { id: 'desperate-repair', label: 'Desperate Repair', description: 'Strain 15+: Repair heals 8',               strainCost: 3, tier: 3, branch: 'repair',  requires: 'repair-plus' },
   { id: 'lifeline',         label: 'Lifeline',         description: 'Strain 12+: Vent also heals 4 HP',         strainCost: 3, tier: 3, branch: 'repair',  requires: 'drain-strike' },
+  { id: 'siphon',           label: 'Siphon',           description: 'Killing with Strike refunds 1 strain',     strainCost: 3, tier: 3, branch: 'repair',  requires: 'drain-strike' },
   { id: 'calm-brace',       label: 'Calm Brace',       description: 'Strain ≤8: Brace reduces 6',               strainCost: 3, tier: 3, branch: 'brace',   requires: 'brace-plus' },
   { id: 'fortify',          label: 'Fortify',          description: 'Unused block converts to HP healing',       strainCost: 3, tier: 3, branch: 'brace',   requires: 'reactive-shield' },
+  { id: 'bulwark',          label: 'Bulwark',          description: 'Persistent block grows +1 each turn',       strainCost: 3, tier: 3, branch: 'brace',   requires: 'reactive-shield' },
+  { id: 'second-wind',      label: 'Second Wind',      description: 'After Vent, next turn all base values +2', strainCost: 3, tier: 3, branch: 'brace',   requires: 'patience' },
   { id: 'executioner',      label: 'Executioner',      description: 'Bonus damage to enemies below 30% HP',      strainCost: 3, tier: 3, branch: 'offense', requires: 'piercing-strike' },
+  { id: 'momentum',         label: 'Momentum',         description: 'Killing with Strike: next push costs 0',    strainCost: 3, tier: 3, branch: 'offense', requires: 'heavy-strike' },
   { id: 'chain-reaction',   label: 'Chain Reaction',   description: 'Kill during Barrage triggers bonus Barrage', strainCost: 3, tier: 3, branch: 'offense', requires: 'scatter-barrage' },
+  { id: 'tremor',           label: 'Tremor',           description: 'Barrage hitting 3+ enemies deals +2 per enemy', strainCost: 3, tier: 3, branch: 'offense', requires: 'shockwave' },
+  { id: 'thorns-aura',      label: 'Thorns Aura',      description: 'Deal 3 damage to every enemy that attacks you', strainCost: 3, tier: 3, branch: 'offense', requires: 'reflect' },
+  { id: 'inner-peace',      label: 'Inner Peace',      description: 'Strain ≤10: Shield also heals 3 HP',        strainCost: 3, tier: 3, branch: 'offense', requires: 'absorb' },
 ]
 
 // ─── Comfort Rewards ──────────────────────────────────────────────────────
@@ -174,6 +186,9 @@ export interface StrainCombatState {
   combatLog: StrainCombatEvent[]
   /** Growth rewards acquired — copied at combat init, used for effect resolution */
   growthRewards: string[]
+  secondWindActive?: boolean // Second Wind: base values +2 this turn
+  momentumFreeNext?: boolean // Momentum: next push costs 0
+  absorbUsedThisTurn?: boolean // Absorb: strain reduction once per turn
 }
 
 // ─── Init ──────────────────────────────────────────────────────────────────
@@ -282,10 +297,17 @@ export function projectedStrainCost(state: StrainCombatState): number {
       if (ability.id === 'vent') return sum
       return sum + (state.activeAbilities.includes(ability.id) ? ability.strainCost : 0)
     }, 0)
-    return abilityCost - VENT_STRAIN_RECOVERY
+    const ventRecovery = state.growthRewards.includes('patience') ? 6 : VENT_STRAIN_RECOVERY
+    return abilityCost - ventRecovery
   }
   const pushCost = STRAIN_SLOTS.reduce((sum, slot) => {
-    return sum + (state.pushedSlots[slot.id] ? state.pushCosts[slot.id] : 0)
+    if (!state.pushedSlots[slot.id]) return sum
+    let cost = state.pushCosts[slot.id]
+    // Momentum: next push free (one-time)
+    if (state.momentumFreeNext && slot.id === 'A') cost = 0
+    // Heavy Strike: +1 extra strain on Strike push
+    if (slot.id === 'A' && state.growthRewards.includes('heavy-strike')) cost += 1
+    return sum + cost
   }, 0)
   const abilityCost = STRAIN_ABILITIES.reduce((sum, ability) => {
     return sum + (state.activeAbilities.includes(ability.id) ? ability.strainCost : 0)
@@ -352,6 +374,10 @@ export function executeStrainTurn(
         combat.combatLog.push({ type: 'ability', abilityId: 'vent', abilityLabel: 'Vent + Lifeline', heal: 4 })
       } else {
         combat.combatLog.push({ type: 'ability', abilityId: 'vent', abilityLabel: 'Vent' })
+      }
+      // Second Wind: next turn base values +2
+      if (gr.includes('second-wind')) {
+        combat.secondWindActive = true
       }
     }
   }
@@ -431,10 +457,14 @@ export function executeStrainTurn(
     for (const slot of STRAIN_SLOTS) {
       const pushed = combat.pushedSlots[slot.id]
       let value = pushed ? slot.pushedValue : slot.baseValue
+      // Second Wind: base values +2 (applies to both pushed and unpushed)
+      if (combat.secondWindActive) value += 2
       // Mastery bonuses — only when pushed
       if (pushed && slot.id === 'A' && gr.includes('mastery-A')) value += 3
       if (pushed && slot.id === 'B' && gr.includes('mastery-B')) value += 3
       if (pushed && slot.id === 'C' && gr.includes('mastery-C')) value += 2
+      // Heavy Strike: +5 damage when pushed (on top of mastery)
+      if (pushed && slot.id === 'A' && gr.includes('heavy-strike')) value += 5
 
       if (slot.type === 'damage_single') {
         const target = enemies.find(e => e.instanceId === combat.selectedTargetId && !e.isDefeated)
@@ -452,10 +482,23 @@ export function executeStrainTurn(
             hp = Math.min(hp + drainHeal, 70)
             combat.combatLog.push({ type: 'ability', abilityId: 'drain-strike', abilityLabel: 'Drain', heal: drainHeal })
           }
+          // Siphon: kill refunds 1 strain
+          if (gr.includes('siphon') && target.isDefeated) {
+            combat.strain = Math.max(0, combat.strain - 1)
+          }
+          // Momentum: kill grants free next push
+          if (gr.includes('momentum') && target.isDefeated) {
+            combat.momentumFreeNext = true
+          }
         }
       } else if (slot.type === 'block') {
         combat.block += value
         combat.combatLog.push({ type: 'slotFire', slotId: slot.id, slotLabel: slot.label, block: value })
+        // Inner Peace: at low strain, Shield also heals 3
+        if (gr.includes('inner-peace') && combat.strain <= 10) {
+          hp = Math.min(hp + 3, 70)
+          combat.combatLog.push({ type: 'ability', abilityId: 'inner-peace', abilityLabel: 'Inner Peace', heal: 3 })
+        }
       } else if (slot.type === 'damage_all') {
         if (hasScatter) {
           // Scatter Barrage: 3 hits on random alive enemies
@@ -469,6 +512,21 @@ export function executeStrainTurn(
           for (const enemy of enemies) {
             if (enemy.isDefeated) continue
             dealDamage(enemy, value, false, slot.id, slot.label)
+          }
+        }
+        // Shockwave: pushed Barrage removes 3 block from all enemies
+        if (pushed && gr.includes('shockwave')) {
+          for (const enemy of enemies) {
+            if (!enemy.isDefeated) enemy.block = Math.max(0, enemy.block - 3)
+          }
+        }
+        // Tremor: +2 damage per enemy if 3+ alive
+        if (gr.includes('tremor')) {
+          const aliveForTremor = enemies.filter(e => !e.isDefeated)
+          if (aliveForTremor.length >= 3) {
+            for (const enemy of aliveForTremor) {
+              dealDamage(enemy, 2, false, slot.id, 'Tremor')
+            }
           }
         }
         // Chain Reaction: if any enemy was killed during this Barrage, fire bonus Barrage
@@ -514,6 +572,21 @@ export function executeStrainTurn(
       blocked,
       reduced: reduced > 0 ? reduced : undefined,
     })
+    // Reflect: deal 2 back to attacker when you block any damage
+    if (blocked > 0 && gr.includes('reflect')) {
+      enemy.currentHealth = Math.max(0, enemy.currentHealth - 2)
+      if (enemy.currentHealth <= 0) enemy.isDefeated = true
+    }
+    // Absorb: blocking reduces strain by 1 (once per turn)
+    if (blocked > 0 && gr.includes('absorb') && !combat.absorbUsedThisTurn) {
+      combat.strain = Math.max(0, combat.strain - 1)
+      combat.absorbUsedThisTurn = true
+    }
+    // Thorns Aura: deal 3 to every enemy that attacks
+    if (actual >= 0 && gr.includes('thorns-aura')) {
+      enemy.currentHealth = Math.max(0, enemy.currentHealth - 3)
+      if (enemy.currentHealth <= 0) enemy.isDefeated = true
+    }
   }
 
   for (const enemy of combat.enemies) {
@@ -680,6 +753,9 @@ export function executeStrainTurn(
   // Reactive Shield block persists — it was gained after enemy attacks
   if (!hasReactiveShield) {
     combat.block = 0 // player block resets
+  } else if (gr.includes('bulwark') && combat.block > 0) {
+    // Bulwark: persistent block grows +1 each turn
+    combat.block += 1
   }
   for (const enemy of combat.enemies) {
     if (!enemy.isDefeated) enemy.block = 0 // enemy block resets
@@ -687,6 +763,11 @@ export function executeStrainTurn(
   combat.damageReduction = 0 // brace resets
   combat.pushedSlots = { A: false, B: false, C: false }
   combat.activeAbilities = [] // abilities reset
+  combat.absorbUsedThisTurn = false // absorb resets
+  // Second Wind consumed — it lasted one turn
+  if (combat.secondWindActive && !venting) combat.secondWindActive = false
+  // Momentum consumed on next push
+  if (combat.momentumFreeNext && !venting) combat.momentumFreeNext = false
   // Auto-retarget if current target is dead
   const currentTarget = combat.enemies.find(e => e.instanceId === combat.selectedTargetId && !e.isDefeated)
   if (!currentTarget) {
