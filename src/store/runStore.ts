@@ -29,11 +29,12 @@ import {
 import { ALL_CARDS } from '../data/cards'
 import {
   initStrainCombat,
-  togglePush,
-  toggleAbility,
+  toggleSlotPush as toggleSlotPushFn,
+  toggleVent as toggleVentFn,
   selectTarget,
   executeStrainTurn as execStrainTurn,
 } from '../game/strainCombat'
+import { STARTING_SLOT_LAYOUT } from '../data/actions'
 import { ALL_ENEMIES } from '../data/enemies'
 import { generateGridMaze } from '../game/mapGen'
 import { saveRunState, loadRunState, clearRunState } from '../game/persistence'
@@ -90,14 +91,15 @@ interface RunActions {
   // Companions
   acquireCompanion: (id: string) => void
 
-  // Strain prototype
+  // Strain combat — unified action slots
   startStrainCombat: (enemies: EnemyInstance[]) => void
-  toggleStrainPush: (slotId: 'A' | 'B' | 'C') => void
-  toggleStrainAbility: (abilityId: string) => void
+  toggleSlotPush: (index: number) => void
+  toggleVent: () => void
   selectStrainTarget: (enemyInstanceId: string) => void
   executeStrainTurn: () => void
-  applyGrowthReward: (rewardId: string, strainCost: number) => void
+  applyGrowthAction: (actionId: string, slotIndex: number, strainCost: number) => void
   applyComfortReward: (rewardId: string) => void
+  swapSlots: (from: number, to: number) => void
 
   // Persistence
   saveRun: () => void
@@ -122,10 +124,12 @@ const emptyRunState: RunState = {
   combatsCleared: 0,
   lastCollapseMessage: null,
   carriedPartSector: null,
-  // Strain prototype
+  // Strain combat — unified action slots
   strain: 2,
   strainCombat: null,
   growth: { rewards: [] },
+  slotLayout: { slots: [...STARTING_SLOT_LAYOUT] },
+  acquiredActions: [],
 }
 
 /** Filter out inert carried parts (S2 part in S1) */
@@ -499,22 +503,22 @@ export const useRunStore = create<RunState & RunActions>()(
         }
       }),
 
-    // ─── Strain Prototype ───────────────────────────────────────────────────
+    // ─── Strain Combat — Unified Action Slots ─────────────────────────────
     startStrainCombat: (enemies) =>
       set((state) => {
-        state.strainCombat = initStrainCombat(enemies, state.strain, state.growth)
+        state.strainCombat = initStrainCombat(enemies, state.strain, state.slotLayout)
       }),
 
-    toggleStrainPush: (slotId) =>
+    toggleSlotPush: (index) =>
       set((state) => {
         if (!state.strainCombat || state.strainCombat.phase !== 'planning') return
-        state.strainCombat = togglePush(state.strainCombat, slotId)
+        state.strainCombat = toggleSlotPushFn(state.strainCombat, index)
       }),
 
-    toggleStrainAbility: (abilityId) =>
+    toggleVent: () =>
       set((state) => {
         if (!state.strainCombat || state.strainCombat.phase !== 'planning') return
-        state.strainCombat = toggleAbility(state.strainCombat, abilityId)
+        state.strainCombat = toggleVentFn(state.strainCombat)
       }),
 
     selectStrainTarget: (enemyInstanceId) =>
@@ -530,14 +534,14 @@ export const useRunStore = create<RunState & RunActions>()(
         state.strainCombat = result.combat
         state.health = result.health
         state.strain = result.combat.strain
-        // If combat ended (reward/forfeit/finished), clear strainCombat after UI handles it
       }),
 
-    applyGrowthReward: (rewardId, strainCost) =>
+    applyGrowthAction: (actionId, slotIndex, strainCost) =>
       set((state) => {
         state.strain = Math.min(state.strain + strainCost, 20)
-        if (!state.growth.rewards.includes(rewardId)) {
-          state.growth.rewards.push(rewardId)
+        state.slotLayout.slots[slotIndex] = actionId
+        if (!state.acquiredActions.includes(actionId)) {
+          state.acquiredActions.push(actionId)
         }
       }),
 
@@ -550,6 +554,13 @@ export const useRunStore = create<RunState & RunActions>()(
         } else if (rewardId === 'companion') {
           state.strain = Math.max(0, state.strain - 2)
         }
+      }),
+
+    swapSlots: (from, to) =>
+      set((state) => {
+        const temp = state.slotLayout.slots[from]
+        state.slotLayout.slots[from] = state.slotLayout.slots[to]
+        state.slotLayout.slots[to] = temp
       }),
 
     saveRun: () => {
@@ -577,6 +588,8 @@ export const useRunStore = create<RunState & RunActions>()(
         strain: state.strain,
         strainCombat: null,
         growth: state.growth,
+        slotLayout: state.slotLayout,
+        acquiredActions: state.acquiredActions,
       }
       saveRunState(toSave)
     },
@@ -586,7 +599,7 @@ export const useRunStore = create<RunState & RunActions>()(
         const saved = loadRunState<RunState>()
         if (!saved || !saved.active || !saved.map) return false
         // Legacy saves without carriedPartSector — discard so a fresh run starts with gating
-        if (saved.carriedPartSector === undefined) {
+        if (saved.carriedPartSector === undefined || !saved.slotLayout) {
           clearRunState()
           return false
         }

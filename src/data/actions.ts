@@ -1,4 +1,4 @@
-import type { ActionDefinition, ActionType, SynergyEffect, SynergyId } from '../game/types'
+import type { ActionDefinition, ActionType, SynergyEffect } from '../game/types'
 
 // ─── Starting Actions ────────────────────────────────────────────────────────
 

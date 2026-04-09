@@ -10,7 +10,6 @@
  *   --enemies PRESET  Enemy preset: reactive, s1, or comma-separated IDs
  *   --health N        Starting HP (default: 70)
  *   --strain N        Starting strain (default: 2)
- *   --growth IDS      Comma-separated growth reward IDs (default: none)
  *   --verbose         Print each combat result
  */
 
@@ -21,8 +20,8 @@ import {
   SECTOR1_REACTIVE_ENCOUNTERS,
   SECTOR1_ENCOUNTERS,
 } from '../data/enemies'
-import { GROWTH_TREE, type GrowthState } from '../game/strainCombat'
-import type { EnemyDefinition } from '../game/types'
+import { STARTING_SLOT_LAYOUT } from '../data/actions'
+import type { EnemyDefinition, SlotLayout } from '../game/types'
 
 function parseArgs(argv: string[]) {
   const args = argv.slice(2)
@@ -65,25 +64,12 @@ function resolveEncounters(preset: string): EnemyDefinition[][] {
       })
     )
   }
-  // Comma-separated enemy IDs
   const ids = preset.split(',')
   return [ids.map(id => {
     const def = ALL_ENEMIES[id.trim()]
     if (!def) throw new Error(`Unknown enemy: ${id.trim()}`)
     return def
   })]
-}
-
-function resolveGrowth(spec: string | undefined): GrowthState {
-  if (!spec) return { rewards: [] }
-  const ids = spec.split(',').map(s => s.trim())
-  // Validate
-  for (const id of ids) {
-    if (!GROWTH_TREE.find(r => r.id === id) && !['vent'].includes(id)) {
-      throw new Error(`Unknown growth reward: ${id}. Available: ${GROWTH_TREE.map(r => r.id).join(', ')}`)
-    }
-  }
-  return { rewards: ids }
 }
 
 function encounterLabel(defs: EnemyDefinition[]): string {
@@ -108,24 +94,25 @@ function main() {
   const strain = parseInt(opts['strain'] ?? '2', 10)
   const verbose = 'verbose' in opts
   const enemyPreset = opts['enemies'] ?? 'reactive'
-  const growth = resolveGrowth(opts['growth'])
   const combatsCleared = parseInt(opts['combats-cleared'] ?? '0', 10)
 
   const encounterGroups = resolveEncounters(enemyPreset)
+
+  const slotLayout: SlotLayout = { slots: [...STARTING_SLOT_LAYOUT] }
 
   const loadout: StrainSimLoadout = {
     health,
     maxHealth: health,
     strain,
-    growth,
+    slotLayout,
     combatsCleared,
   }
 
   console.log(`\nStrain Combat Simulator`)
-  console.log(`${'═'.repeat(50)}`)
+  console.log(`${'='.repeat(50)}`)
   console.log(`  Runs: ${runs}  Seed: ${seed}`)
   console.log(`  HP: ${health}  Strain: ${strain}/20`)
-  console.log(`  Growth: ${growth.rewards.length > 0 ? growth.rewards.join(', ') : '(none)'}`)
+  console.log(`  Slots: ${slotLayout.slots.filter(Boolean).join(', ')}`)
   console.log(`  Enemies: ${enemyPreset} (${encounterGroups.length} encounter types)`)
   console.log()
 
@@ -148,7 +135,6 @@ function main() {
 
   const elapsed = Date.now() - t0
 
-  // Aggregate
   const wins = results.filter(r => r.outcome === 'win')
   const losses = results.filter(r => r.outcome === 'loss')
   const forfeits = results.filter(r => r.outcome === 'forfeit')
@@ -158,14 +144,13 @@ function main() {
   const avgHpLeft = wins.length > 0 ? wins.reduce((s, r) => s + r.hpRemaining, 0) / wins.length : 0
   const avgStrainEnd = results.reduce((s, r) => s + r.strainEnd, 0) / results.length
 
-  console.log(`${'═'.repeat(50)}`)
+  console.log(`${'='.repeat(50)}`)
   console.log(`  Win Rate:     ${(winRate * 100).toFixed(1)}%  (${wins.length}W / ${losses.length}L / ${forfeits.length}F)`)
   console.log(`  Avg Turns:    ${avgTurns.toFixed(1)}`)
   console.log(`  Avg HP Left:  ${avgHpLeft.toFixed(1)} (on wins)`)
   console.log(`  Avg Strain:   ${avgStrainEnd.toFixed(1)} (at combat end)`)
   console.log()
 
-  // Per-encounter breakdown
   const byEncounter = new Map<string, StrainSimResult[]>()
   for (const r of results) {
     const arr = byEncounter.get(r.encounter) ?? []

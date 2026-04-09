@@ -7,10 +7,9 @@
  * Strain accumulates permanently — the core tension.
  */
 
-import type { EnemyInstance, Intent, IntentType, SlotLayout, ActionType, SynergyId } from './types'
+import type { EnemyInstance, Intent, IntentType, SlotLayout, SynergyId, SynergyEffect } from './types'
 import { ALL_ENEMIES } from '../data/enemies'
 import { ALL_ACTIONS, getSynergyForPair } from '../data/actions'
-import type { SynergyEffect } from '../data/actions'
 
 // ─── Constants ────────────────────────────────────────────────────────────
 

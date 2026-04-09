@@ -1,31 +1,22 @@
 /**
  * Strain Combat Heuristic AI
  *
- * Decides which slots to push, which abilities to use, which enemy to target,
- * and when to vent. Simple but non-trivial — avoids "push everything always."
+ * Updated for unified action slot system (5 slots, 2 pairs + 1 solo).
+ * Decides which slots to push, whether to vent, and which enemy to target.
  */
 
 import type { EnemyInstance } from '../game/types'
 import {
-  STRAIN_SLOTS,
-  STRAIN_ABILITIES,
-  DEFAULT_ABILITIES,
-  OVEREXTEND_PENALTY,
   getEnemyIntent,
   type StrainCombatState,
-  type GrowthState,
 } from '../game/strainCombat'
+import { ALL_ACTIONS } from '../data/actions'
 import { ALL_ENEMIES } from '../data/enemies'
 
 export interface StrainDecision {
-  pushedSlots: Record<'A' | 'B' | 'C', boolean>
-  activeAbilities: string[]
+  pushedSlots: [boolean, boolean, boolean, boolean, boolean]
+  vent: boolean
   targetEnemyId: string | null
-}
-
-/** Get available ability IDs based on growth */
-function availableAbilityIds(growth: GrowthState): string[] {
-  return [...DEFAULT_ABILITIES, ...growth.rewards.filter(id => id === 'repair' || id === 'brace')]
 }
 
 /** Estimate incoming damage this turn */
@@ -38,9 +29,9 @@ function estimateThreat(enemies: EnemyInstance[]): number {
     if (intent.type === 'Attack' || intent.type === 'AttackDebuff') {
       total += intent.value * (intent.hits || 1)
     } else if (intent.type === 'Retaliate') {
-      total += (intent.valuePerPush ?? intent.value) * 2 // assume 2 pushes
+      total += (intent.valuePerPush ?? intent.value) * 2
     } else if (intent.type === 'StrainScale') {
-      total += intent.value + 2 // rough estimate
+      total += intent.value + 2
     } else if (intent.type === 'BerserkerAttack') {
       const hpPct = enemy.currentHealth / enemy.maxHealth
       const mult = hpPct > 0.5 ? 1 : hpPct > 0.25 ? 2 : 3
@@ -60,150 +51,99 @@ function estimateThreat(enemies: EnemyInstance[]): number {
   return total
 }
 
-/** Pick best target — lowest HP enemy that's alive, prioritizing threats */
+/** Pick best target */
 function pickTarget(enemies: EnemyInstance[]): string | null {
   const alive = enemies.filter(e => !e.isDefeated)
   if (alive.length === 0) return null
-
-  // Priority: Strain Parasite (strain ticking) > Shield Generator > lowest HP
   const parasite = alive.find(e => {
     const def = ALL_ENEMIES[e.definitionId]
     return def?.intentPattern.some(i => i.type === 'StrainTick')
   })
   if (parasite) return parasite.instanceId
-
   const pylon = alive.find(e => {
     const def = ALL_ENEMIES[e.definitionId]
     return def?.intentPattern.some(i => i.type === 'ShieldAllies')
   })
   if (pylon) return pylon.instanceId
-
-  // Lowest HP
   alive.sort((a, b) => a.currentHealth - b.currentHealth)
   return alive[0].instanceId
 }
 
-/** Count how many retaliators are alive */
-function countRetaliators(enemies: EnemyInstance[]): number {
-  return enemies.filter(e => {
-    if (e.isDefeated) return false
-    const intent = getEnemyIntent(e)
-    return intent?.type === 'Retaliate'
-  }).length
-}
-
-/** Main heuristic: decide pushes, abilities, target */
+/** Main heuristic: decide pushes, vent, target */
 export function planStrainTurn(
   combat: StrainCombatState,
-  health: number,
-  maxHealth: number,
-  growth: GrowthState,
+  _health: number,
+  _maxHealth: number,
 ): StrainDecision {
   const strain = combat.strain
   const maxStrain = combat.maxStrain
   const threat = estimateThreat(combat.enemies)
-  const abilities = availableAbilityIds(growth)
-  const hasRepair = abilities.includes('repair')
-  const hasBrace = abilities.includes('brace')
-  const hasVent = abilities.includes('vent')
 
-  const retaliators = countRetaliators(combat.enemies)
-
-  // Start with no pushes, no abilities
   const decision: StrainDecision = {
-    pushedSlots: { A: false, B: false, C: false },
-    activeAbilities: [],
+    pushedSlots: [false, false, false, false, false],
+    vent: false,
     targetEnemyId: pickTarget(combat.enemies),
   }
 
-  // Vent if strain is high (>= 14) and threat is low
-  if (hasVent && strain >= 14 && threat <= 8) {
-    decision.activeAbilities.push('vent')
+  // Vent if strain is high and threat is low
+  if (strain >= 14 && threat <= 8) {
+    decision.vent = true
+    return decision
+  }
+  if (strain >= 17) {
+    decision.vent = true
     return decision
   }
 
-  // Vent if strain is very high (>= 17) regardless
-  if (hasVent && strain >= 17) {
-    decision.activeAbilities.push('vent')
-    // Still use Repair if available and HP is low
-    if (hasRepair && health < maxHealth * 0.4) {
-      decision.activeAbilities.push('repair')
+  // Budget: leave 3 buffer before forfeit
+  const strainBudget = maxStrain - strain - 3
+
+  // Evaluate each slot
+  for (let i = 0; i < 5; i++) {
+    const actionId = combat.slotActions[i]
+    if (!actionId) continue
+    const action = ALL_ACTIONS[actionId]
+    if (!action || action.isVent) continue
+
+    const isDefensive = action.type === 'block' || action.type === 'reduce' || action.type === 'heal'
+    const isOffensive = action.type === 'damage_single' || action.type === 'damage_all'
+
+    // Push offensive slots if budget allows
+    if (isOffensive && strainBudget >= 1) {
+      decision.pushedSlots[i] = true
     }
-    return decision
-  }
-
-  // Push decisions based on strain budget
-  const strainBudget = maxStrain - strain - 3 // leave buffer of 3 before forfeit
-
-  // Push Strike if we can afford it and no retaliator penalty outweighs it
-  if (combat.pushCosts.A <= strainBudget && retaliators === 0) {
-    decision.pushedSlots.A = true
-  } else if (combat.pushCosts.A === 0) {
-    decision.pushedSlots.A = true // free push always
-  }
-
-  // Push Shield if enemy is attacking
-  if (threat > 5 && combat.pushCosts.B <= strainBudget) {
-    decision.pushedSlots.B = true
-  } else if (combat.pushCosts.B === 0) {
-    decision.pushedSlots.B = true
-  }
-
-  // Push Barrage if multiple enemies alive
-  const aliveCount = combat.enemies.filter(e => !e.isDefeated).length
-  if (aliveCount > 1 && combat.pushCosts.C <= strainBudget) {
-    decision.pushedSlots.C = true
-  } else if (combat.pushCosts.C === 0) {
-    decision.pushedSlots.C = true
-  }
-
-  // Use Brace if threat is high
-  if (hasBrace && threat > 12 && strain + 1 < maxStrain - 2) {
-    decision.activeAbilities.push('brace')
-  }
-
-  // Use Repair if HP is low
-  if (hasRepair && health < maxHealth * 0.5 && strain + 1 < maxStrain - 2) {
-    decision.activeAbilities.push('repair')
-  }
-
-  // Check overextension: if all actions are active, drop the least valuable one
-  const totalActions = Object.values(decision.pushedSlots).filter(Boolean).length
-    + decision.activeAbilities.filter(id => id !== 'vent').length
-  const totalAvailable = STRAIN_SLOTS.length
-    + STRAIN_ABILITIES.filter(a => a.id !== 'vent' && abilities.includes(a.id)).length
-
-  if (totalAvailable >= 4 && totalActions >= totalAvailable) {
-    // Drop lowest value push to avoid overextension penalty
-    if (aliveCount <= 1 && decision.pushedSlots.C) {
-      decision.pushedSlots.C = false // don't push AoE against single enemy
-    } else if (threat <= 5 && decision.pushedSlots.B) {
-      decision.pushedSlots.B = false // skip shield if low threat
-    } else if (decision.pushedSlots.A && retaliators > 0) {
-      decision.pushedSlots.A = false // skip strike against retaliator
+    // Push defensive slots if threat is significant
+    if (isDefensive && threat > 5 && strainBudget >= 1) {
+      decision.pushedSlots[i] = true
+    }
+    // Push utility/buff/debuff if budget allows
+    if (!isOffensive && !isDefensive && strainBudget >= 1) {
+      decision.pushedSlots[i] = true
     }
   }
 
-  // Final safety: don't forfeit
+  // Check total cost won't forfeit
   let totalCost = 0
-  for (const slot of STRAIN_SLOTS) {
-    if (decision.pushedSlots[slot.id]) totalCost += combat.pushCosts[slot.id]
+  for (let i = 0; i < 5; i++) {
+    if (decision.pushedSlots[i] && combat.slotActions[i]) totalCost += 1
   }
-  for (const abilityId of decision.activeAbilities) {
-    const ability = STRAIN_ABILITIES.find(a => a.id === abilityId)
-    if (ability && ability.id !== 'vent') totalCost += ability.strainCost
-  }
-  // Check overextension
-  const finalActions = Object.values(decision.pushedSlots).filter(Boolean).length
-    + decision.activeAbilities.filter(id => id !== 'vent').length
-  if (totalAvailable >= 4 && finalActions >= totalAvailable) {
-    totalCost += OVEREXTEND_PENALTY
-  }
+  // Link tax
+  if (decision.pushedSlots[0] && decision.pushedSlots[1] && combat.pairASynergy) totalCost += 1
+  if (decision.pushedSlots[2] && decision.pushedSlots[3] && combat.pairBSynergy) totalCost += 1
 
   if (strain + totalCost >= maxStrain) {
-    // Too expensive — scale back to just free pushes
-    decision.pushedSlots = { A: combat.pushCosts.A === 0, B: combat.pushCosts.B === 0, C: combat.pushCosts.C === 0 }
-    decision.activeAbilities = []
+    // Scale back: only push most important slots
+    decision.pushedSlots = [false, false, false, false, false]
+    // Push one offensive slot
+    for (let i = 0; i < 5; i++) {
+      const actionId = combat.slotActions[i]
+      if (!actionId) continue
+      const action = ALL_ACTIONS[actionId]
+      if (action && (action.type === 'damage_single' || action.type === 'damage_all') && !action.isVent) {
+        decision.pushedSlots[i] = true
+        break
+      }
+    }
   }
 
   return decision

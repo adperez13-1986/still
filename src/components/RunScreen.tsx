@@ -12,6 +12,7 @@ import ShopScreen from './ShopScreen'
 import EventScreen from './EventScreen'
 import CardPicker from './CardPicker'
 import RunInfoOverlay from './RunInfoOverlay'
+import SlotRearrangement from './SlotRearrangement'
 import { generateGridMaze, findPath } from '../game/mapGen'
 import { makeEnemyInstance, makeCardInstance } from '../game/combat'
 import {
@@ -23,6 +24,7 @@ import {
 import { STARTING_CARDS, SECTOR1_CARD_POOL, SECTOR2_CARD_POOL } from '../data/cards'
 import { rollWeightedCards } from '../game/drops'
 import { ALL_PARTS, ALL_EQUIPMENT, STARTING_HEAD, STARTING_TORSO, STARTING_ARMS, STARTING_LEGS } from '../data/parts'
+import { STARTING_SLOT_LAYOUT } from '../data/actions'
 
 function pickEnemiesForRoom(room: GridRoom, sector: number, _combatsCleared: number) {
   if (room.type === 'Boss') {
@@ -63,6 +65,7 @@ export default function RunScreen() {
   const location = useLocation()
   const [roomDone, setRoomDone] = useState(false)
   const [infoTab, setInfoTab] = useState<'deck' | 'equips' | null>(null)
+  const [showSlots, setShowSlots] = useState(false)
   const [eventCardRemoval, setEventCardRemoval] = useState<number | null>(null)
   const [autoPath, setAutoPath] = useState<[number, number][] | null>(null)
   const walkingRef = useRef(false)
@@ -141,6 +144,8 @@ export default function RunScreen() {
         strain: 2,
         strainCombat: null,
         growth: { rewards: [] },
+        slotLayout: { slots: [...STARTING_SLOT_LAYOUT] },
+        acquiredActions: [],
       })
       run.saveRun()
       return
@@ -196,6 +201,8 @@ export default function RunScreen() {
       strain: 2,
       strainCombat: null,
       growth: { rewards: [] },
+      slotLayout: { slots: [...STARTING_SLOT_LAYOUT] },
+      acquiredActions: [],
     })
     run.saveRun()
   }, [])
@@ -359,6 +366,21 @@ export default function RunScreen() {
         >
           Equips
         </button>
+        <button
+          onClick={() => setShowSlots(true)}
+          style={{
+            padding: '8px 16px',
+            backgroundColor: '#16213e',
+            border: '1px solid #e67e22',
+            borderRadius: '6px',
+            color: '#e67e22',
+            fontSize: '12px',
+            cursor: 'pointer',
+            letterSpacing: '1px',
+          }}
+        >
+          Slots
+        </button>
       </div>
       {infoTab && (
         <RunInfoOverlay
@@ -369,6 +391,9 @@ export default function RunScreen() {
           onClose={() => setInfoTab(null)}
           onTabChange={setInfoTab}
         />
+      )}
+      {showSlots && (
+        <SlotRearrangement onClose={() => setShowSlots(false)} />
       )}
     </>
   )
