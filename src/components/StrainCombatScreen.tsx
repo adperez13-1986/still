@@ -85,41 +85,75 @@ interface ReplayStep {
   activeSlot?: number       // which slot glows
   flashEnemy?: string       // which enemy flashes
   flashPlayer?: boolean     // player card flashes
+  eventIndex: number        // index into original combatLog
+}
+
+interface PreExecState {
+  health: number
+  maxHealth: number
+  block: number
+  strain: number
+  enemyHp: Record<string, number>
+}
+
+function computeDisplayState(pre: PreExecState, log: StrainCombatEvent[], upToEvent: number) {
+  let health = pre.health
+  let block = pre.block
+  const enemyHp: Record<string, number> = { ...pre.enemyHp }
+
+  for (let i = 0; i <= upToEvent && i < log.length; i++) {
+    const e = log[i]
+    if (e.type === 'slotFire') {
+      if (e.damage != null && e.enemyId) enemyHp[e.enemyId] = Math.max(0, (enemyHp[e.enemyId] ?? 0) - e.damage)
+      if (e.block != null) block += e.block
+      if (e.heal != null) health = Math.min(health + e.heal, pre.maxHealth)
+    }
+    if (e.type === 'synergy') {
+      if (e.damage != null && e.enemyId) enemyHp[e.enemyId] = Math.max(0, (enemyHp[e.enemyId] ?? 0) - e.damage)
+      if (e.heal != null) health = Math.min(health + e.heal, pre.maxHealth)
+    }
+    if (e.type === 'enemyAction') {
+      if (e.damage != null) health -= e.damage
+      if (e.blocked) block = Math.max(0, block - e.blocked)
+    }
+  }
+  return { health: Math.max(0, health), block, enemyHp }
 }
 
 const REPLAY_STEP_MS = 500
 
 function buildReplaySteps(log: StrainCombatEvent[]): ReplayStep[] {
   const steps: ReplayStep[] = []
-  for (const event of log) {
+  for (let idx = 0; idx < log.length; idx++) {
+    const event = log[idx]
     if (event.type === 'slotFire') {
       if (event.damage != null) {
-        steps.push({ text: `-${event.damage}`, color: '#e74c3c', target: event.enemyId ?? 'player', activeSlot: event.slotIndex, flashEnemy: event.enemyId ?? undefined })
+        steps.push({ text: `-${event.damage}`, color: '#e74c3c', target: event.enemyId ?? 'player', activeSlot: event.slotIndex, flashEnemy: event.enemyId ?? undefined, eventIndex: idx })
       }
       if (event.block != null) {
-        steps.push({ text: `+${event.block}`, color: '#3498db', target: 'player', activeSlot: event.slotIndex, flashPlayer: true })
+        steps.push({ text: `+${event.block}`, color: '#3498db', target: 'player', activeSlot: event.slotIndex, flashPlayer: true, eventIndex: idx })
       }
       if (event.heal != null) {
-        steps.push({ text: `+${event.heal}`, color: '#2ecc71', target: 'player', activeSlot: event.slotIndex, flashPlayer: true })
+        steps.push({ text: `+${event.heal}`, color: '#2ecc71', target: 'player', activeSlot: event.slotIndex, flashPlayer: true, eventIndex: idx })
       }
       if (event.strainChange != null) {
-        steps.push({ text: `${event.strainChange > 0 ? '+' : ''}${event.strainChange}`, color: event.strainChange < 0 ? '#2ecc71' : '#e67e22', target: 'player', activeSlot: event.slotIndex, flashPlayer: true })
+        steps.push({ text: `${event.strainChange > 0 ? '+' : ''}${event.strainChange}`, color: event.strainChange < 0 ? '#2ecc71' : '#e67e22', target: 'player', activeSlot: event.slotIndex, flashPlayer: true, eventIndex: idx })
       }
     }
     if (event.type === 'synergy') {
       if (event.damage != null) {
-        steps.push({ text: `-${event.damage}`, color: '#f39c12', target: event.enemyId ?? 'player', flashEnemy: event.enemyId ?? undefined })
+        steps.push({ text: `-${event.damage}`, color: '#f39c12', target: event.enemyId ?? 'player', flashEnemy: event.enemyId ?? undefined, eventIndex: idx })
       } else if (event.heal != null) {
-        steps.push({ text: `+${event.heal}`, color: '#2ecc71', target: 'player', flashPlayer: true })
+        steps.push({ text: `+${event.heal}`, color: '#2ecc71', target: 'player', flashPlayer: true, eventIndex: idx })
       } else if (event.strainChange != null && event.strainChange < 0) {
-        steps.push({ text: `${event.strainChange}`, color: '#2ecc71', target: 'player', flashPlayer: true })
+        steps.push({ text: `${event.strainChange}`, color: '#2ecc71', target: 'player', flashPlayer: true, eventIndex: idx })
       }
     }
     if (event.type === 'enemyAction') {
       if (event.damage != null && event.damage > 0) {
-        steps.push({ text: `-${event.damage}`, color: '#ff6b6b', target: 'player', flashEnemy: event.enemyId ?? undefined, flashPlayer: true })
+        steps.push({ text: `-${event.damage}`, color: '#ff6b6b', target: 'player', flashEnemy: event.enemyId ?? undefined, flashPlayer: true, eventIndex: idx })
       } else if (event.damage === 0 && event.blocked) {
-        steps.push({ text: 'BLOCKED', color: '#3498db', target: 'player', flashPlayer: true })
+        steps.push({ text: 'BLOCKED', color: '#3498db', target: 'player', flashPlayer: true, eventIndex: idx })
       }
     }
   }
@@ -178,10 +212,13 @@ function StrainMeter({ current, projected, max }: { current: number; projected: 
 
 // ─── Player Card ─────────────────────────────────────────────────────────
 
-function PlayerCard({ health, maxHealth, block, flashColor, activeFloat }: {
+function PlayerCard({ health, maxHealth, block, flashColor, activeFloat, displayHealth, displayBlock }: {
   health: number; maxHealth: number; block: number; flashColor: string | null; activeFloat: { text: string; color: string } | null
+  displayHealth?: number; displayBlock?: number
 }) {
-  const hpPct = (health / maxHealth) * 100
+  const hp = displayHealth ?? health
+  const blk = displayBlock ?? block
+  const hpPct = (hp / maxHealth) * 100
   return (
     <div style={{
       background: '#1a1a2e',
@@ -195,8 +232,8 @@ function PlayerCard({ health, maxHealth, block, flashColor, activeFloat }: {
         <div style={{ height: '100%', width: `${hpPct}%`, background: health > maxHealth * 0.4 ? '#2ecc71' : '#e74c3c', transition: 'width 0.3s' }} />
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#aaa' }}>
-        <span>{health} / {maxHealth} HP</span>
-        {block > 0 && <span style={{ color: '#3498db' }}>{'\uD83D\uDEE1\uFE0F'} {block}</span>}
+        <span>{hp} / {maxHealth} HP</span>
+        {blk > 0 && <span style={{ color: '#3498db' }}>{'\uD83D\uDEE1\uFE0F'} {blk}</span>}
       </div>
       {activeFloat && <FloatNumber key={Date.now()} text={activeFloat.text} color={activeFloat.color} />}
     </div>
@@ -205,14 +242,16 @@ function PlayerCard({ health, maxHealth, block, flashColor, activeFloat }: {
 
 // ─── Enemy Card ──────────────────────────────────────────────────────────
 
-function EnemyCard({ enemy, selected, onClick, flashColor, activeFloat }: {
+function EnemyCard({ enemy, selected, onClick, flashColor, activeFloat, displayHealth }: {
   enemy: EnemyInstance; selected?: boolean; onClick?: () => void; flashColor: string | null; activeFloat: { text: string; color: string } | null
+  displayHealth?: number
 }) {
   const def = ALL_ENEMIES[enemy.definitionId]
   if (!def || enemy.isDefeated) return null
 
   const intent = getEnemyIntent(enemy)
-  const hpPct = (enemy.currentHealth / enemy.maxHealth) * 100
+  const hp = displayHealth ?? enemy.currentHealth
+  const hpPct = (hp / enemy.maxHealth) * 100
 
   return (
     <div
@@ -229,7 +268,7 @@ function EnemyCard({ enemy, selected, onClick, flashColor, activeFloat }: {
         <div style={{ height: '100%', width: `${hpPct}%`, background: '#e74c3c', transition: 'width 0.3s' }} />
       </div>
       <div style={{ fontSize: 11, color: '#aaa', marginBottom: 4 }}>
-        {enemy.currentHealth}/{enemy.maxHealth}
+        {hp}/{enemy.maxHealth}
         {enemy.block > 0 && <span style={{ color: '#3498db' }}> {'\uD83D\uDEE1\uFE0F'}{enemy.block}</span>}
       </div>
       {intent && (
@@ -379,6 +418,7 @@ export default function StrainCombatScreen() {
   const [replaySteps, setReplaySteps] = useState<ReplayStep[]>([])
   const [replayIndex, setReplayIndex] = useState(-1)
   const lastAnimKey = useRef('')
+  const preExecRef = useRef<PreExecState | null>(null)
   const sc = run.strainCombat
 
   // Start replay when combat log changes
@@ -396,7 +436,7 @@ export default function StrainCombatScreen() {
     if (replayIndex < 0 || replayIndex >= replaySteps.length) return
     const timer = setTimeout(() => {
       if (replayIndex + 1 >= replaySteps.length) {
-        setTimeout(() => { setReplayIndex(-1); setReplaySteps([]) }, 600)
+        setTimeout(() => { setReplayIndex(-1); setReplaySteps([]); preExecRef.current = null }, 600)
       } else {
         setReplayIndex(i => i + 1)
       }
@@ -410,6 +450,11 @@ export default function StrainCombatScreen() {
   const flashEnemyId = currentStep?.flashEnemy ?? null
   const flashPlayer = currentStep?.flashPlayer ?? false
   const isReplaying = replayIndex >= 0
+
+  // Compute intermediate display state for bars during replay
+  const displayState = preExecRef.current && sc && currentStep
+    ? computeDisplayState(preExecRef.current, sc.combatLog, currentStep.eventIndex)
+    : null
 
   // S3 victory
   if (runVictory) {
@@ -553,6 +598,8 @@ export default function StrainCombatScreen() {
         health={run.health} maxHealth={run.maxHealth} block={sc.block}
         flashColor={flashPlayer ? (currentStep?.color ?? null) : null}
         activeFloat={currentStep?.target === 'player' ? { text: currentStep.text, color: currentStep.color } : null}
+        displayHealth={displayState?.health}
+        displayBlock={displayState?.block}
       />
 
       {/* 3. Enemies */}
@@ -568,6 +615,7 @@ export default function StrainCombatScreen() {
               onClick={isPlanning && !isReplaying ? () => run.selectStrainTarget(enemy.instanceId) : undefined}
               flashColor={isFlash ? (currentStep?.color ?? null) : null}
               activeFloat={enemyFloat}
+              displayHealth={displayState?.enemyHp[enemy.instanceId]}
             />
           )
         })}
@@ -662,7 +710,15 @@ export default function StrainCombatScreen() {
           </button>
         )}
         {isPlanning && !isReplaying && (
-          <button onClick={() => run.executeStrainTurn()} style={{
+          <button onClick={() => {
+            if (sc) {
+              preExecRef.current = {
+                health: run.health, maxHealth: run.maxHealth, block: sc.block,
+                strain: sc.strain, enemyHp: Object.fromEntries(sc.enemies.map(e => [e.instanceId, e.currentHealth])),
+              }
+            }
+            run.executeStrainTurn()
+          }} style={{
             flex: 2, padding: '10px 0',
             background: willForfeit ? '#c0392b' : '#2d3436',
             border: willForfeit ? '2px solid #e74c3c' : '2px solid #636e72',
