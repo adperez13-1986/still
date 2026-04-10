@@ -541,15 +541,22 @@ export default function StrainCombatScreen() {
     <div style={{
       display: 'flex', flexDirection: 'column',
       height: '100vh', background: '#0d0d1a', color: '#fff',
-      padding: '12px 12px 8px',
+      padding: '10px 12px 8px',
     }}>
       <style>{FLOAT_STYLE}</style>
 
-      {/* Strain Meter */}
+      {/* 1. Strain Meter */}
       <StrainMeter current={sc.strain} projected={projected} max={sc.maxStrain} />
 
-      {/* Enemy Zone */}
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap', margin: '10px 0' }}>
+      {/* 2. Player HP + Block */}
+      <PlayerCard
+        health={run.health} maxHealth={run.maxHealth} block={sc.block}
+        flashColor={flashPlayer ? (currentStep?.color ?? null) : null}
+        activeFloat={currentStep?.target === 'player' ? { text: currentStep.text, color: currentStep.color } : null}
+      />
+
+      {/* 3. Enemies */}
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap', margin: '8px 0' }}>
         {sc.enemies.filter(e => !e.isDefeated).map(enemy => {
           const isFlash = flashEnemyId === enemy.instanceId
           const enemyFloat = isFlash && currentStep?.target === enemy.instanceId ? { text: currentStep.text, color: currentStep.color } : null
@@ -566,18 +573,8 @@ export default function StrainCombatScreen() {
         })}
       </div>
 
-      {/* Spacer pushes player + slots to bottom */}
-      <div style={{ flex: 1 }} />
-
-      {/* Player Card — anchored above action slots */}
-      <PlayerCard
-        health={run.health} maxHealth={run.maxHealth} block={sc.block}
-        flashColor={flashPlayer ? (currentStep?.color ?? null) : null}
-        activeFloat={currentStep?.target === 'player' ? { text: currentStep.text, color: currentStep.color } : null}
-      />
-
-      {/* Action Slots */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, margin: '6px 0' }}>
+      {/* 4. Action Slots */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, margin: '4px 0' }}>
         {/* Pair A */}
         <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
           <ActionSlot actionId={sc.slotActions[0]} pushed={!sc.ventActive && sc.pushedSlots[0]} onToggle={() => run.toggleSlotPush(0)} disabled={!isPlanning || sc.ventActive || isReplaying} bonusValue={sc.secondWindBonus} isActive={activeSlot === 0} />
@@ -608,7 +605,10 @@ export default function StrainCombatScreen() {
         </div>
       </div>
 
-      {/* Controls */}
+      {/* Spacer */}
+      <div style={{ flex: 1 }} />
+
+      {/* 5. Controls */}
       <div style={{ display: 'flex', gap: 8 }}>
         {hasVent && isPlanning && !isReplaying && (
           <button onClick={() => run.toggleVent()} style={{
