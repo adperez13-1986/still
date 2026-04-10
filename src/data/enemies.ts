@@ -552,7 +552,7 @@ const thornSentinel: EnemyDefinition = {
   name: 'Thorn Sentinel',
   maxHealth: 65,
   intentPattern: [
-    { type: 'Retaliate', value: 0, valuePerPush: 4 },
+    { type: 'Retaliate', value: 0, valuePerPush: 3 },
     { type: 'Attack', value: 13 },
     { type: 'Block', value: 8 },
   ],
@@ -587,7 +587,7 @@ const overloadCore: EnemyDefinition = {
   name: 'Overload Core',
   maxHealth: 70,
   intentPattern: [
-    { type: 'Charge', value: 0, chargeTime: 2, blastValue: 35 },
+    { type: 'Charge', value: 0, chargeTime: 2, blastValue: 25 },
   ],
   dropPool: [{ type: 'shards', amount: 14, weight: 1 }],
 }
@@ -629,10 +629,10 @@ const echoShell: EnemyDefinition = {
 const voidLeech: EnemyDefinition = {
   id: 'void-leech',
   name: 'Void Leech',
-  maxHealth: 58,
+  maxHealth: 48,
   intentPattern: [
-    { type: 'Leech', value: 13 },
     { type: 'Leech', value: 10 },
+    { type: 'Leech', value: 8 },
   ],
   dropPool: [{ type: 'shards', amount: 11, weight: 1 }],
 }
@@ -672,7 +672,7 @@ const wardPylon: EnemyDefinition = {
 const ragingHull: EnemyDefinition = {
   id: 'raging-hull',
   name: 'Raging Hull',
-  maxHealth: 68,
+  maxHealth: 58,
   intentPattern: [
     { type: 'BerserkerAttack', value: 8 },
     { type: 'BerserkerAttack', value: 8 },

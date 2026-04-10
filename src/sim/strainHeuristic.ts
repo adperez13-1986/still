@@ -93,15 +93,18 @@ export function planStrainTurn(
     targetEnemyId: pickTarget(combat.enemies),
   }
 
-  // Vent aggressively to keep strain manageable across a full run
-  // Vent if strain is high enough that recovery is worth a turn
-  const ventThreshold = health > maxHealth * 0.6 ? 8 : 12
-  if (strain >= ventThreshold && threat <= 10) {
-    decision.vent = true
-    return decision
+  // Vent proactively to keep strain manageable across a full run
+  // As strain rises, tolerate more threat (accept HP loss to save the run)
+  const ventThreshold = health > maxHealth * 0.5 ? 7 : 11
+  if (strain >= ventThreshold) {
+    const threatTolerance = 8 + (strain - ventThreshold) * 4
+    if (threat <= threatTolerance) {
+      decision.vent = true
+      return decision
+    }
   }
-  // Emergency vent if strain is critical
-  if (strain >= 15) {
+  // Emergency vent at strain 14+ regardless of threat
+  if (strain >= 14) {
     decision.vent = true
     return decision
   }

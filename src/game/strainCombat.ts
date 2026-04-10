@@ -13,8 +13,8 @@ import { ALL_ACTIONS, getSynergyForPair } from '../data/actions'
 
 // ─── Constants ────────────────────────────────────────────────────────────
 
-export const STRAIN_DECAY_BETWEEN_COMBATS = 2
-export const VENT_STRAIN_RECOVERY = 4
+export const STRAIN_DECAY_BETWEEN_COMBATS = 4
+export const VENT_STRAIN_RECOVERY = 5
 
 // ─── Combat State ─────────────────────────────────────────────────────────
 

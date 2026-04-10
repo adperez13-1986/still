@@ -115,10 +115,9 @@ function pickBestAction(
   slotLayout: SlotLayout,
   rng: () => number,
 ): ActionDefinition {
-  // Prefer actions that create good synergies with existing slots
   const scored = available.map(action => {
     let score = 0
-    // Check synergy potential in each pair
+    // Synergy potential with existing pair partners
     for (const [a, b] of [[0, 1], [2, 3]] as const) {
       const existingA = slotLayout.slots[a]
       const existingB = slotLayout.slots[b]
@@ -131,8 +130,15 @@ function pickBestAction(
         if (syn) score += 3
       }
     }
-    // Prefer damage actions slightly
-    if (action.type === 'damage_single' || action.type === 'damage_all') score += 1
+    // Value sustain actions highly for run sustainability
+    if (action.type === 'heal') score += 4
+    if (action.type === 'block') score += 3
+    if (action.type === 'reduce') score += 3
+    // Damage is good but not as critical (base actions already cover it)
+    if (action.type === 'damage_single') score += 2
+    if (action.type === 'damage_all') score += 1
+    // Prefer cheaper actions
+    if ((action.takeCost ?? 3) <= 3) score += 1
     // Some randomness
     score += rng() * 2
     return { action, score }

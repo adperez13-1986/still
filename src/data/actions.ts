@@ -4,19 +4,19 @@ import type { ActionDefinition, ActionType, SynergyEffect } from '../game/types'
 
 export const ACTION_STRIKE: ActionDefinition = {
   id: 'strike', name: 'Strike', type: 'damage_single',
-  baseValue: 6, pushedValue: 9,
+  baseValue: 7, pushedValue: 11,
   description: 'Deal damage to selected enemy',
 }
 
 export const ACTION_SHIELD: ActionDefinition = {
   id: 'shield', name: 'Shield', type: 'block',
-  baseValue: 5, pushedValue: 7,
+  baseValue: 6, pushedValue: 9,
   description: 'Gain block',
 }
 
 export const ACTION_BARRAGE: ActionDefinition = {
   id: 'barrage', name: 'Barrage', type: 'damage_all',
-  baseValue: 4, pushedValue: 6,
+  baseValue: 5, pushedValue: 7,
   description: 'Deal damage to all enemies',
 }
 
