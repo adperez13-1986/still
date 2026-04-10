@@ -76,92 +76,76 @@ function typeColor(type: string): string {
   }
 }
 
-// ─── Floating Number System ─────────────────────────────────────────────
+// ─── Replay System ──────────────────────────────────────────────────────
 
-interface FloatEntry {
-  id: number
+interface ReplayStep {
   text: string
   color: string
-  delay: number
-  target: 'player' | string // 'player' or enemyId
+  target: 'player' | string // where float appears
+  activeSlot?: number       // which slot glows
+  flashEnemy?: string       // which enemy flashes
+  flashPlayer?: boolean     // player card flashes
 }
 
-const FLOAT_STEP = 500
+const REPLAY_STEP_MS = 500
 
-function buildFloats(log: StrainCombatEvent[]): FloatEntry[] {
-  const floats: FloatEntry[] = []
-  let delay = 0
-
+function buildReplaySteps(log: StrainCombatEvent[]): ReplayStep[] {
+  const steps: ReplayStep[] = []
   for (const event of log) {
     if (event.type === 'slotFire') {
       if (event.damage != null) {
-        floats.push({ id: delay, text: `-${event.damage}`, color: '#e74c3c', delay, target: event.enemyId ?? 'player' })
-        delay += FLOAT_STEP
+        steps.push({ text: `-${event.damage}`, color: '#e74c3c', target: event.enemyId ?? 'player', activeSlot: event.slotIndex, flashEnemy: event.enemyId ?? undefined })
       }
       if (event.block != null) {
-        floats.push({ id: delay, text: `+${event.block}`, color: '#3498db', delay, target: 'player' })
-        delay += FLOAT_STEP
+        steps.push({ text: `+${event.block}`, color: '#3498db', target: 'player', activeSlot: event.slotIndex, flashPlayer: true })
       }
       if (event.heal != null) {
-        floats.push({ id: delay, text: `+${event.heal}`, color: '#2ecc71', delay, target: 'player' })
-        delay += FLOAT_STEP
+        steps.push({ text: `+${event.heal}`, color: '#2ecc71', target: 'player', activeSlot: event.slotIndex, flashPlayer: true })
       }
       if (event.strainChange != null) {
-        floats.push({ id: delay, text: `${event.strainChange > 0 ? '+' : ''}${event.strainChange}`, color: event.strainChange < 0 ? '#2ecc71' : '#e67e22', delay, target: 'player' })
-        delay += FLOAT_STEP
+        steps.push({ text: `${event.strainChange > 0 ? '+' : ''}${event.strainChange}`, color: event.strainChange < 0 ? '#2ecc71' : '#e67e22', target: 'player', activeSlot: event.slotIndex, flashPlayer: true })
       }
     }
     if (event.type === 'synergy') {
       if (event.damage != null) {
-        floats.push({ id: delay, text: `-${event.damage}`, color: '#f39c12', delay, target: event.enemyId ?? 'player' })
-        delay += FLOAT_STEP
+        steps.push({ text: `-${event.damage}`, color: '#f39c12', target: event.enemyId ?? 'player', flashEnemy: event.enemyId ?? undefined })
       } else if (event.heal != null) {
-        floats.push({ id: delay, text: `+${event.heal}`, color: '#2ecc71', delay, target: 'player' })
-        delay += FLOAT_STEP
+        steps.push({ text: `+${event.heal}`, color: '#2ecc71', target: 'player', flashPlayer: true })
       } else if (event.strainChange != null && event.strainChange < 0) {
-        floats.push({ id: delay, text: `${event.strainChange}`, color: '#2ecc71', delay, target: 'player' })
-        delay += FLOAT_STEP
+        steps.push({ text: `${event.strainChange}`, color: '#2ecc71', target: 'player', flashPlayer: true })
       }
     }
     if (event.type === 'enemyAction') {
       if (event.damage != null && event.damage > 0) {
-        floats.push({ id: delay, text: `-${event.damage}`, color: '#ff6b6b', delay, target: 'player' })
-        delay += FLOAT_STEP
+        steps.push({ text: `-${event.damage}`, color: '#ff6b6b', target: 'player', flashEnemy: event.enemyId ?? undefined, flashPlayer: true })
       } else if (event.damage === 0 && event.blocked) {
-        floats.push({ id: delay, text: 'BLOCKED', color: '#3498db', delay, target: 'player' })
-        delay += FLOAT_STEP
+        steps.push({ text: 'BLOCKED', color: '#3498db', target: 'player', flashPlayer: true })
       }
     }
   }
-  return floats
+  return steps
 }
 
 const FLOAT_STYLE = `
   @keyframes combatFloat {
     0% { opacity: 0; transform: translateY(4px); }
     15% { opacity: 1; transform: translateY(0); }
-    60% { opacity: 1; transform: translateY(-20px); }
-    100% { opacity: 0; transform: translateY(-32px); }
+    60% { opacity: 1; transform: translateY(-16px); }
+    100% { opacity: 0; transform: translateY(-28px); }
   }
 `
 
-function EntityFloats({ floats, targetId }: { floats: FloatEntry[]; targetId: string }) {
-  const filtered = floats.filter(f => f.target === targetId)
-  if (filtered.length === 0) return null
+function FloatNumber({ text, color }: { text: string; color: string }) {
   return (
-    <>
-      {filtered.map(f => (
-        <div key={f.id} style={{
-          position: 'absolute', top: '50%', right: -2,
-          color: f.color, fontWeight: 700, fontSize: 18,
-          textShadow: '0 1px 4px rgba(0,0,0,0.9)', whiteSpace: 'nowrap',
-          animation: `combatFloat 1s ease-out ${f.delay}ms both`,
-          pointerEvents: 'none', zIndex: 10,
-        }}>
-          {f.text}
-        </div>
-      ))}
-    </>
+    <div style={{
+      position: 'absolute', top: 0, right: -4,
+      color, fontWeight: 700, fontSize: 18,
+      textShadow: '0 1px 4px rgba(0,0,0,0.9)', whiteSpace: 'nowrap',
+      animation: 'combatFloat 0.9s ease-out both',
+      pointerEvents: 'none', zIndex: 10,
+    }}>
+      {text}
+    </div>
   )
 }
 
@@ -194,14 +178,17 @@ function StrainMeter({ current, projected, max }: { current: number; projected: 
 
 // ─── Player Card ─────────────────────────────────────────────────────────
 
-function PlayerCard({ health, maxHealth, block, floats }: {
-  health: number; maxHealth: number; block: number; floats: FloatEntry[]
+function PlayerCard({ health, maxHealth, block, flashColor, activeFloat }: {
+  health: number; maxHealth: number; block: number; flashColor: string | null; activeFloat: { text: string; color: string } | null
 }) {
   const hpPct = (health / maxHealth) * 100
   return (
     <div style={{
-      background: '#1a1a2e', border: '1px solid #555', borderRadius: 8,
+      background: '#1a1a2e',
+      border: flashColor ? `2px solid ${flashColor}` : '1px solid #555',
+      borderRadius: 8,
       padding: '6px 14px 8px', position: 'relative', margin: '0 auto 4px', width: '80%', maxWidth: 300,
+      transition: 'border-color 0.15s',
     }}>
       <div style={{ fontSize: 9, color: '#636e72', letterSpacing: 2, marginBottom: 3, textAlign: 'center' }}>STILL</div>
       <div style={{ height: 10, background: '#2d3436', borderRadius: 3, overflow: 'hidden', marginBottom: 4 }}>
@@ -211,15 +198,15 @@ function PlayerCard({ health, maxHealth, block, floats }: {
         <span>{health} / {maxHealth} HP</span>
         {block > 0 && <span style={{ color: '#3498db' }}>{'\uD83D\uDEE1\uFE0F'} {block}</span>}
       </div>
-      <EntityFloats floats={floats} targetId="player" />
+      {activeFloat && <FloatNumber key={Date.now()} text={activeFloat.text} color={activeFloat.color} />}
     </div>
   )
 }
 
 // ─── Enemy Card ──────────────────────────────────────────────────────────
 
-function EnemyCard({ enemy, selected, onClick, floats }: {
-  enemy: EnemyInstance; selected?: boolean; onClick?: () => void; floats: FloatEntry[]
+function EnemyCard({ enemy, selected, onClick, flashColor, activeFloat }: {
+  enemy: EnemyInstance; selected?: boolean; onClick?: () => void; flashColor: string | null; activeFloat: { text: string; color: string } | null
 }) {
   const def = ALL_ENEMIES[enemy.definitionId]
   if (!def || enemy.isDefeated) return null
@@ -232,9 +219,10 @@ function EnemyCard({ enemy, selected, onClick, floats }: {
       onClick={onClick}
       style={{
         background: '#1a1a2e',
-        border: selected ? '2px solid #e74c3c' : '1px solid #444',
+        border: flashColor ? `2px solid ${flashColor}` : selected ? '2px solid #e74c3c' : '1px solid #444',
         borderRadius: 8, padding: '8px 10px', minWidth: 110, textAlign: 'center',
         cursor: onClick ? 'pointer' : 'default', position: 'relative',
+        transition: 'border-color 0.15s',
       }}>
       <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 4 }}>{def.name}</div>
       <div style={{ height: 6, background: '#2d3436', borderRadius: 3, overflow: 'hidden', marginBottom: 3 }}>
@@ -277,7 +265,7 @@ function EnemyCard({ enemy, selected, onClick, floats }: {
             : intent.type}
         </div>
       )}
-      <EntityFloats floats={floats} targetId={enemy.instanceId} />
+      {activeFloat && <FloatNumber key={Date.now()} text={activeFloat.text} color={activeFloat.color} />}
     </div>
   )
 }
@@ -285,9 +273,9 @@ function EnemyCard({ enemy, selected, onClick, floats }: {
 // ─── Compact Action Slot ─────────────────────────────────────────────────
 
 function ActionSlot({
-  actionId, pushed, onToggle, disabled, bonusValue,
+  actionId, pushed, onToggle, disabled, bonusValue, isActive,
 }: {
-  actionId: string | null; pushed: boolean; onToggle: () => void; disabled: boolean; bonusValue: number
+  actionId: string | null; pushed: boolean; onToggle: () => void; disabled: boolean; bonusValue: number; isActive?: boolean
 }) {
   if (!actionId) {
     return (
@@ -313,7 +301,8 @@ function ActionSlot({
       style={{
         flex: 1, padding: '4px 4px 6px',
         background: pushed ? '#2d3436' : '#1a1a2e',
-        border: pushed ? '2px solid #e67e22' : isVent ? '2px solid #636e72' : '2px solid #333',
+        border: isActive ? '2px solid #fff' : pushed ? '2px solid #e67e22' : isVent ? '2px solid #636e72' : '2px solid #333',
+        boxShadow: isActive ? '0 0 8px rgba(255,255,255,0.4)' : 'none',
         borderRadius: 6, color: '#fff',
         cursor: disabled || isVent ? 'default' : 'pointer',
         textAlign: 'center', transition: 'all 0.15s',
@@ -387,21 +376,40 @@ export default function StrainCombatScreen() {
   const [runVictory, setRunVictory] = useState(false)
   const [pendingGrowth, setPendingGrowth] = useState<{ action: ActionDefinition; cost: number } | null>(null)
   const growthOffersRef = useRef<ActionDefinition[] | null>(null)
-  const [floats, setFloats] = useState<FloatEntry[]>([])
+  const [replaySteps, setReplaySteps] = useState<ReplayStep[]>([])
+  const [replayIndex, setReplayIndex] = useState(-1)
   const lastAnimKey = useRef('')
   const sc = run.strainCombat
 
-  // Combat animation
+  // Start replay when combat log changes
   const animKey = sc ? `${sc.roundNumber}-${sc.phase}` : ''
   useEffect(() => {
     if (!sc || animKey === lastAnimKey.current || sc.combatLog.length === 0) return
     lastAnimKey.current = animKey
-    const newFloats = buildFloats(sc.combatLog)
-    setFloats(newFloats)
-    const maxDelay = newFloats.length * FLOAT_STEP
-    const timer = setTimeout(() => setFloats([]), maxDelay + 1500)
-    return () => clearTimeout(timer)
+    const steps = buildReplaySteps(sc.combatLog)
+    setReplaySteps(steps)
+    setReplayIndex(0)
   }, [animKey])
+
+  // Step through replay events
+  useEffect(() => {
+    if (replayIndex < 0 || replayIndex >= replaySteps.length) return
+    const timer = setTimeout(() => {
+      if (replayIndex + 1 >= replaySteps.length) {
+        setTimeout(() => { setReplayIndex(-1); setReplaySteps([]) }, 600)
+      } else {
+        setReplayIndex(i => i + 1)
+      }
+    }, REPLAY_STEP_MS)
+    return () => clearTimeout(timer)
+  }, [replayIndex, replaySteps.length])
+
+  // Current replay state
+  const currentStep = replayIndex >= 0 && replayIndex < replaySteps.length ? replaySteps[replayIndex] : null
+  const activeSlot = currentStep?.activeSlot ?? -1
+  const flashEnemyId = currentStep?.flashEnemy ?? null
+  const flashPlayer = currentStep?.flashPlayer ?? false
+  const isReplaying = replayIndex >= 0
 
   // S3 victory
   if (runVictory) {
@@ -542,58 +550,67 @@ export default function StrainCombatScreen() {
 
       {/* Enemy Zone */}
       <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap', margin: '10px 0' }}>
-        {sc.enemies.filter(e => !e.isDefeated).map(enemy => (
-          <EnemyCard
-            key={enemy.instanceId}
-            enemy={enemy}
-            selected={enemy.instanceId === sc.selectedTargetId}
-            onClick={isPlanning ? () => run.selectStrainTarget(enemy.instanceId) : undefined}
-            floats={floats}
-          />
-        ))}
+        {sc.enemies.filter(e => !e.isDefeated).map(enemy => {
+          const isFlash = flashEnemyId === enemy.instanceId
+          const enemyFloat = isFlash && currentStep?.target === enemy.instanceId ? { text: currentStep.text, color: currentStep.color } : null
+          return (
+            <EnemyCard
+              key={enemy.instanceId}
+              enemy={enemy}
+              selected={enemy.instanceId === sc.selectedTargetId}
+              onClick={isPlanning && !isReplaying ? () => run.selectStrainTarget(enemy.instanceId) : undefined}
+              flashColor={isFlash ? (currentStep?.color ?? null) : null}
+              activeFloat={enemyFloat}
+            />
+          )
+        })}
       </div>
 
       {/* Spacer pushes player + slots to bottom */}
       <div style={{ flex: 1 }} />
 
       {/* Player Card — anchored above action slots */}
-      <PlayerCard health={run.health} maxHealth={run.maxHealth} block={sc.block} floats={floats} />
+      <PlayerCard
+        health={run.health} maxHealth={run.maxHealth} block={sc.block}
+        flashColor={flashPlayer ? (currentStep?.color ?? null) : null}
+        activeFloat={currentStep?.target === 'player' ? { text: currentStep.text, color: currentStep.color } : null}
+      />
 
       {/* Action Slots */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4, margin: '6px 0' }}>
         {/* Pair A */}
         <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-          <ActionSlot actionId={sc.slotActions[0]} pushed={!sc.ventActive && sc.pushedSlots[0]} onToggle={() => run.toggleSlotPush(0)} disabled={!isPlanning || sc.ventActive} bonusValue={sc.secondWindBonus} />
+          <ActionSlot actionId={sc.slotActions[0]} pushed={!sc.ventActive && sc.pushedSlots[0]} onToggle={() => run.toggleSlotPush(0)} disabled={!isPlanning || sc.ventActive || isReplaying} bonusValue={sc.secondWindBonus} isActive={activeSlot === 0} />
           <div style={{ fontSize: 9, color: '#444', minWidth: 20, textAlign: 'center' }}>
             {sc.pushedSlots[0] && sc.pushedSlots[1] && sc.pairASynergy && !sc.ventActive
               ? <span style={{ color: '#f39c12', fontWeight: 600 }}>{sc.pairASynergy.name}</span>
               : '──'}
           </div>
-          <ActionSlot actionId={sc.slotActions[1]} pushed={!sc.ventActive && sc.pushedSlots[1]} onToggle={() => run.toggleSlotPush(1)} disabled={!isPlanning || sc.ventActive} bonusValue={sc.secondWindBonus} />
+          <ActionSlot actionId={sc.slotActions[1]} pushed={!sc.ventActive && sc.pushedSlots[1]} onToggle={() => run.toggleSlotPush(1)} disabled={!isPlanning || sc.ventActive || isReplaying} bonusValue={sc.secondWindBonus} isActive={activeSlot === 1} />
         </div>
 
         {/* Pair B */}
         <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-          <ActionSlot actionId={sc.slotActions[2]} pushed={!sc.ventActive && sc.pushedSlots[2]} onToggle={() => run.toggleSlotPush(2)} disabled={!isPlanning || sc.ventActive} bonusValue={sc.secondWindBonus} />
+          <ActionSlot actionId={sc.slotActions[2]} pushed={!sc.ventActive && sc.pushedSlots[2]} onToggle={() => run.toggleSlotPush(2)} disabled={!isPlanning || sc.ventActive || isReplaying} bonusValue={sc.secondWindBonus} isActive={activeSlot === 2} />
           <div style={{ fontSize: 9, color: '#444', minWidth: 20, textAlign: 'center' }}>
             {sc.pushedSlots[2] && sc.pushedSlots[3] && sc.pairBSynergy && !sc.ventActive
               ? <span style={{ color: '#f39c12', fontWeight: 600 }}>{sc.pairBSynergy.name}</span>
               : '──'}
           </div>
-          <ActionSlot actionId={sc.slotActions[3]} pushed={!sc.ventActive && sc.pushedSlots[3]} onToggle={() => run.toggleSlotPush(3)} disabled={!isPlanning || sc.ventActive} bonusValue={sc.secondWindBonus} />
+          <ActionSlot actionId={sc.slotActions[3]} pushed={!sc.ventActive && sc.pushedSlots[3]} onToggle={() => run.toggleSlotPush(3)} disabled={!isPlanning || sc.ventActive || isReplaying} bonusValue={sc.secondWindBonus} isActive={activeSlot === 3} />
         </div>
 
         {/* Solo */}
         <div style={{ display: 'flex', justifyContent: 'center' }}>
           <div style={{ width: '38%' }}>
-            <ActionSlot actionId={sc.slotActions[4]} pushed={!sc.ventActive && sc.pushedSlots[4]} onToggle={() => run.toggleSlotPush(4)} disabled={!isPlanning || sc.ventActive} bonusValue={sc.secondWindBonus} />
+            <ActionSlot actionId={sc.slotActions[4]} pushed={!sc.ventActive && sc.pushedSlots[4]} onToggle={() => run.toggleSlotPush(4)} disabled={!isPlanning || sc.ventActive || isReplaying} bonusValue={sc.secondWindBonus} isActive={activeSlot === 4} />
           </div>
         </div>
       </div>
 
       {/* Controls */}
       <div style={{ display: 'flex', gap: 8 }}>
-        {hasVent && isPlanning && (
+        {hasVent && isPlanning && !isReplaying && (
           <button onClick={() => run.toggleVent()} style={{
             flex: 1, padding: '10px 0',
             background: sc.ventActive ? '#1a3a2a' : '#1a1a2e',
@@ -604,7 +621,7 @@ export default function StrainCombatScreen() {
             {sc.ventActive ? `VENTING -${VENT_STRAIN_RECOVERY}` : `Vent -${VENT_STRAIN_RECOVERY}`}
           </button>
         )}
-        {isPlanning && (
+        {isPlanning && !isReplaying && (
           <button onClick={() => run.executeStrainTurn()} style={{
             flex: 2, padding: '10px 0',
             background: willForfeit ? '#c0392b' : '#2d3436',
