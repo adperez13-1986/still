@@ -464,7 +464,13 @@ export function executeStrainTurn(
 
   combat.enemies = enemies
 
-  // 7. End-of-turn synergy effects
+  // 7. Check win (enemies may have died from Counter/Thorns/Focused Aggro)
+  if (enemies.every(e => e.isDefeated)) {
+    combat.phase = 'reward'
+    return { combat, health: hp }
+  }
+
+  // 8. End-of-turn synergy effects
   // Fortify: remaining block → healing
   if ((combat as any)._fortifyActive && combat.block > 0) {
     const fortifyHeal = combat.block
