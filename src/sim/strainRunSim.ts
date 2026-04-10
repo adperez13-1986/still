@@ -66,45 +66,42 @@ function pickReward(
   // After decay, our effective strain for next combat is strain - 2
   const effectiveStrain = strain - STRAIN_DECAY_BETWEEN_COMBATS
 
-  // Fill empty solo slot eagerly — it's pure upside (more base damage for free)
+  // Fill empty solo slot eagerly — it's pure upside (more base value for free)
   if (hasEmptySlot) {
     const available = FINDABLE_ACTIONS.filter(a => !acquiredActions.includes(a.id))
     if (available.length > 0) {
-      const action = pickBestAction(available, slotLayout, rng)
+      const action = pickBestAction(available, slotLayout, health, maxHealth, rng)
       const emptyIdx = slotLayout.slots.indexOf(null)
       const cost = action.takeCost ?? 3
-      // Take it if we can afford it and still be under 12 effective strain
-      if (effectiveStrain + cost < 12) {
+      if (effectiveStrain + cost < 14) {
         return { type: 'growth', action, slotIndex: emptyIdx }
       }
     }
   }
 
   // Critical HP → heal
-  if (health < maxHealth * 0.4) {
+  if (health < maxHealth * 0.35) {
     return { type: 'comfort', id: 'heal' }
   }
 
-  // High strain → relief (want to enter next combat at strain < 8)
-  if (effectiveStrain >= 8) {
+  // Only take comfort relief at high effective strain
+  if (effectiveStrain >= 9) {
     return { type: 'comfort', id: 'relief' }
   }
 
-  // Low strain → good time for growth
-  if (effectiveStrain < 6) {
-    const available = FINDABLE_ACTIONS.filter(a => !acquiredActions.includes(a.id))
-    if (available.length > 0) {
-      const action = pickBestAction(available, slotLayout, rng)
-      const cost = action.takeCost ?? 3
-      if (effectiveStrain + cost < 10) {
-        const bestSlot = pickBestSlot(action, slotLayout)
-        return { type: 'growth', action, slotIndex: bestSlot }
-      }
+  // Default: take growth if we can afford it
+  const available = FINDABLE_ACTIONS.filter(a => !acquiredActions.includes(a.id))
+  if (available.length > 0) {
+    const action = pickBestAction(available, slotLayout, health, maxHealth, rng)
+    const cost = action.takeCost ?? 3
+    if (effectiveStrain + cost < 12) {
+      const bestSlot = pickBestSlot(action, slotLayout)
+      return { type: 'growth', action, slotIndex: bestSlot }
     }
   }
 
-  // Default comfort
-  if (health < maxHealth * 0.6) return { type: 'comfort', id: 'heal' }
+  // Comfort fallback
+  if (health < maxHealth * 0.5) return { type: 'comfort', id: 'heal' }
   if (strain >= 6) return { type: 'comfort', id: 'relief' }
   return { type: 'comfort', id: 'companion' }
 }
@@ -113,10 +110,20 @@ function pickReward(
 function pickBestAction(
   available: ActionDefinition[],
   slotLayout: SlotLayout,
+  health: number,
+  maxHealth: number,
   rng: () => number,
 ): ActionDefinition {
+  // Check what types we already have
+  const existingTypes = new Set(
+    slotLayout.slots.filter(Boolean).map(id => ALL_ACTIONS[id!]?.type)
+  )
+  const hasHeal = existingTypes.has('heal')
+  const hpRatio = health / maxHealth
+
   const scored = available.map(action => {
     let score = 0
+
     // Synergy potential with existing pair partners
     for (const [a, b] of [[0, 1], [2, 3]] as const) {
       const existingA = slotLayout.slots[a]
@@ -130,15 +137,28 @@ function pickBestAction(
         if (syn) score += 3
       }
     }
-    // Value sustain actions highly for run sustainability
-    if (action.type === 'heal') score += 4
-    if (action.type === 'block') score += 3
-    if (action.type === 'reduce') score += 3
-    // Damage is good but not as critical (base actions already cover it)
-    if (action.type === 'damage_single') score += 2
+
+    // Strongly prefer heal if we don't have one — critical for run sustainability
+    if (action.type === 'heal' && !hasHeal) score += 8
+    else if (action.type === 'heal') score += 3
+
+    // Value block/reduce more when hurt
+    if (action.type === 'block') score += hpRatio < 0.6 ? 6 : 3
+    if (action.type === 'reduce') score += hpRatio < 0.6 ? 5 : 2
+
+    // Damage has diminishing returns (we already have Strike + Barrage)
+    if (action.type === 'damage_single') score += 1
     if (action.type === 'damage_all') score += 1
+
+    // Convert/reflect/debuff are situationally valuable
+    if (action.type === 'convert') score += 3 // strain recovery potential
+    if (action.type === 'reflect') score += 2
+    if (action.type === 'debuff') score += 2
+    if (action.type === 'buff') score += 2
+
     // Prefer cheaper actions
     if ((action.takeCost ?? 3) <= 3) score += 1
+
     // Some randomness
     score += rng() * 2
     return { action, score }
