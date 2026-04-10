@@ -69,90 +69,85 @@ interface FloatEntry {
   text: string
   color: string
   delay: number
+  area: 'enemy' | 'player'
 }
+
+const FLOAT_STEP = 500
 
 function buildFloats(log: StrainCombatEvent[]): FloatEntry[] {
   const floats: FloatEntry[] = []
   let delay = 0
-  const step = 250
 
   for (const event of log) {
     if (event.type === 'slotFire') {
       if (event.damage != null) {
-        floats.push({ id: delay, text: `${event.slotLabel} ${event.damage}`, color: '#e74c3c', delay })
-        delay += step
+        floats.push({ id: delay, text: `-${event.damage}`, color: '#e74c3c', delay, area: 'enemy' })
+        delay += FLOAT_STEP
       }
       if (event.block != null) {
-        floats.push({ id: delay, text: `+${event.block} BLK`, color: '#3498db', delay })
-        delay += step
+        floats.push({ id: delay, text: `+${event.block} BLK`, color: '#3498db', delay, area: 'player' })
+        delay += FLOAT_STEP
       }
       if (event.heal != null) {
-        floats.push({ id: delay, text: `+${event.heal} HP`, color: '#2ecc71', delay })
-        delay += step
+        floats.push({ id: delay, text: `+${event.heal} HP`, color: '#2ecc71', delay, area: 'player' })
+        delay += FLOAT_STEP
       }
       if (event.strainChange != null) {
-        floats.push({ id: delay, text: `${event.strainChange > 0 ? '+' : ''}${event.strainChange} strain`, color: event.strainChange < 0 ? '#2ecc71' : '#e67e22', delay })
-        delay += step
+        floats.push({ id: delay, text: `${event.strainChange > 0 ? '+' : ''}${event.strainChange} strain`, color: event.strainChange < 0 ? '#2ecc71' : '#e67e22', delay, area: 'player' })
+        delay += FLOAT_STEP
       }
     }
     if (event.type === 'synergy') {
       if (event.damage != null) {
-        floats.push({ id: delay, text: `${event.synergyName} ${event.damage}`, color: '#f39c12', delay })
+        floats.push({ id: delay, text: `-${event.damage}`, color: '#f39c12', delay, area: 'enemy' })
       } else if (event.heal != null) {
-        floats.push({ id: delay, text: `${event.synergyName} +${event.heal}`, color: '#2ecc71', delay })
+        floats.push({ id: delay, text: `+${event.heal} HP`, color: '#2ecc71', delay, area: 'player' })
       } else if (event.strainChange != null && event.strainChange < 0) {
-        floats.push({ id: delay, text: `${event.synergyName} ${event.strainChange}`, color: '#2ecc71', delay })
-      } else {
-        floats.push({ id: delay, text: `${event.synergyName}`, color: '#f39c12', delay })
+        floats.push({ id: delay, text: `${event.strainChange} strain`, color: '#2ecc71', delay, area: 'player' })
       }
-      delay += step
+      // Skip activation-only entries (no visible number needed)
+      if (event.damage != null || event.heal != null || (event.strainChange != null && event.strainChange < 0)) {
+        delay += FLOAT_STEP
+      }
     }
     if (event.type === 'enemyAction') {
       if (event.damage != null && event.damage > 0) {
-        const blockInfo = event.blocked ? ` (${event.blocked} blocked)` : ''
-        floats.push({ id: delay, text: `${event.enemyName} -${event.damage}${blockInfo}`, color: '#ff6b6b', delay })
-        delay += step
+        floats.push({ id: delay, text: `-${event.damage}`, color: '#ff6b6b', delay, area: 'player' })
+        delay += FLOAT_STEP
       } else if (event.damage === 0 && event.blocked) {
-        floats.push({ id: delay, text: `${event.enemyName} BLOCKED`, color: '#3498db', delay })
-        delay += step
+        floats.push({ id: delay, text: `BLOCKED`, color: '#3498db', delay, area: 'player' })
+        delay += FLOAT_STEP
       }
     }
   }
   return floats
 }
 
-function CombatFloats({ floats }: { floats: FloatEntry[] }) {
-  if (floats.length === 0) return null
+function FloatNumbers({ floats, areaRef, area }: { floats: FloatEntry[]; areaRef: React.RefObject<HTMLDivElement | null>; area: 'enemy' | 'player' }) {
+  const filtered = floats.filter(f => f.area === area)
+  if (filtered.length === 0 || !areaRef.current) return null
+
   return (
     <>
-      <style>{`
-        @keyframes combatFloat {
-          0% { opacity: 0; transform: translate(-50%, 10px); }
-          12% { opacity: 1; transform: translate(-50%, 0); }
-          65% { opacity: 1; transform: translate(-50%, -20px); }
-          100% { opacity: 0; transform: translate(-50%, -35px); }
-        }
-      `}</style>
-      <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 50 }}>
-        {floats.map(f => (
-          <div
-            key={f.id}
-            style={{
-              position: 'absolute',
-              top: '38%',
-              left: '50%',
-              color: f.color,
-              fontWeight: 700,
-              fontSize: 16,
-              textShadow: '0 1px 3px rgba(0,0,0,0.9)',
-              whiteSpace: 'nowrap',
-              animation: `combatFloat 0.9s ease-out ${f.delay}ms both`,
-            }}
-          >
-            {f.text}
-          </div>
-        ))}
-      </div>
+      {filtered.map(f => (
+        <div
+          key={f.id}
+          style={{
+            position: 'absolute',
+            right: -4,
+            top: 0,
+            color: f.color,
+            fontWeight: 700,
+            fontSize: 18,
+            textShadow: '0 1px 4px rgba(0,0,0,0.9)',
+            whiteSpace: 'nowrap',
+            animation: `combatFloat 1s ease-out ${f.delay}ms both`,
+            pointerEvents: 'none',
+          }}
+        >
+          {f.text}
+        </div>
+      ))}
     </>
   )
 }
@@ -444,6 +439,8 @@ export default function StrainCombatScreen() {
   const growthOffersRef = useRef<ActionDefinition[] | null>(null)
   const [floats, setFloats] = useState<FloatEntry[]>([])
   const lastAnimKey = useRef('')
+  const enemyAreaRef = useRef<HTMLDivElement>(null)
+  const playerAreaRef = useRef<HTMLDivElement>(null)
   const sc = run.strainCombat
 
   // Combat animation: show floating numbers when events happen
@@ -453,8 +450,8 @@ export default function StrainCombatScreen() {
     lastAnimKey.current = animKey
     const newFloats = buildFloats(sc.combatLog)
     setFloats(newFloats)
-    const maxDelay = newFloats.length * 250
-    const timer = setTimeout(() => setFloats([]), maxDelay + 1200)
+    const maxDelay = newFloats.length * FLOAT_STEP
+    const timer = setTimeout(() => setFloats([]), maxDelay + 1500)
     return () => clearTimeout(timer)
   }, [animKey])
 
@@ -649,18 +646,28 @@ export default function StrainCombatScreen() {
       height: '100vh', background: '#0d0d1a', color: '#fff', padding: 16,
       overflow: 'auto',
     }}>
+      <style>{`
+        @keyframes combatFloat {
+          0% { opacity: 0; transform: translateY(4px); }
+          15% { opacity: 1; transform: translateY(0); }
+          60% { opacity: 1; transform: translateY(-16px); }
+          100% { opacity: 0; transform: translateY(-28px); }
+        }
+      `}</style>
+
       {/* Header: HP + Strain */}
-      <div style={{ marginBottom: 8 }}>
+      <div style={{ marginBottom: 8, position: 'relative' }} ref={playerAreaRef}>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, color: '#aaa' }}>
           <span>HP: {run.health} / {run.maxHealth}</span>
           <span>Block: {sc.block}</span>
           <span>Round {sc.roundNumber}</span>
         </div>
         <StrainMeter current={sc.strain} projected={projected} max={sc.maxStrain} />
+        <FloatNumbers floats={floats} areaRef={playerAreaRef} area="player" />
       </div>
 
       {/* Enemies */}
-      <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 12 }}>
+      <div ref={enemyAreaRef} style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 12, position: 'relative' }}>
         {sc.enemies.filter(e => !e.isDefeated).map(enemy => (
           <EnemyDisplay
             key={enemy.instanceId}
@@ -669,10 +676,8 @@ export default function StrainCombatScreen() {
             onClick={isPlanning ? () => run.selectStrainTarget(enemy.instanceId) : undefined}
           />
         ))}
+        <FloatNumbers floats={floats} areaRef={enemyAreaRef} area="enemy" />
       </div>
-
-      {/* Floating combat numbers */}
-      <CombatFloats floats={floats} />
 
       {/* Combat Log */}
       <CombatLog log={sc.combatLog} />
