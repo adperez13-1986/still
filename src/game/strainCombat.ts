@@ -493,6 +493,15 @@ export function executeStrainTurn(
   combat.reflectPct = 0
   combat.pushedSlots = [false, false, false, false, false]
   combat.ventActive = false
+  // Clear synergy flags (only last one turn)
+  ;(combat as any)._counterArmed = false
+  ;(combat as any)._counterDamage = 0
+  ;(combat as any)._thornsActive = false
+  ;(combat as any)._fortifyActive = false
+  ;(combat as any)._recycleActive = false
+  ;(combat as any)._focusedAggroActive = false
+  ;(combat as any)._focusedAggroDamage = 0
+  ;(combat as any)._suppressActive = false
   // Second Wind: consumed after one turn
   if (combat.secondWindBonus > 0 && !state.ventActive) combat.secondWindBonus = 0
   // Auto-retarget
