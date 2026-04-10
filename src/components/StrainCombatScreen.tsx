@@ -230,7 +230,13 @@ function CombatLog({ log }: { log: StrainCombatEvent[] }) {
             <span>{event.slotLabel}: <span style={{ color: '#2ecc71' }}>{event.strainChange} strain</span></span>
           )}
           {event.type === 'synergy' && (
-            <span style={{ color: '#f39c12' }}>{'✨'} {event.synergyName} activated</span>
+            <span style={{ color: '#f39c12' }}>
+              {'✨'} {event.synergyName}
+              {event.damage != null && <span> deals <span style={{ color: '#e74c3c' }}>{event.damage}</span></span>}
+              {event.heal != null && <span> heals <span style={{ color: '#2ecc71' }}>{event.heal}</span></span>}
+              {event.strainChange != null && event.strainChange < 0 && <span> <span style={{ color: '#2ecc71' }}>{event.strainChange} strain</span></span>}
+              {!event.damage && !event.heal && (event.strainChange == null || event.strainChange > 0) && ' activated'}
+            </span>
           )}
           {event.type === 'enemyAction' && event.damage != null && (
             <span>
