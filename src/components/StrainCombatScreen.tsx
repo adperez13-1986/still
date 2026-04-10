@@ -120,7 +120,7 @@ function computeDisplayState(pre: PreExecState, log: StrainCombatEvent[], upToEv
   return { health: Math.max(0, health), block, enemyHp }
 }
 
-const REPLAY_STEP_MS = 500
+const REPLAY_STEP_MS = 1000
 
 function buildReplaySteps(log: StrainCombatEvent[]): ReplayStep[] {
   const steps: ReplayStep[] = []
