@@ -200,9 +200,10 @@ function PlayerCard({ health, maxHealth, block, floats }: {
   const hpPct = (health / maxHealth) * 100
   return (
     <div style={{
-      background: '#1a1a2e', border: '1px solid #444', borderRadius: 8,
-      padding: '8px 14px', position: 'relative', margin: '0 auto', width: '70%', maxWidth: 280,
+      background: '#1a1a2e', border: '1px solid #555', borderRadius: 8,
+      padding: '6px 14px 8px', position: 'relative', margin: '0 auto 4px', width: '80%', maxWidth: 300,
     }}>
+      <div style={{ fontSize: 9, color: '#636e72', letterSpacing: 2, marginBottom: 3, textAlign: 'center' }}>STILL</div>
       <div style={{ height: 10, background: '#2d3436', borderRadius: 3, overflow: 'hidden', marginBottom: 4 }}>
         <div style={{ height: '100%', width: `${hpPct}%`, background: health > maxHealth * 0.4 ? '#2ecc71' : '#e74c3c', transition: 'width 0.3s' }} />
       </div>
@@ -552,11 +553,14 @@ export default function StrainCombatScreen() {
         ))}
       </div>
 
-      {/* Player Card */}
+      {/* Spacer pushes player + slots to bottom */}
+      <div style={{ flex: 1 }} />
+
+      {/* Player Card — anchored above action slots */}
       <PlayerCard health={run.health} maxHealth={run.maxHealth} block={sc.block} floats={floats} />
 
       {/* Action Slots */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 4, margin: '8px 0' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, margin: '6px 0' }}>
         {/* Pair A */}
         <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
           <ActionSlot actionId={sc.slotActions[0]} pushed={!sc.ventActive && sc.pushedSlots[0]} onToggle={() => run.toggleSlotPush(0)} disabled={!isPlanning || sc.ventActive} bonusValue={sc.secondWindBonus} />
