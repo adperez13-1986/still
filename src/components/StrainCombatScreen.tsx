@@ -499,7 +499,7 @@ export default function StrainCombatScreen() {
   }
 
   // Forfeit
-  if (sc.phase === 'forfeit') {
+  if (sc.phase === 'forfeit' && !isReplaying) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#0d0d1a', color: '#fff', padding: 24 }}>
         <div style={{ fontSize: 28, fontWeight: 300, marginBottom: 16, color: '#636e72' }}>You stopped.</div>
@@ -522,7 +522,7 @@ export default function StrainCombatScreen() {
   }
 
   // Reward
-  if (sc.phase === 'reward') {
+  if (sc.phase === 'reward' && !isReplaying) {
     if (!growthOffersRef.current) growthOffersRef.current = getGrowthOffers(run.acquiredActions)
     const growthOffers = growthOffersRef.current
     const comfort = getComfortReward(run.health, run.maxHealth, run.strain)
@@ -568,7 +568,7 @@ export default function StrainCombatScreen() {
   }
 
   // Death
-  if (sc.phase === 'finished') {
+  if (sc.phase === 'finished' && !isReplaying) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#0d0d1a', color: '#fff', padding: 24 }}>
         <div style={{ fontSize: 28, fontWeight: 300, marginBottom: 16, color: '#e74c3c' }}>Shutdown.</div>
