@@ -605,10 +605,50 @@ export default function StrainCombatScreen() {
         </div>
       </div>
 
-      {/* Spacer */}
-      <div style={{ flex: 1 }} />
+      {/* 5. Battle Log */}
+      <div style={{
+        flex: 1, background: '#0d0d1a', border: '1px solid #222', borderRadius: 6,
+        padding: 6, overflowY: 'auto', fontSize: 11, color: '#888', margin: '6px 0',
+        minHeight: 40,
+      }}>
+        {sc.combatLog.length === 0 && <div style={{ color: '#444', textAlign: 'center' }}>Waiting...</div>}
+        {sc.combatLog.map((event, i) => (
+          <div key={i} style={{ marginBottom: 1 }}>
+            {event.type === 'slotFire' && event.damage != null && (
+              <span>{event.slotLabel} <span style={{ color: '#e74c3c' }}>{event.damage} dmg</span></span>
+            )}
+            {event.type === 'slotFire' && event.block != null && (
+              <span>{event.slotLabel} <span style={{ color: '#3498db' }}>+{event.block} blk</span></span>
+            )}
+            {event.type === 'slotFire' && event.heal != null && (
+              <span>{event.slotLabel} <span style={{ color: '#2ecc71' }}>+{event.heal} hp</span></span>
+            )}
+            {event.type === 'slotFire' && event.strainChange != null && (
+              <span>{event.slotLabel} <span style={{ color: '#2ecc71' }}>{event.strainChange} strain</span></span>
+            )}
+            {event.type === 'synergy' && (
+              <span style={{ color: '#f39c12' }}>
+                {event.synergyName}
+                {event.damage != null && <span> {event.damage} dmg</span>}
+                {event.heal != null && <span> +{event.heal} hp</span>}
+                {event.strainChange != null && event.strainChange < 0 && <span> {event.strainChange} strain</span>}
+              </span>
+            )}
+            {event.type === 'enemyAction' && event.damage != null && (
+              <span>{event.enemyName} <span style={{ color: '#e74c3c' }}>{event.damage} dmg</span>{event.blocked ? <span style={{ color: '#3498db' }}> ({event.blocked} blk)</span> : ''}</span>
+            )}
+            {event.type === 'enemyAction' && !event.damage && event.block != null && (
+              <span>{event.enemyName} +{event.block} blk</span>
+            )}
+            {event.type === 'enemyAction' && !event.damage && !event.block && (
+              <span>{event.enemyName} {event.intentType}</span>
+            )}
+            {event.type === 'forfeit' && <span style={{ color: '#e67e22' }}>Stopped.</span>}
+          </div>
+        ))}
+      </div>
 
-      {/* 5. Controls */}
+      {/* 6. Controls */}
       <div style={{ display: 'flex', gap: 8 }}>
         {hasVent && isPlanning && !isReplaying && (
           <button onClick={() => run.toggleVent()} style={{
