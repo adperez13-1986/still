@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useRunStore } from '../store/runStore'
 import { ALL_ENEMIES } from '../data/enemies'
@@ -60,6 +60,101 @@ function typeColor(type: string): string {
     case 'recovery': return '#636e72'
     default: return '#aaa'
   }
+}
+
+// ─── Combat Floats ───────────────────────────────────────────────────────
+
+interface FloatEntry {
+  id: number
+  text: string
+  color: string
+  delay: number
+}
+
+function buildFloats(log: StrainCombatEvent[]): FloatEntry[] {
+  const floats: FloatEntry[] = []
+  let delay = 0
+  const step = 250
+
+  for (const event of log) {
+    if (event.type === 'slotFire') {
+      if (event.damage != null) {
+        floats.push({ id: delay, text: `${event.slotLabel} ${event.damage}`, color: '#e74c3c', delay })
+        delay += step
+      }
+      if (event.block != null) {
+        floats.push({ id: delay, text: `+${event.block} BLK`, color: '#3498db', delay })
+        delay += step
+      }
+      if (event.heal != null) {
+        floats.push({ id: delay, text: `+${event.heal} HP`, color: '#2ecc71', delay })
+        delay += step
+      }
+      if (event.strainChange != null) {
+        floats.push({ id: delay, text: `${event.strainChange > 0 ? '+' : ''}${event.strainChange} strain`, color: event.strainChange < 0 ? '#2ecc71' : '#e67e22', delay })
+        delay += step
+      }
+    }
+    if (event.type === 'synergy') {
+      if (event.damage != null) {
+        floats.push({ id: delay, text: `${event.synergyName} ${event.damage}`, color: '#f39c12', delay })
+      } else if (event.heal != null) {
+        floats.push({ id: delay, text: `${event.synergyName} +${event.heal}`, color: '#2ecc71', delay })
+      } else if (event.strainChange != null && event.strainChange < 0) {
+        floats.push({ id: delay, text: `${event.synergyName} ${event.strainChange}`, color: '#2ecc71', delay })
+      } else {
+        floats.push({ id: delay, text: `${event.synergyName}`, color: '#f39c12', delay })
+      }
+      delay += step
+    }
+    if (event.type === 'enemyAction') {
+      if (event.damage != null && event.damage > 0) {
+        const blockInfo = event.blocked ? ` (${event.blocked} blocked)` : ''
+        floats.push({ id: delay, text: `${event.enemyName} -${event.damage}${blockInfo}`, color: '#ff6b6b', delay })
+        delay += step
+      } else if (event.damage === 0 && event.blocked) {
+        floats.push({ id: delay, text: `${event.enemyName} BLOCKED`, color: '#3498db', delay })
+        delay += step
+      }
+    }
+  }
+  return floats
+}
+
+function CombatFloats({ floats }: { floats: FloatEntry[] }) {
+  if (floats.length === 0) return null
+  return (
+    <>
+      <style>{`
+        @keyframes combatFloat {
+          0% { opacity: 0; transform: translate(-50%, 10px); }
+          12% { opacity: 1; transform: translate(-50%, 0); }
+          65% { opacity: 1; transform: translate(-50%, -20px); }
+          100% { opacity: 0; transform: translate(-50%, -35px); }
+        }
+      `}</style>
+      <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 50 }}>
+        {floats.map(f => (
+          <div
+            key={f.id}
+            style={{
+              position: 'absolute',
+              top: '38%',
+              left: '50%',
+              color: f.color,
+              fontWeight: 700,
+              fontSize: 16,
+              textShadow: '0 1px 3px rgba(0,0,0,0.9)',
+              whiteSpace: 'nowrap',
+              animation: `combatFloat 0.9s ease-out ${f.delay}ms both`,
+            }}
+          >
+            {f.text}
+          </div>
+        ))}
+      </div>
+    </>
+  )
 }
 
 // ─── Strain Meter ────────────────────────────────────────────────────────
@@ -347,7 +442,21 @@ export default function StrainCombatScreen() {
   const [runVictory, setRunVictory] = useState(false)
   const [pendingGrowth, setPendingGrowth] = useState<{ action: ActionDefinition; cost: number } | null>(null)
   const growthOffersRef = useRef<ActionDefinition[] | null>(null)
+  const [floats, setFloats] = useState<FloatEntry[]>([])
+  const lastAnimKey = useRef('')
   const sc = run.strainCombat
+
+  // Combat animation: show floating numbers when events happen
+  const animKey = sc ? `${sc.roundNumber}-${sc.phase}` : ''
+  useEffect(() => {
+    if (!sc || animKey === lastAnimKey.current || sc.combatLog.length === 0) return
+    lastAnimKey.current = animKey
+    const newFloats = buildFloats(sc.combatLog)
+    setFloats(newFloats)
+    const maxDelay = newFloats.length * 250
+    const timer = setTimeout(() => setFloats([]), maxDelay + 1200)
+    return () => clearTimeout(timer)
+  }, [animKey])
 
   // S3 victory screen
   if (runVictory) {
@@ -561,6 +670,9 @@ export default function StrainCombatScreen() {
           />
         ))}
       </div>
+
+      {/* Floating combat numbers */}
+      <CombatFloats floats={floats} />
 
       {/* Combat Log */}
       <CombatLog log={sc.combatLog} />
