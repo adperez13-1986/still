@@ -345,6 +345,9 @@ export function executeStrainTurn(
   const pushCount = countPushedSlots(combat)
 
   function enemyDealDamage(dmg: number, enemy: EnemyInstance, def: { name: string }, intentType: IntentType) {
+    // Suppress: AoE debuff reduces enemy damage
+    if ((combat as any)._suppressActive) dmg = Math.max(0, dmg - 3)
+
     const reduced = Math.min(combat.damageReduction, dmg)
     dmg -= reduced
     const blocked = Math.min(combat.block, dmg)
@@ -362,6 +365,29 @@ export function executeStrainTurn(
       if (reflected > 0) {
         enemy.currentHealth = Math.max(0, enemy.currentHealth - reflected)
         if (enemy.currentHealth <= 0) enemy.isDefeated = true
+      }
+    }
+    // Thorns: damage reduction deals 2 back per hit
+    if ((combat as any)._thornsActive && reduced > 0) {
+      enemy.currentHealth = Math.max(0, enemy.currentHealth - 2)
+      if (enemy.currentHealth <= 0) enemy.isDefeated = true
+    }
+    // Counter: fully blocked attack → damage action fires again at base
+    if ((combat as any)._counterArmed && actual === 0 && blocked > 0) {
+      const counterDmg = (combat as any)._counterDamage ?? 0
+      if (counterDmg > 0) {
+        enemy.currentHealth = Math.max(0, enemy.currentHealth - counterDmg)
+        if (enemy.currentHealth <= 0) enemy.isDefeated = true
+        combat.combatLog.push({ type: 'synergy', synergyName: 'Counter!', damage: counterDmg, enemyId: enemy.instanceId })
+      }
+    }
+    // Focused Aggro: counter-attack on every hit received
+    if ((combat as any)._focusedAggroActive && actual > 0) {
+      const aggroDmg = (combat as any)._focusedAggroDamage ?? 0
+      if (aggroDmg > 0) {
+        enemy.currentHealth = Math.max(0, enemy.currentHealth - aggroDmg)
+        if (enemy.currentHealth <= 0) enemy.isDefeated = true
+        combat.combatLog.push({ type: 'synergy', synergyName: 'Aggro!', damage: aggroDmg, enemyId: enemy.instanceId })
       }
     }
   }
@@ -438,13 +464,29 @@ export function executeStrainTurn(
 
   combat.enemies = enemies
 
-  // 7. Check loss
+  // 7. End-of-turn synergy effects
+  // Fortify: remaining block → healing
+  if ((combat as any)._fortifyActive && combat.block > 0) {
+    const fortifyHeal = combat.block
+    hp = Math.min(hp + fortifyHeal, 70)
+    combat.combatLog.push({ type: 'synergy', synergyName: 'Fortify', heal: fortifyHeal })
+  }
+  // Recycle: remaining block → strain reduction (2 block = 1 strain)
+  if ((combat as any)._recycleActive && combat.block > 0) {
+    const strainReduced = Math.floor(combat.block / 2)
+    if (strainReduced > 0) {
+      combat.strain = Math.max(0, combat.strain - strainReduced)
+      combat.combatLog.push({ type: 'synergy', synergyName: 'Recycle', strainChange: -strainReduced })
+    }
+  }
+
+  // 8. Check loss
   if (hp <= 0) {
     combat.phase = 'finished'
     return { combat, health: 0 }
   }
 
-  // 8. Next turn reset
+  // 9. Next turn reset
   combat.block = 0
   for (const enemy of combat.enemies) { if (!enemy.isDefeated) enemy.block = 0 }
   combat.damageReduction = 0
@@ -502,9 +544,14 @@ function resolveSynergy(
       break
     }
     case 'counter': {
-      // If block absorbed a full attack, damage fires again — resolved during enemy turn, not here
-      // Mark for enemy turn resolution
+      // If block absorbs a full attack, damage action fires again at base
       (combat as any)._counterArmed = true
+      const counterDmgIdx = [idxA, idxB].find(idx => {
+        const id = combat.slotActions[idx]
+        return id && ALL_ACTIONS[id]?.type === 'damage_single'
+      })
+      ;(combat as any)._counterDamage = counterDmgIdx !== undefined
+        ? ALL_ACTIONS[combat.slotActions[counterDmgIdx]!]!.baseValue : 0
       break
     }
     case 'focus': {
@@ -538,20 +585,47 @@ function resolveSynergy(
       break
     }
     case 'thorns': {
-      // Damage reduction deals 2 back — handled in enemyDealDamage via damageReduction
+      // Damage reduction deals 2 back per hit to attacker
       (combat as any)._thornsActive = true
       break
     }
     case 'empower': {
-      // Buff doubles on damage action — already in getActionValue logic
+      // Buff doubles on damage action — deal bonus damage equal to damage action's base
+      const empDmgIdx = [idxA, idxB].find(idx => {
+        const id = combat.slotActions[idx]
+        return id && (ALL_ACTIONS[id]?.type === 'damage_single' || ALL_ACTIONS[id]?.type === 'damage_all')
+      })
+      if (empDmgIdx !== undefined) {
+        const bonus = ALL_ACTIONS[combat.slotActions[empDmgIdx]!]!.baseValue
+        const target = enemies.find(e => e.instanceId === combat.selectedTargetId && !e.isDefeated)
+          || enemies.find(e => !e.isDefeated)
+        if (target && bonus > 0) {
+          target.currentHealth = Math.max(0, target.currentHealth - bonus)
+          if (target.currentHealth <= 0) target.isDefeated = true
+        }
+      }
       break
     }
     case 'exploit': {
-      // +50% to debuffed — mark for damage calc
+      // +50% bonus damage from pair's damage actions
+      const expDmgEvents = combat.combatLog.filter(e =>
+        e.type === 'slotFire' && (e.slotIndex === idxA || e.slotIndex === idxB) && e.damage
+      )
+      const totalDmg = expDmgEvents.reduce((s, e) => s + (e.damage ?? 0), 0)
+      const bonus = Math.floor(totalDmg * 0.5)
+      if (bonus > 0) {
+        const target = enemies.find(e => e.instanceId === combat.selectedTargetId && !e.isDefeated)
+          || enemies.find(e => !e.isDefeated)
+        if (target) {
+          target.currentHealth = Math.max(0, target.currentHealth - bonus)
+          if (target.currentHealth <= 0) target.isDefeated = true
+        }
+      }
       break
     }
     case 'suppress': {
-      // AoE applies debuff — simplified: reduce all enemy damage by 2 for this turn
+      // AoE applies debuff — reduce all enemy damage by 3 this turn
+      (combat as any)._suppressActive = true
       break
     }
     case 'barrage': {
@@ -585,8 +659,14 @@ function resolveSynergy(
       break
     }
     case 'focused-aggro': {
-      // Counter on every hit — handled in enemy turn
+      // Counter-attack on every hit received
       (combat as any)._focusedAggroActive = true
+      const aggroDmgIdx = [idxA, idxB].find(idx => {
+        const id = combat.slotActions[idx]
+        return id && ALL_ACTIONS[id]?.type === 'damage_single'
+      })
+      ;(combat as any)._focusedAggroDamage = aggroDmgIdx !== undefined
+        ? ALL_ACTIONS[combat.slotActions[aggroDmgIdx]!]!.baseValue : 0
       break
     }
   }
