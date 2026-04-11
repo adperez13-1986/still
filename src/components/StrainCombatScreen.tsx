@@ -604,7 +604,13 @@ export default function StrainCombatScreen() {
 
       {/* 3. Enemies */}
       <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap', margin: '8px 0' }}>
-        {sc.enemies.filter(e => !e.isDefeated).map(enemy => {
+        {sc.enemies.filter(e => {
+          // During replay, keep showing enemies until their display HP hits 0
+          if (displayState && e.instanceId in displayState.enemyHp) {
+            return displayState.enemyHp[e.instanceId] > 0
+          }
+          return !e.isDefeated
+        }).map(enemy => {
           const isFlash = flashEnemyId === enemy.instanceId
           const enemyFloat = isFlash && currentStep?.target === enemy.instanceId ? { text: currentStep.text, color: currentStep.color } : null
           return (
