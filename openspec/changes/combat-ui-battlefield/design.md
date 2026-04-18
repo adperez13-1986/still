@@ -115,7 +115,7 @@ Unpushed:                 Pushed:
 Numbers are positioned relative to the entity card they affect:
 
 - **Positioned**: `position: absolute` within each card's container
-- **Sequenced**: 500ms delay between events
+- **Sequenced**: 1000ms delay between events (tuned up from 500ms during playtest to leave room for future hit animations)
 - **Animation**: fade in, float up 28px, fade out (1s total)
 - **Colors**: red (damage taken), green (heal/strain recovery), blue (block), gold (synergy bonus)
 
@@ -131,9 +131,32 @@ Events map to areas:
 | Synergy heals | Player card | +4 (gold) |
 | Vent strain recovery | Player card | -5 strain |
 
-### 6. Combat log removed
+### 6. Battle log retained (revised from removal)
 
-The floating numbers on entity cards replace the text combat log entirely. Players see what happened spatially — damage on the thing that got damaged.
+**Original plan**: remove the combat log entirely, let floating numbers carry all combat feedback.
+
+**Playtest finding**: there's unused vertical space below the action slots, and the floating numbers alone are easy to miss — players appreciated a persistent text record as a complement, not replacement. The log is now a compact scrolling area between the slots and the controls.
+
+### 7. Step-through execution replay (added during playtest)
+
+The initial design had floating numbers fire via CSS animation delays, which meant all state (HP, block, bars) updated instantly at the start of the turn while only the numbers sequenced. Playtesting showed this was confusing — the enemy HP bar would drop to its final value before the damage animated. Same for enemies dying: they'd disappear instantly before the killing blow played.
+
+The revised replay system:
+- Saves pre-execution state (HP, block, strain, per-enemy HP) before executing
+- Steps through combat log events one at a time (1000ms per step)
+- Highlights the active slot with a white glow/border
+- Flashes the affected entity's border in the event's color
+- Shows HP bars at their intermediate values (computed from pre-state + events so far)
+- Keeps dying enemies visible until the step that kills them plays through
+- Plays the full replay before transitioning to reward/forfeit/death screens
+
+### 8. Layout order revised (playtest-driven)
+
+**Original plan**: strain meter → enemy cards → player card → action slots → controls.
+
+**Playtest finding**: the player's eye had to jump between the top (enemies) and bottom (player card + slots) of the screen. Confusing on mobile where vertical scanning is the natural reading pattern.
+
+**Revised layout**: strain meter → **player card** → enemy cards → action slots → battle log → controls. Player stats sit near the strain meter so resource state is all at the top; combat targets and decisions flow downward.
 
 ### 7. Per-enemy damage targeting
 

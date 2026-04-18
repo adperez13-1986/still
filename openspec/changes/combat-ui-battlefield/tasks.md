@@ -35,7 +35,7 @@
 
 ## 6. Playtest
 
-- [ ] 6.1 Verify damage numbers appear on the correct entity
-- [ ] 6.2 Verify 500ms pacing feels readable
-- [ ] 6.3 Verify action slots are clear enough to make push decisions
-- [ ] 6.4 Verify layout fits on phone without scrolling
+- [x] 6.1 Verify damage numbers appear on the correct entity
+- [x] 6.2 Verify pacing feels readable (tuned to 1000ms during playtest)
+- [x] 6.3 Verify action slots are clear enough to make push decisions
+- [x] 6.4 Verify layout fits on phone without scrolling
