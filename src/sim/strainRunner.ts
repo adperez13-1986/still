@@ -15,6 +15,8 @@ import {
   executeStrainTurn,
 } from '../game/strainCombat'
 import { planStrainTurn } from './strainHeuristic'
+import type { HeuristicProfile } from './strainProfiles'
+import { BALANCED_PROFILE } from './strainProfiles'
 
 export interface StrainSimLoadout {
   health: number
@@ -22,6 +24,7 @@ export interface StrainSimLoadout {
   strain: number
   slotLayout: SlotLayout
   combatsCleared: number
+  profile?: HeuristicProfile
 }
 
 export interface StrainSimResult {
@@ -50,7 +53,7 @@ export function simulateStrainCombat(
   while (turn < MAX_TURNS) {
     turn++
 
-    const decision = planStrainTurn(combat, hp, loadout.maxHealth)
+    const decision = planStrainTurn(combat, hp, loadout.maxHealth, loadout.profile ?? BALANCED_PROFILE)
 
     let state = combat
     // Apply slot pushes

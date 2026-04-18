@@ -18,6 +18,8 @@ import {
 } from '../game/strainCombat'
 import { STARTING_SLOT_LAYOUT, ALL_ACTIONS, FINDABLE_ACTIONS, getSynergyForPair } from '../data/actions'
 import { planStrainTurn } from './strainHeuristic'
+import type { HeuristicProfile } from './strainProfiles'
+import { BALANCED_PROFILE } from './strainProfiles'
 
 // ─── Types ───────────────────────────────────────────────────────────────
 
@@ -26,6 +28,7 @@ export interface RunSimConfig {
   boss: EnemyDefinition[]
   startingHealth: number
   startingStrain: number
+  profile?: HeuristicProfile
 }
 
 export interface RunSimResult {
@@ -59,42 +62,41 @@ function pickReward(
   strain: number,
   slotLayout: SlotLayout,
   acquiredActions: string[],
+  profile: HeuristicProfile,
   rng: () => number,
 ): { type: 'comfort'; id: string } | { type: 'growth'; action: ActionDefinition; slotIndex: number } {
   const hasEmptySlot = slotLayout.slots.some(s => s === null)
-
-  // After decay, our effective strain for next combat is strain - 2
   const effectiveStrain = strain - STRAIN_DECAY_BETWEEN_COMBATS
 
-  // Fill empty solo slot eagerly — it's pure upside (more base value for free)
+  // Fill empty slot eagerly
   if (hasEmptySlot) {
     const available = FINDABLE_ACTIONS.filter(a => !acquiredActions.includes(a.id))
     if (available.length > 0) {
-      const action = pickBestAction(available, slotLayout, health, maxHealth, rng)
+      const action = pickBestAction(available, slotLayout, health, maxHealth, profile, rng)
       const emptyIdx = slotLayout.slots.indexOf(null)
       const cost = action.takeCost ?? 3
-      if (effectiveStrain + cost < 14) {
+      if (effectiveStrain + cost < profile.growthStrainCapEmptySlot) {
         return { type: 'growth', action, slotIndex: emptyIdx }
       }
     }
   }
 
   // Critical HP → heal
-  if (health < maxHealth * 0.35) {
+  if (health < maxHealth * profile.criticalHealHpRatio) {
     return { type: 'comfort', id: 'heal' }
   }
 
-  // Only take comfort relief at high effective strain
-  if (effectiveStrain >= 9) {
+  // High strain → relief
+  if (effectiveStrain >= profile.reliefStrainThreshold) {
     return { type: 'comfort', id: 'relief' }
   }
 
   // Default: take growth if we can afford it
   const available = FINDABLE_ACTIONS.filter(a => !acquiredActions.includes(a.id))
   if (available.length > 0) {
-    const action = pickBestAction(available, slotLayout, health, maxHealth, rng)
+    const action = pickBestAction(available, slotLayout, health, maxHealth, profile, rng)
     const cost = action.takeCost ?? 3
-    if (effectiveStrain + cost < 12) {
+    if (effectiveStrain + cost < profile.growthStrainCap) {
       const bestSlot = pickBestSlot(action, slotLayout)
       return { type: 'growth', action, slotIndex: bestSlot }
     }
@@ -106,15 +108,15 @@ function pickReward(
   return { type: 'comfort', id: 'companion' }
 }
 
-/** Pick the best action from available pool */
+/** Pick the best action from available pool using profile weights */
 function pickBestAction(
   available: ActionDefinition[],
   slotLayout: SlotLayout,
   health: number,
   maxHealth: number,
+  profile: HeuristicProfile,
   rng: () => number,
 ): ActionDefinition {
-  // Check what types we already have
   const existingTypes = new Set(
     slotLayout.slots.filter(Boolean).map(id => ALL_ACTIONS[id!]?.type)
   )
@@ -138,23 +140,19 @@ function pickBestAction(
       }
     }
 
-    // Strongly prefer heal if we don't have one — critical for run sustainability
-    if (action.type === 'heal' && !hasHeal) score += 8
-    else if (action.type === 'heal') score += 3
-
-    // Value block/reduce more when hurt
-    if (action.type === 'block') score += hpRatio < 0.6 ? 6 : 3
-    if (action.type === 'reduce') score += hpRatio < 0.6 ? 5 : 2
-
-    // Damage has diminishing returns (we already have Strike + Barrage)
-    if (action.type === 'damage_single') score += 1
-    if (action.type === 'damage_all') score += 1
-
-    // Convert/reflect/debuff are situationally valuable
-    if (action.type === 'convert') score += 3 // strain recovery potential
-    if (action.type === 'reflect') score += 2
-    if (action.type === 'debuff') score += 2
-    if (action.type === 'buff') score += 2
+    // Profile-weighted action type bonuses
+    if (action.type === 'heal') {
+      score += hasHeal ? profile.healActionBonus : profile.healActionBonus + profile.firstHealBonus
+    }
+    if (action.type === 'block') score += hpRatio < 0.6 ? profile.blockActionBonus * 2 : profile.blockActionBonus
+    if (action.type === 'reduce') score += hpRatio < 0.6 ? profile.reduceActionBonus * 2 : profile.reduceActionBonus
+    if (action.type === 'damage_single') score += profile.damageSingleActionBonus
+    if (action.type === 'damage_all') score += profile.damageAllActionBonus
+    if (action.type === 'convert') score += profile.convertActionBonus
+    if (action.type === 'reflect') score += profile.reflectActionBonus
+    if (action.type === 'debuff') score += profile.debuffActionBonus
+    if (action.type === 'buff') score += profile.buffActionBonus
+    if (action.type === 'utility') score += profile.utilityActionBonus
 
     // Prefer cheaper actions
     if ((action.takeCost ?? 3) <= 3) score += 1
@@ -221,6 +219,7 @@ function simulateCombat(
   strain: number,
   slotLayout: SlotLayout,
   combatsCleared: number,
+  profile: HeuristicProfile,
   rng: () => number,
 ): { outcome: 'win' | 'loss' | 'forfeit'; turns: number; health: number; strain: number } {
   const enemies: EnemyInstance[] = enemyDefs.map(d => makeEnemyInstance(d, combatsCleared, rng))
@@ -231,7 +230,7 @@ function simulateCombat(
 
   while (turn < maxTurns) {
     turn++
-    const decision = planStrainTurn(combat, hp, maxHealth)
+    const decision = planStrainTurn(combat, hp, maxHealth, profile)
 
     let state = combat
     for (let i = 0; i < 5; i++) {
@@ -282,6 +281,7 @@ export function simulateRun(config: RunSimConfig, rng: () => number): RunSimResu
   const acquiredActions: string[] = []
   const turnLog: CombatSummary[] = []
   let combatsWon = 0
+  const profile = config.profile ?? BALANCED_PROFILE
 
   const allEncounters = [...config.encounters, config.boss]
 
@@ -292,7 +292,7 @@ export function simulateRun(config: RunSimConfig, rng: () => number): RunSimResu
     const hpBefore = health
     const strainBefore = strain
 
-    const result = simulateCombat(enemyDefs, health, maxHealth, strain, slotLayout, combatsWon, rng)
+    const result = simulateCombat(enemyDefs, health, maxHealth, strain, slotLayout, combatsWon, profile, rng)
 
     health = result.health
     strain = result.strain
@@ -326,7 +326,7 @@ export function simulateRun(config: RunSimConfig, rng: () => number): RunSimResu
 
     // Reward selection (not after boss)
     if (!isBoss) {
-      const reward = pickReward(health, maxHealth, strain, slotLayout, acquiredActions, rng)
+      const reward = pickReward(health, maxHealth, strain, slotLayout, acquiredActions, profile, rng)
       if (reward.type === 'comfort') {
         if (reward.id === 'heal') health = Math.min(health + 8, maxHealth)
         else if (reward.id === 'relief') strain = Math.max(0, strain - 4)

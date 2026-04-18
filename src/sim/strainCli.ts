@@ -15,6 +15,7 @@
  *   --health N        Starting HP (default: 70)
  *   --strain N        Starting strain (default: 2)
  *   --combats N       Combats before boss in run mode (default: 8)
+ *   --profile NAME    Heuristic profile: balanced | defensive | aggressive (default: balanced)
  *   --verbose         Print each combat/run result
  */
 
@@ -29,6 +30,7 @@ import {
   SECTOR1_BOSS,
 } from '../data/enemies'
 import { STARTING_SLOT_LAYOUT } from '../data/actions'
+import { getProfile } from './strainProfiles'
 import type { EnemyDefinition, SlotLayout } from '../game/types'
 
 function parseArgs(argv: string[]) {
@@ -103,6 +105,7 @@ function runSingleCombatMode(opts: Record<string, string>) {
   const verbose = 'verbose' in opts
   const enemyPreset = opts['enemies'] ?? 'reactive'
   const combatsCleared = parseInt(opts['combats-cleared'] ?? '0', 10)
+  const profile = getProfile(opts['profile'] ?? 'balanced')
 
   const encounterGroups = resolveEncounters(enemyPreset)
   const slotLayout: SlotLayout = { slots: [...STARTING_SLOT_LAYOUT] }
@@ -113,11 +116,13 @@ function runSingleCombatMode(opts: Record<string, string>) {
     strain,
     slotLayout,
     combatsCleared,
+    profile,
   }
 
   console.log(`\nStrain Combat Simulator (single-combat)`)
   console.log(`${'='.repeat(50)}`)
   console.log(`  Runs: ${runs}  Seed: ${seed}`)
+  console.log(`  Profile: ${profile.name}`)
   console.log(`  HP: ${health}  Strain: ${strain}/20`)
   console.log(`  Slots: ${slotLayout.slots.filter(Boolean).join(', ')}`)
   console.log(`  Enemies: ${enemyPreset} (${encounterGroups.length} encounter types)`)
@@ -202,6 +207,7 @@ function runFullRunMode(opts: Record<string, string>) {
   const strain = parseInt(opts['strain'] ?? '2', 10)
   const combatsBeforeBoss = parseInt(opts['combats'] ?? '8', 10)
   const verbose = 'verbose' in opts
+  const profile = getProfile(opts['profile'] ?? 'balanced')
 
   // Build encounter pools
   const standardPool = resolveEncounters('reactive')
@@ -217,6 +223,7 @@ function runFullRunMode(opts: Record<string, string>) {
   console.log(`\nStrain Run Simulator (full sector 1)`)
   console.log(`${'='.repeat(55)}`)
   console.log(`  Runs: ${runs}  Seed: ${seed}`)
+  console.log(`  Profile: ${profile.name}`)
   console.log(`  HP: ${health}  Strain: ${strain}/20`)
   console.log(`  Combats before boss: ${combatsBeforeBoss}`)
   console.log(`  Starting slots: ${STARTING_SLOT_LAYOUT.filter(Boolean).join(', ')}`)
@@ -244,6 +251,7 @@ function runFullRunMode(opts: Record<string, string>) {
       boss,
       startingHealth: health,
       startingStrain: strain,
+      profile,
     }
 
     const result = simulateRun(config, rng)
