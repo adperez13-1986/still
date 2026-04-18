@@ -120,6 +120,98 @@ export const ACTION_TAUNT: ActionDefinition = {
   takeCost: 3,
 }
 
+// ─── Expansion: Damage ───────────────────────────────────────────────────────
+
+export const ACTION_QUICK_JABS: ActionDefinition = {
+  id: 'quick-jabs', name: 'Quick Jabs', type: 'damage_single',
+  baseValue: 2, pushedValue: 3, hits: 3,
+  description: 'Hit selected enemy three times',
+  takeCost: 3,
+}
+
+export const ACTION_HEAVY_BLOW: ActionDefinition = {
+  id: 'heavy-blow', name: 'Heavy Blow', type: 'damage_single',
+  baseValue: 4, pushedValue: 14,
+  description: 'Slow swing. Weak unpushed, devastating when committed',
+  takeCost: 4,
+}
+
+export const ACTION_SPLASH: ActionDefinition = {
+  id: 'splash', name: 'Splash', type: 'damage_all',
+  baseValue: 3, pushedValue: 5,
+  description: 'Consistent AoE to all enemies',
+  takeCost: 3,
+}
+
+export const ACTION_FLURRY: ActionDefinition = {
+  id: 'flurry', name: 'Flurry', type: 'damage_all',
+  baseValue: 2, pushedValue: 3, hits: 2,
+  description: 'Hit all enemies twice',
+  takeCost: 4,
+}
+
+// ─── Expansion: Defense ──────────────────────────────────────────────────────
+
+export const ACTION_IRON_WALL: ActionDefinition = {
+  id: 'iron-wall', name: 'Iron Wall', type: 'block',
+  baseValue: 2, pushedValue: 5, persistent: true,
+  description: 'Low block that persists across turns',
+  takeCost: 4,
+}
+
+export const ACTION_GUARD: ActionDefinition = {
+  id: 'guard', name: 'Guard', type: 'reduce',
+  baseValue: 2, pushedValue: 4, perHit: true,
+  description: 'Lightweight per-hit damage reduction',
+  takeCost: 3,
+}
+
+export const ACTION_THORNSKIN: ActionDefinition = {
+  id: 'thornskin', name: 'Thornskin', type: 'reflect',
+  baseValue: 30, pushedValue: 50, reflectPct: 30,
+  description: 'Reflect 30% of damage taken (50% pushed)',
+  takeCost: 3,
+}
+
+// ─── Expansion: Sustain ──────────────────────────────────────────────────────
+
+export const ACTION_STITCH: ActionDefinition = {
+  id: 'stitch', name: 'Stitch', type: 'heal',
+  baseValue: 3, pushedValue: 5,
+  description: 'Quick field heal',
+  takeCost: 3,
+}
+
+export const ACTION_REGEN: ActionDefinition = {
+  id: 'regen', name: 'Regen', type: 'heal',
+  baseValue: 1, pushedValue: 2, healOverTurns: 3,
+  description: 'Slow healing over 3 turns',
+  takeCost: 3,
+}
+
+export const ACTION_RECHARGE: ActionDefinition = {
+  id: 'recharge', name: 'Recharge', type: 'convert',
+  baseValue: 4, pushedValue: 6,
+  description: 'Convert block to strain reduction',
+  takeCost: 3,
+}
+
+// ─── Expansion: Utility ──────────────────────────────────────────────────────
+
+export const ACTION_RALLY: ActionDefinition = {
+  id: 'rally', name: 'Rally', type: 'buff',
+  baseValue: 5, pushedValue: 7,
+  description: 'Linked action gets a large boost next turn',
+  takeCost: 4,
+}
+
+export const ACTION_CRIPPLE: ActionDefinition = {
+  id: 'cripple', name: 'Cripple', type: 'debuff',
+  baseValue: 4, pushedValue: 6,
+  description: 'Heavily reduce enemy damage for 2 turns',
+  takeCost: 4,
+}
+
 // ─── All Actions ─────────────────────────────────────────────────────────────
 
 export const STARTING_ACTIONS: ActionDefinition[] = [
@@ -131,6 +223,11 @@ export const FINDABLE_ACTIONS: ActionDefinition[] = [
   ACTION_BARRIER, ACTION_BRACE, ACTION_REDIRECT,
   ACTION_REPAIR, ACTION_MEND, ACTION_ABSORB,
   ACTION_PATIENCE, ACTION_OVERCLOCK, ACTION_WEAKEN, ACTION_TAUNT,
+  // Expansion
+  ACTION_QUICK_JABS, ACTION_HEAVY_BLOW, ACTION_SPLASH, ACTION_FLURRY,
+  ACTION_IRON_WALL, ACTION_GUARD, ACTION_THORNSKIN,
+  ACTION_STITCH, ACTION_REGEN, ACTION_RECHARGE,
+  ACTION_RALLY, ACTION_CRIPPLE,
 ]
 
 export const ALL_ACTIONS: Record<string, ActionDefinition> = Object.fromEntries(
