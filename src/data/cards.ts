@@ -61,27 +61,33 @@ const emergencyStrike: ModifierCardDefinition = {
 const vent: ModifierCardDefinition = {
   id: 'vent',
   name: 'Vent',
-  description: 'Draw 2 cards.',
-  energyCost: 2,
+  description: 'Recover 5 strain. End turn. Damage body actions skipped this turn.',
+  energyCost: 0,
   category: {
     type: 'system',
-    modifier: 'Draw',
-    effects: [{ type: 'draw', count: 2 }],
-    homeSlot: 'Legs',
+    modifier: 'Utility',
+    effects: [], // effects are handled by ventEffect flag, not here
+    homeSlot: 'Torso',
   },
-  keywords: [],
+  keywords: ['Innate'],
+  freePlay: true,
+  ventEffect: true,
+  ventStrainRecovery: 5,
   upgraded: {
     id: 'vent',
     name: 'Vent+',
-    description: 'Draw 2 cards.',
-    energyCost: 1,
+    description: 'Recover 7 strain. End turn. Damage body actions skipped this turn.',
+    energyCost: 0,
     category: {
       type: 'system',
-      modifier: 'Draw',
-      effects: [{ type: 'draw', count: 2 }],
-      homeSlot: 'Legs',
+      modifier: 'Utility',
+      effects: [],
+      homeSlot: 'Torso',
     },
-    keywords: [],
+    keywords: ['Innate'],
+    freePlay: true,
+    ventEffect: true,
+    ventStrainRecovery: 7,
   },
 }
 
@@ -117,12 +123,18 @@ const diagnostics: ModifierCardDefinition = {
 const overcharge: ModifierCardDefinition = {
   id: 'overcharge',
   name: 'Overcharge',
-  description: '+100% to one slot\'s output.',
+  description: '+100% to one slot\'s output. Push: +150% AND exhaust.',
   energyCost: 3,
   category: {
     type: 'slot',
     modifier: 'Amplify',
     effect: { type: 'amplify', multiplier: 2.0 },
+  },
+  pushCost: 1,
+  pushedCategory: {
+    type: 'slot',
+    modifier: 'Amplify',
+    effect: { type: 'amplify', multiplier: 2.5 },
   },
   keywords: [],
   upgraded: {
@@ -246,7 +258,7 @@ const retaliate: ModifierCardDefinition = {
 const fortify: ModifierCardDefinition = {
   id: 'fortify',
   name: 'Fortify',
-  description: 'Gain 6 Block. Deal 6 damage to all enemies.',
+  description: 'Gain 6 Block. Deal 6 damage to all enemies. Push: 10/10.',
   energyCost: 2,
   category: {
     type: 'system',
@@ -254,6 +266,16 @@ const fortify: ModifierCardDefinition = {
     effects: [
       { type: 'gainBlock', value: 6 },
       { type: 'damage', value: 6, targetMode: 'all_enemies' },
+    ],
+    homeSlot: 'Torso',
+  },
+  pushCost: 1,
+  pushedCategory: {
+    type: 'system',
+    modifier: 'Utility',
+    effects: [
+      { type: 'gainBlock', value: 10 },
+      { type: 'damage', value: 10, targetMode: 'all_enemies' },
     ],
     homeSlot: 'Torso',
   },
@@ -279,7 +301,7 @@ const fortify: ModifierCardDefinition = {
 const shieldBash: ModifierCardDefinition = {
   id: 'shield-bash',
   name: 'Shield Bash',
-  description: 'Override: deal 10 damage to one enemy.',
+  description: 'Override: deal 10 damage. Push: 16 damage.',
   energyCost: 2,
   category: {
     type: 'slot',
@@ -287,6 +309,15 @@ const shieldBash: ModifierCardDefinition = {
     effect: {
       type: 'override',
       action: { type: 'damage', baseValue: 10, targetMode: 'single_enemy' },
+    },
+  },
+  pushCost: 1,
+  pushedCategory: {
+    type: 'slot',
+    modifier: 'Override',
+    effect: {
+      type: 'override',
+      action: { type: 'damage', baseValue: 16, targetMode: 'single_enemy' },
     },
   },
   keywords: [],
@@ -459,12 +490,19 @@ const thermalSurge: ModifierCardDefinition = {
 const meltdown: ModifierCardDefinition = {
   id: 'meltdown',
   name: 'Meltdown',
-  description: 'Deal 15 damage to one enemy.',
+  description: 'Deal 15 damage to one enemy. Push: deal 22 instead.',
   energyCost: 3,
   category: {
     type: 'system',
     modifier: 'Utility',
     effects: [{ type: 'damage', value: 15, targetMode: 'single_enemy' }],
+    homeSlot: 'Arms',
+  },
+  pushCost: 2,
+  pushedCategory: {
+    type: 'system',
+    modifier: 'Utility',
+    effects: [{ type: 'damage', value: 22, targetMode: 'single_enemy' }],
     homeSlot: 'Arms',
   },
   keywords: [],
@@ -656,12 +694,19 @@ const heatSurge: ModifierCardDefinition = {
 const recklessCharge: ModifierCardDefinition = {
   id: 'reckless-charge',
   name: 'Reckless Charge',
-  description: 'Deal 18 damage.',
+  description: 'Deal 18 damage. Push: deal 26 damage.',
   energyCost: 4,
   category: {
     type: 'system',
     modifier: 'Utility',
     effects: [{ type: 'damage', value: 18, targetMode: 'single_enemy' }],
+    homeSlot: 'Arms',
+  },
+  pushCost: 2,
+  pushedCategory: {
+    type: 'system',
+    modifier: 'Utility',
+    effects: [{ type: 'damage', value: 26, targetMode: 'single_enemy' }],
     homeSlot: 'Arms',
   },
   keywords: [],

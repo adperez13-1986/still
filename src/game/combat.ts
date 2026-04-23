@@ -174,6 +174,23 @@ function resolveSingleTarget(enemies: EnemyInstance[], preferredId?: string): En
   return fallback ? [fallback] : []
 }
 
+// ─── Strain Constants (inlined from strainCombat.ts) ─────────────────────────
+
+export const STRAIN_DECAY_BETWEEN_COMBATS = 4
+export const VENT_STRAIN_RECOVERY = 5
+export const MAX_STRAIN = 20
+
+/** Check if the combat should forfeit based on strain. Caller is responsible for applying the transition (phase='forfeit', strain=14). */
+export function hasForfeited(combat: { strain: number; maxStrain: number }): boolean {
+  return combat.strain >= combat.maxStrain
+}
+
+/** Apply forfeit transition: sets phase and drops strain. Returns the strain to write back to RunState (which will decay further). */
+export function applyForfeit(combat: CombatState): void {
+  combat.phase = 'forfeit'
+  combat.strain = 14
+}
+
 // ─── Combat Initialisation (Task 2.11) ───────────────────────────────────────
 
 export function initCombat(
@@ -182,7 +199,8 @@ export function initCombat(
   enemies: EnemyInstance[],
   startingStatuses: StatusEffect[] = [],
   parts: BehavioralPartDefinition[] = [],
-  rng: () => number = Math.random
+  rng: () => number = Math.random,
+  startingStrain: number = 2,
 ): CombatState {
   const drawPile = shuffle(deck, rng)
   const hand: CardInstance[] = []
@@ -227,6 +245,12 @@ export function initCombat(
     absorbBlockGained: 0,
     cardsExhaustedThisTurn: 0,
     damageReduction: 0,
+    // Strain integration
+    strain: startingStrain,
+    maxStrain: MAX_STRAIN,
+    pushedCards: {},
+    ventedThisTurn: false,
+    headDebuffsApplied: {},
   }
 }
 
@@ -694,16 +718,27 @@ export function executeBodyActions(ctx: CombatContext): CombatResult {
       result.combat.absorbBlockGained += actionResult.blockGained
     }
 
-    // Apply debuffs from HEAD
+    // Apply debuffs from HEAD — with stack cap per enemy per combat (HEAD VULN fix)
     if (actionResult.debuffsApplied) {
+      const HEAD_DEBUFF_CAP = 3
       for (const deb of actionResult.debuffsApplied) {
         const targets = deb.targetMode === 'all_enemies'
           ? result.combat.enemies.filter(e => !e.isDefeated)
           : resolveSingleTarget(result.combat.enemies, ctx.targetEnemyId)
         for (const enemy of targets) {
-          enemy.statusEffects = addStatus(enemy.statusEffects, deb.debuffType as any, deb.stacks)
+          // Track HEAD-applied debuffs per enemy
+          if (!result.combat.headDebuffsApplied[enemy.instanceId]) {
+            result.combat.headDebuffsApplied[enemy.instanceId] = { Weak: 0, Vulnerable: 0, Strength: 0, Dexterity: 0, Inspired: 0 }
+          }
+          const applied = result.combat.headDebuffsApplied[enemy.instanceId][deb.debuffType as 'Weak' | 'Vulnerable'] ?? 0
+          const remaining = Math.max(0, HEAD_DEBUFF_CAP - applied)
+          const actualStacks = Math.min(deb.stacks, remaining)
+          if (actualStacks > 0) {
+            enemy.statusEffects = addStatus(enemy.statusEffects, deb.debuffType as any, actualStacks)
+            result.combat.headDebuffsApplied[enemy.instanceId][deb.debuffType as 'Weak' | 'Vulnerable'] = applied + actualStacks
+          }
         }
-        result.log.push(`${slot}: applied ${deb.stacks} ${deb.debuffType}${deb.targetMode === 'all_enemies' ? ' to all' : ''}`)
+        result.log.push(`${slot}: applied ${deb.stacks} ${deb.debuffType}${deb.targetMode === 'all_enemies' ? ' to all' : ''} (capped at ${HEAD_DEBUFF_CAP})`)
       }
     }
 
@@ -760,6 +795,12 @@ export function executeBodyActions(ctx: CombatContext): CombatResult {
     if (actionResult.healAmount > 0) {
       result.stillHealth = Math.min(ctx.maxHealth, result.stillHealth + actionResult.healAmount)
       result.log.push(`${slot}: healed ${actionResult.healAmount}`)
+    }
+
+    // Vent: skip damage-type slot fires entirely
+    if (result.combat.ventedThisTurn && actionResult.damage.length > 0) {
+      actionResult.damage = []
+      result.log.push(`${slot}: damage skipped (venting)`)
     }
 
     // Apply damage to enemies
@@ -879,14 +920,36 @@ function hasOverrideModifier(
 
 export function playModifierCard(
   ctx: CombatContext,
-  card: ModifierCardDefinition,
+  cardDef: ModifierCardDefinition,
   instanceId: string,
-  targetSlot?: BodySlot
+  targetSlot?: BodySlot,
+  pushed: boolean = false,
 ): CombatResult {
   const result: CombatResult = {
     combat: JSON.parse(JSON.stringify(ctx.combat)) as CombatState,
     stillHealth: ctx.stillHealth,
     log: [],
+  }
+
+  // Resolve push state: pushed cards swap category for pushedCategory
+  const isActuallyPushed = pushed && cardDef.pushCost != null && cardDef.pushedCategory != null
+  const card: ModifierCardDefinition = isActuallyPushed
+    ? { ...cardDef, category: cardDef.pushedCategory! }
+    : cardDef
+
+  // Vent: special free-play card that recovers strain and sets flag to skip damage actions
+  if (cardDef.ventEffect) {
+    const recovery = cardDef.ventStrainRecovery ?? VENT_STRAIN_RECOVERY
+    result.combat.strain = Math.max(0, result.combat.strain - recovery)
+    result.combat.ventedThisTurn = true
+    // Vent goes to exhaust (consumed)
+    const handIdx = result.combat.hand.findIndex(c => c.instanceId === instanceId)
+    if (handIdx !== -1) {
+      const [ventCard] = result.combat.hand.splice(handIdx, 1)
+      result.combat.exhaustPile.push(ventCard)
+    }
+    result.log.push(`${card.name}: vent. Strain -${recovery}. Damage actions skipped this turn.`)
+    return result
   }
 
   // Check energy sufficiency
@@ -895,8 +958,23 @@ export function playModifierCard(
     return result
   }
 
+  // If pushed, verify strain budget
+  if (isActuallyPushed) {
+    const pushCost = cardDef.pushCost!
+    if (result.combat.strain + pushCost >= result.combat.maxStrain) {
+      result.log.push(`Cannot push ${card.name}: would reach forfeit strain`)
+      return result
+    }
+  }
+
   // Deduct energy
   result.combat.currentEnergy -= card.energyCost
+
+  // Deduct strain and record push
+  if (isActuallyPushed) {
+    result.combat.strain += cardDef.pushCost!
+    result.combat.pushedCards[instanceId] = true
+  }
 
   if (card.category.type === 'slot') {
     if (!targetSlot) {
@@ -1235,12 +1313,21 @@ export function unassignModifier(
   const secondaryId = result.combat.slotModifiers2[slot]
   const primaryId = result.combat.slotModifiers[slot]
 
+  const refundPushStrain = (instanceId: string) => {
+    if (result.combat.pushedCards[instanceId] && card.pushCost != null) {
+      result.combat.strain = Math.max(0, result.combat.strain - card.pushCost)
+      delete result.combat.pushedCards[instanceId]
+    }
+  }
+
   if (secondaryId) {
     result.combat.currentEnergy = Math.min(result.combat.maxEnergy, result.combat.currentEnergy + card.energyCost)
+    refundPushStrain(secondaryId)
     result.combat.slotModifiers2[slot] = null
     result.log.push(`Unassigned ${card.name} from ${slot} (secondary)`)
   } else if (primaryId) {
     result.combat.currentEnergy = Math.min(result.combat.maxEnergy, result.combat.currentEnergy + card.energyCost)
+    refundPushStrain(primaryId)
     result.combat.slotModifiers[slot] = null
     result.log.push(`Unassigned ${card.name} from ${slot}`)
   } else {
@@ -1551,6 +1638,8 @@ export function startTurn(ctx: CombatContext, inspiredBonus = 0): CombatResult {
   // Reset energy budget and per-turn counters
   result.combat.currentEnergy = result.combat.maxEnergy
   result.combat.cardsExhaustedThisTurn = 0
+  // Reset vent flag for next turn
+  result.combat.ventedThisTurn = false
 
   // Apply overclock disables (survived enemy turn clear)
   if (result.combat._overclockDisables && result.combat._overclockDisables.length > 0) {

@@ -87,6 +87,12 @@ export interface ModifierCardDefinition {
   keywords: Keyword[]
   freePlay?: boolean // plays instantly without occupying a slot (e.g., companion cards)
   upgraded?: ModifierCardDefinition
+  // Strain/push: cards with these fields can be pushed for an alternate effect at an additional strain cost
+  pushCost?: number
+  pushedCategory?: ModifierCardType
+  // Vent behavior: when true, playing this card recovers strain and skips damage actions this turn
+  ventEffect?: boolean
+  ventStrainRecovery?: number
 }
 
 export interface CardInstance {
@@ -240,7 +246,7 @@ export interface GridMaze {
 
 // ─── Run State ───────────────────────────────────────────────────────────────
 
-export type CombatPhase = 'planning' | 'executing' | 'enemyTurn' | 'reward' | 'finished'
+export type CombatPhase = 'planning' | 'executing' | 'enemyTurn' | 'reward' | 'finished' | 'forfeit'
 
 // ─── Combat Animation Events ────────────────────────────────────────────────
 
@@ -278,6 +284,12 @@ export interface CombatState {
   cardsExhaustedThisTurn: number // tracks exhaust events for Feedback Loop
   damageReduction: number // per-hit reduction from LEGS equipment this turn
   _overclockDisables?: BodySlot[] // slots to disable next turn (survives enemy turn clear)
+  // Strain integration
+  strain: number // persistent accumulator; 20 = forfeit. Carries between combats.
+  maxStrain: number // default 20
+  pushedCards: Record<string, boolean> // instanceId -> pushed flag for pushable cards
+  ventedThisTurn: boolean // true when a Vent card was played this turn
+  headDebuffsApplied: Record<string, Record<StatusEffectType, number>> // enemyId -> debuff -> count, for HEAD stack capping
 }
 
 export interface RunState {
