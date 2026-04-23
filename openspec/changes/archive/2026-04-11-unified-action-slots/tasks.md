@@ -66,11 +66,28 @@
 - [x] 7.2 New run initializes with starting loadout
 - [x] 7.3 Update RunScreen startRun calls
 
-## 8. Playtest
+## 8. Playtest (observed during extended session)
 
-- [ ] 8.1 Verify link tax makes pair pushing a real decision
-- [ ] 8.2 Verify synergies feel distinct and meaningful
-- [ ] 8.3 Verify slot rearrangement creates build experimentation
-- [ ] 8.4 Verify action replacement feels like a real trade-off (moth and flame)
-- [ ] 8.5 Verify no dominant strategy emerges from one pair combo
-- [ ] 8.6 Verify reactive enemies still create dilemmas with new system
+- [x] 8.1 Link tax makes pair pushing a real decision — **PARTIAL**: Upfront +1 strain for pushing both felt punishing when the synergy was conditional (e.g. Counter only fires on full-block). Moved to "charge on activation" during playtest. Link tax is now only a real decision for unconditional synergies. Reworked mid-session (commit 1668b62).
+- [x] 8.2 Synergies feel distinct and meaningful — **PARTIAL**: 8 of 18 synergies were implemented as no-op flags that never read (Counter, Fortify, Recycle, Thorns, Focused Aggro, Empower, Exploit, Suppress). Fixed during playtest (commit ddf710e). Even after fixing: because synergies are type-based, swapping Strike for Focus Fire doesn't change the synergy, only the values. Individual actions within a type feel interchangeable. This is the core limitation surfacing repeatedly.
+- [x] 8.3 Slot rearrangement creates build experimentation — **WEAK**: 5 slots × ~4 meaningful type mixes = small build space. Rearranging within types changes numbers, not play pattern. Players converge on a stable loadout and rarely deviate.
+- [x] 8.4 Action replacement feels like a real trade-off (moth and flame) — **NO**: Because types determine synergies, replacing a damage_single with another damage_single is a stat swap, not a build change. The "moth and flame" emotional weight doesn't land — you just take the strict upgrade or keep what you have.
+- [x] 8.5 No dominant strategy emerges from one pair combo — **WEAK**: Profile sim (seed 42) shows Balanced 33% / Defensive 20% / Aggressive 1%. "Balanced" wins by covering both offense and defense — single-focus builds underperform. Not a dominant COMBO, but a dominant PLAYSTYLE (flexibility).
+- [x] 8.6 Reactive enemies still create dilemmas with new system — **YES**: Retaliators, StrainScale, Charge, etc. all translate well. This part works.
+
+### Summary of playtest findings
+
+**What worked:**
+- Strain as a self-inflicted pressure meter with 20-cap forfeit — emotional core is intact
+- Vent as a real sacrifice (skip damage to recover strain)
+- Reactive enemies create per-enemy dilemmas
+- Separation of HP (tactical) vs strain (strategic) layer
+
+**What didn't work:**
+- Type-based synergies make individual actions within a type interchangeable
+- 5 slots is too tight — owning more actions than slots is wasted
+- "Push or don't push" is a flat decision space per turn
+- Build identity doesn't emerge because rearrangement within types changes nothing
+- Momentum/building-up feeling is absent — every turn feels like the last
+
+**Superseded by:** These findings drive a reframe toward dynamic loadouts (action swap per turn from an unbounded owned pool). Next change will explore that direction.
