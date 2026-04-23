@@ -33,4 +33,20 @@
 - [x] 6.2 `npx vite build` succeeds
 - [x] 6.3 Single-combat sim: 100% win rate maintained
 - [x] 6.4 Full S1 sim: victory rate 20.7% → 29.7%, action acquisition diversified (quick-jabs 67%, barrier 49%, regen 42%, stitch 37%). Top 3 damage picks are slightly above the 60% target but overall distribution is much more even.
-- [ ] 6.5 Manual playtest: start a run and confirm growth reward screens show a mix of new and existing actions
+- [x] 6.5 Manual playtest: reward screens do show a mix of new and existing actions
+
+## 7. Post-implementation findings
+
+**What the content addition delivered (good):**
+- Sim victory rate improved: 20.7% → 29.7% (balanced profile) just from adding actions
+- Action acquisition spread diversified: barrier went from 9% → 49% picks, regen 42%, stitch 37%
+- Multi-hit actions (Quick Jabs, Flurry) have measurably different take patterns vs single-hit damage
+- Heavy Blow's identity as a commitment action reads clearly in sims: 43% acquisition with aggressive profile, ~0% with defensive profile
+
+**What content alone did NOT fix (lesson):**
+- Adding 12 more actions didn't resolve the "rewards feel the same" problem surfaced in play
+- Because synergies are type-based, a second damage_single feels like "bigger Strike" not "different playstyle"
+- 5 slots still constrains build variety; owning 21 findable actions is mostly shelved
+- The working theory "content density will create build identity" was wrong — the ceiling is set by the slot + synergy design, not the action count
+
+**Superseded direction:** These findings plus the unified-action-slots playtest findings together argue for a structural reframe (dynamic loadouts: swap actions per turn from the full owned pool). The content expansion stands as useful raw material for that future system, since a bigger pool has more value when per-turn selection matters.

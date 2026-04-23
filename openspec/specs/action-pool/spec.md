@@ -2,63 +2,67 @@
 
 ## Purpose
 
-Pool of actions the player can acquire during a run. Starting loadout is 4 fixed actions (Strike, Shield, Barrage, Vent). Findable actions become available as growth rewards. Each findable is a sidegrade with a distinct tactical niche.
+Pool of actions the player can acquire during a run. Starting loadout is 4 fixed actions (Strike, Shield, Barrage, Vent). 21 findable actions are available as growth rewards, covering all action types. Each findable is a sidegrade with a distinct tactical niche.
 
 ## Requirements
 
 ### Requirement: Findable action pool
 
-The game SHALL maintain a pool of actions that can be found as growth rewards during a run. Each action is a sidegrade — different from starting actions, not strictly better.
+The game SHALL maintain a pool of actions that can be found as growth rewards during a run. Each action is a sidegrade — different from starting actions, not strictly better. The pool SHALL contain at least 25 actions covering all action types.
 
 #### Scenario: Action definitions
 - **WHEN** a run begins
 - **THEN** the findable pool contains the following actions:
 
-**Damage actions:**
-| ID | Name | Type | Base | Pushed | Notes |
-|----|------|------|------|--------|-------|
-| phase-blade | Phase Blade | damage_single | 3×2 | 5×2 | Multi-hit single target |
-| focus-fire | Focus Fire | damage_single | 10 | 14 | Heavy single hit |
-| pulse | Pulse | damage_all | 2×3 | 3×3 | Multi-hit AoE (3 random) |
+**Damage (single target):**
+| ID | Name | Type | Base | Pushed | Special |
+|----|------|------|------|--------|---------|
+| phase-blade | Phase Blade | damage_single | 3 | 5 | hits: 2 |
+| focus-fire | Focus Fire | damage_single | 10 | 14 | — |
+| quick-jabs | Quick Jabs | damage_single | 2 | 3 | hits: 3 |
+| heavy-blow | Heavy Blow | damage_single | 4 | 14 | — |
 
-**Defense actions:**
-| ID | Name | Type | Base | Pushed | Notes |
-|----|------|------|------|--------|-------|
-| barrier | Barrier | block | 3 | 5 | Block + persists 1 turn |
-| brace | Brace | reduce | 3/hit | 5/hit | Reduce per hit |
-| redirect | Redirect | reflect | 40% | 60% | Reflect damage taken |
+**Damage (all enemies):**
+| ID | Name | Type | Base | Pushed | Special |
+|----|------|------|------|--------|---------|
+| pulse | Pulse | damage_all | 2 | 3 | hits: 3 (random) |
+| splash | Splash | damage_all | 3 | 5 | — |
+| flurry | Flurry | damage_all | 2 | 3 | hits: 2 |
 
-**Sustain actions:**
-| ID | Name | Type | Base | Pushed | Notes |
-|----|------|------|------|--------|-------|
-| repair | Repair | heal | 4 | 6 | Heal HP |
-| mend | Mend | heal | 2/turn | 3/turn | Heal over 2 turns |
-| absorb | Absorb | convert | 3 | 5 | Convert block to strain reduction |
+**Defense:**
+| ID | Name | Type | Base | Pushed | Special |
+|----|------|------|------|--------|---------|
+| barrier | Barrier | block | 3 | 5 | persistent |
+| brace | Brace | reduce | 3 | 5 | perHit |
+| redirect | Redirect | reflect | 40 | 60 | reflectPct: 40 |
+| iron-wall | Iron Wall | block | 2 | 5 | persistent |
+| guard | Guard | reduce | 2 | 4 | perHit |
+| thornskin | Thornskin | reflect | 30 | 50 | reflectPct: 30 |
 
-**Utility actions:**
-| ID | Name | Type | Base | Pushed | Notes |
-|----|------|------|------|--------|-------|
-| patience | Patience | buff | +3 | +5 | Linked action gains base value next turn |
-| overclock | Overclock | buff | 0 | 0 | Linked action fires twice (push only) |
-| weaken | Weaken | debuff | -3 dmg | -4 dmg | Reduce enemy damage 2 turns |
-| taunt | Taunt | utility | 0 | 0 | Force all enemies to target you |
+**Sustain:**
+| ID | Name | Type | Base | Pushed | Special |
+|----|------|------|------|--------|---------|
+| repair | Repair | heal | 4 | 6 | — |
+| mend | Mend | heal | 2 | 3 | healOverTurns: 2 |
+| absorb | Absorb | convert | 3 | 5 | — |
+| stitch | Stitch | heal | 3 | 5 | — |
+| regen | Regen | heal | 1 | 2 | healOverTurns: 3 |
+| recharge | Recharge | convert | 4 | 6 | — |
+
+**Utility:**
+| ID | Name | Type | Base | Pushed | Special |
+|----|------|------|------|--------|---------|
+| patience | Patience | buff | 3 | 5 | — |
+| overclock | Overclock | buff | 0 | 0 | — |
+| weaken | Weaken | debuff | 3 | 4 | — |
+| taunt | Taunt | utility | 0 | 0 | — |
+| rally | Rally | buff | 5 | 7 | — |
+| cripple | Cripple | debuff | 4 | 6 | — |
 
 #### Scenario: Actions are sidegrades
 - **WHEN** a findable action is compared to a starting action of the same type
-- **THEN** it is not strictly better. It trades one advantage for another (e.g., Phase Blade hits twice but each hit is weaker, making it worse against Brace enemies)
+- **THEN** it is not strictly better. It trades one advantage for another (e.g., Heavy Blow's low base (4) forces commitment via pushing to reach its strong pushed value (14))
 
-### Requirement: Action replacement
-
-Taking a new action requires replacing an existing one. The replaced action is permanently lost.
-
-#### Scenario: Filling empty slot
-- **WHEN** the player takes a new action and the solo slot (slot 5) is empty
-- **THEN** the action fills the empty slot. No replacement needed.
-
-#### Scenario: Replacing existing action
-- **WHEN** the player takes a new action and all slots are filled
-- **THEN** the player chooses which existing action to replace. The old action is gone permanently.
-
-#### Scenario: Replacement decision
-- **WHEN** the player is choosing which action to replace
-- **THEN** the UI shows the current slot layout, pair synergies that would change, and a preview of the new configuration
+#### Scenario: Pool variety in rewards
+- **WHEN** growth options are offered after combat victory
+- **THEN** the pool contains enough variety that no single action type dominates reward selection across many runs
