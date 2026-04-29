@@ -11,17 +11,20 @@ import { ALL_CARDS } from '../data/cards'
 import type { BodySlot, EquipmentDefinition, BehavioralPartDefinition, CombatEvent } from '../game/types'
 import { MAX_PARTS } from '../game/types'
 
-import useIsMobile from '../hooks/useIsMobile'
-import StillPanel from './StillPanel'
-import EnemyCard from './EnemyCard'
-import BodySlotPanel from './BodySlotPanel'
-// HeatTrack removed — energy system uses simple display in StillPanel
-import Hand from './Hand'
-import RewardScreen from './RewardScreen'
+import useScreenLayout from '../hooks/useScreenLayout'
+import RewardScreen, { type RewardTier } from './RewardScreen'
 import EquipCompareOverlay from './EquipCompareOverlay'
 import RunInfoOverlay from './RunInfoOverlay'
-import DamageNumber from './DamageNumber'
 import PartBadges from './PartBadges'
+
+// New layout components
+import CombatTopBar from './CombatTopBar'
+import ThreatGrid from './ThreatGrid'
+import BattleLog from './BattleLog'
+import PlayerZone from './PlayerZone'
+import ActionBar from './ActionBar'
+import CombatStage from './CombatStage'
+import ControlDeck from './ControlDeck'
 
 export default function CombatScreen() {
   const navigate = useNavigate()
@@ -29,8 +32,9 @@ export default function CombatScreen() {
   const permanent = usePermanentStore()
   const combat = run.combat
 
-  const isMobile = useIsMobile()
+  const layout = useScreenLayout()
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
+  const [pushed, setPushed] = useState(false)
   const [targetEnemyId, setTargetEnemyId] = useState<string | null>(null)
   const [equipConflicts, setEquipConflicts] = useState<EquipmentDefinition[]>([])
   const [partReplacements, setPartReplacements] = useState<BehavioralPartDefinition[]>([])
@@ -201,7 +205,7 @@ export default function CombatScreen() {
   // ─── Card Interaction ─────────────────────────────────────────────
   const handleSelectSlotCard = useCallback((instanceId: string | null) => {
     if (animating) return
-    // Free-play cards (companions) play immediately without slot selection
+    // Free-play cards (companions, vent) play immediately without slot selection
     if (instanceId && combat) {
       const cardInst = combat.hand.find(c => c.instanceId === instanceId)
       if (cardInst) {
@@ -213,24 +217,25 @@ export default function CombatScreen() {
             def.category.effects.some(e => e.type === 'applyFeedback' || e.type === 'disableOwnSlot')
           if (!needsSlotTarget) {
             const homeSlot = def.category.type === 'system' ? def.category.homeSlot : undefined
-            run.playCard(instanceId, homeSlot ?? 'Head', targetEnemyId ?? undefined)
+            run.playCard(instanceId, homeSlot ?? 'Head', targetEnemyId ?? undefined, false)
             return
           }
         }
       }
     }
     setSelectedCardId(instanceId)
+    setPushed(false)
   }, [animating, combat, run, targetEnemyId])
 
   const handleAssignSlot = useCallback((slot: BodySlot) => {
     if (animating || !selectedCardId) return
-    run.playCard(selectedCardId, slot, targetEnemyId ?? undefined)
+    run.playCard(selectedCardId, slot, targetEnemyId ?? undefined, pushed)
     setSelectedCardId(null)
-  }, [run, selectedCardId, targetEnemyId, animating])
+    setPushed(false)
+  }, [run, selectedCardId, targetEnemyId, animating, pushed])
 
-  const handleUnassignSlot = useCallback((slot: BodySlot) => {
-    run.unassignSlotModifier(slot)
-  }, [run])
+  // (handleUnassignSlot removed — the new layouts use the existing playCard flow only;
+  // unassignment will return when we add a "tap a filled slot to remove" interaction.)
 
   // ─── Execute Turn ─────────────────────────────────────────────────
   const handleExecute = useCallback(() => {
@@ -396,13 +401,19 @@ export default function CombatScreen() {
     // Part drops — auto-add to parts
     const partDrops = allDrops.filter(d => d.type === 'part')
 
-    return (
-      <>
-      <RewardScreen
-        drops={allDrops}
-        onChoose={(cardId, skippedPartIds = [], skippedEquipIds = []) => {
-          const skippedPartSet = new Set(skippedPartIds)
-          const skippedEquipSet = new Set(skippedEquipIds)
+    // Pick a comfort option based on current run state
+    const pickComfort = () => {
+      if (run.health < run.maxHealth * 0.5) return { id: 'heal', label: 'Rest', description: 'Heal 8 HP' }
+      if (combat.strain >= 10) return { id: 'relief', label: 'Relief', description: '-4 strain' }
+      return { id: 'companion', label: 'Companion', description: '-2 strain' }
+    }
+    const comfort = pickComfort()
+
+    const proceedCommon = (
+      cardId: string | undefined,
+      skippedPartSet: Set<string>,
+      skippedEquipSet: Set<string>,
+    ) => {
           // Collect shards
           if (totalShards > 0) {
             run.addShards(totalShards)
@@ -457,8 +468,8 @@ export default function CombatScreen() {
                     const tile = s.map.grid[s.map.playerY][s.map.playerX]
                     if (tile) tile.cleared = true
                   }
-                  s.combat = null
                 })
+                useRunStore.getState().finishCombat()
                 useRunStore.getState().saveRun()
                 navigate('/staging')
                 return
@@ -518,8 +529,8 @@ export default function CombatScreen() {
                   s.lastCollapseMessage = `A ${collapsed.type} room has collapsed!`
                 }
               }
-              s.combat = null
             })
+            useRunStore.getState().finishCombat()
             useRunStore.getState().saveRun()
           }
 
@@ -542,7 +553,49 @@ export default function CombatScreen() {
           } else {
             finishReward()
           }
-        }}
+    }
+
+    const handleReward = (
+      cardId: string | undefined,
+      skippedPartIds: string[],
+      skippedEquipIds: string[],
+      acceptedTiers: RewardTier[],
+    ) => {
+      // Bill strain for accepted tiers (writes into combat.strain during reward phase)
+      for (const tier of acceptedTiers) {
+        run.applyGrowthStrainCost(tier)
+      }
+      proceedCommon(cardId, new Set(skippedPartIds), new Set(skippedEquipIds))
+    }
+
+    const handleComfort = (comfortId: string) => {
+      // Apply comfort directly to CombatState.strain / health (so finishCombat captures it)
+      if (comfortId === 'heal') {
+        run.heal(8)
+      } else if (comfortId === 'relief') {
+        useRunStore.setState((s) => {
+          if (s.combat) s.combat.strain = Math.max(0, s.combat.strain - 4)
+        })
+      } else if (comfortId === 'companion') {
+        useRunStore.setState((s) => {
+          if (s.combat) s.combat.strain = Math.max(0, s.combat.strain - 2)
+        })
+      }
+      // Skip all growth drops — pass all part/equip IDs as skipped, no card, no accepted tiers
+      const skipParts = allDrops.flatMap(d => d.type === 'part' ? [d.partId] : [])
+      const skipEquips = allDrops.flatMap(d => d.type === 'equipment' ? [d.equipmentId] : [])
+      proceedCommon(undefined, new Set(skipParts), new Set(skipEquips))
+    }
+
+    return (
+      <>
+      <RewardScreen
+        drops={allDrops}
+        strain={combat.strain}
+        maxStrain={combat.maxStrain}
+        comfort={comfort}
+        onChoose={handleReward}
+        onComfort={handleComfort}
       />
       {/* Info buttons on reward screen */}
       <div style={{
@@ -595,6 +648,54 @@ export default function CombatScreen() {
         />
       )}
       </>
+    )
+  }
+
+  // ─── Forfeit (strain hit cap) ─────────────────────────────────────
+  if (!animating && combat?.phase === 'forfeit') {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        backgroundColor: '#0d0d1a',
+        color: '#e8e8e8',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 24,
+        gap: 20,
+      }}>
+        <div style={{ fontSize: 28, fontWeight: 300, color: '#636e72' }}>You stopped.</div>
+        <div style={{ fontSize: 14, color: '#888', textAlign: 'center', maxWidth: 360 }}>
+          Strain reached {combat.maxStrain}. The fight ends. No rewards this time.
+          <br />
+          Strain drops to {combat.strain}, then settles further between rooms.
+        </div>
+        <button
+          onClick={() => {
+            // Mark room cleared so the player doesn't re-enter this combat, then finishCombat
+            useRunStore.setState((s) => {
+              if (s.map) {
+                const tile = s.map.grid[s.map.playerY][s.map.playerX]
+                if (tile) tile.cleared = true
+              }
+            })
+            run.finishCombat()
+            useRunStore.getState().saveRun()
+          }}
+          style={{
+            padding: '12px 32px',
+            background: '#2d3436',
+            border: '1px solid #636e72',
+            borderRadius: 6,
+            color: '#dfe6e9',
+            fontSize: 15,
+            cursor: 'pointer',
+          }}
+        >
+          Continue
+        </button>
+      </div>
     )
   }
 
@@ -679,270 +780,168 @@ export default function CombatScreen() {
   const targetAlive = targetEnemyId && combat.enemies.some(e => e.instanceId === targetEnemyId && !e.isDefeated)
   const effectiveTarget = (targetAlive ? targetEnemyId : null) ?? firstAliveEnemy?.instanceId ?? null
 
-  return (
-    <div style={{
-      minHeight: '100vh',
-      backgroundColor: '#0d0d1a',
-      color: '#e8e8e8',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: isMobile ? '6px' : '12px',
-      padding: isMobile ? '8px 8px 60px 8px' : '16px',
-    }}>
-      {/* Top section: Still panel + Enemies */}
-      {isMobile ? (
-        // Mobile: stack vertically
-        <>
-          <div style={{ position: 'relative' }}>
-            <StillPanel
-              health={displayHealth ?? run.health}
-              maxHealth={run.maxHealth}
-              energy={combat.currentEnergy}
-              maxEnergy={combat.maxEnergy}
-              block={displayBlock ?? combat.block}
-              statusEffects={combat.statusEffects}
-              compact
-            />
-            {damageNumbers.filter(dn => dn.target === 'still').map(dn => (
-              <DamageNumber key={dn.id} value={dn.value} color={dn.color} x="50%" y="0%" />
-            ))}
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            {combat.enemies.map(enemy => {
-              const def = ALL_ENEMIES[enemy.definitionId]
-              if (!def) return null
-              const dispHp = displayEnemyHealth?.[enemy.instanceId]
-              const dispDefeated = dispHp != null ? dispHp <= 0 : enemy.isDefeated
-              const inst = dispHp != null ? { ...enemy, currentHealth: Math.max(0, dispHp), isDefeated: dispDefeated } : enemy
-              return (
-                <div key={enemy.instanceId} style={{ position: 'relative' }}>
-                  <EnemyCard
-                    instance={inst}
-                    definition={def}
-                    selected={effectiveTarget === enemy.instanceId}
-                    onClick={() => {
-                      if (!dispDefeated) setTargetEnemyId(enemy.instanceId)
-                    }}
-                    compact
-                    combatsCleared={run.combatsCleared}
-                  />
-                  {damageNumbers.filter(dn => dn.target === enemy.instanceId).map(dn => (
-                    <DamageNumber key={dn.id} value={dn.value} color={dn.color} x="70%" y="30%" />
-                  ))}
-                </div>
-              )
-            })}
-          </div>
-        </>
-      ) : (
-        // Desktop: side-by-side
-        <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
-          <div style={{ position: 'relative' }}>
-            <StillPanel
-              health={displayHealth ?? run.health}
-              maxHealth={run.maxHealth}
-              energy={combat.currentEnergy}
-              maxEnergy={combat.maxEnergy}
-              block={displayBlock ?? combat.block}
-              statusEffects={combat.statusEffects}
-            />
-            {damageNumbers.filter(dn => dn.target === 'still').map(dn => (
-              <DamageNumber key={dn.id} value={dn.value} color={dn.color} x="50%" y="20%" />
-            ))}
-          </div>
-          <div style={{ flex: 1, display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
-            {combat.enemies.filter(e => !e.isDefeated).length > 1 && (
-              <div style={{ width: '100%', fontSize: '11px', color: '#f1c40f', marginBottom: '-4px' }}>
-                Click an enemy to set target
-              </div>
-            )}
-            {combat.enemies.map(enemy => {
-              const def = ALL_ENEMIES[enemy.definitionId]
-              if (!def) return null
-              const dispHp = displayEnemyHealth?.[enemy.instanceId]
-              const dispDefeated = dispHp != null ? dispHp <= 0 : enemy.isDefeated
-              const inst = dispHp != null ? { ...enemy, currentHealth: Math.max(0, dispHp), isDefeated: dispDefeated } : enemy
-              return (
-                <div key={enemy.instanceId} style={{ position: 'relative' }}>
-                  <EnemyCard
-                    instance={inst}
-                    definition={def}
-                    selected={effectiveTarget === enemy.instanceId}
-                    onClick={() => {
-                      if (!dispDefeated) setTargetEnemyId(enemy.instanceId)
-                    }}
-                    combatsCleared={run.combatsCleared}
-                  />
-                  {damageNumbers.filter(dn => dn.target === enemy.instanceId).map(dn => (
-                    <DamageNumber key={dn.id} value={dn.value} color={dn.color} x="50%" y="40%" />
-                  ))}
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Body Slot Panel */}
-      <BodySlotPanel
-        combat={combat}
-        equipment={run.equipment}
-        parts={run.parts}
-        selectedCardId={selectedCardId}
-        projections={projections}
-        onAssign={handleAssignSlot}
-        onUnassign={handleUnassignSlot}
-        compact={isMobile}
-        activeSlot={activeSlot}
-      />
-
-      {/* Hand */}
+  // ─── Portrait Layout (paper-doll) ─────────────────────────────────
+  if (layout === 'portrait') {
+    const hint = selectedCardId
+      ? 'Tap a body slot to assign. Re-tap a card to deselect.'
+      : 'Tap a card, then tap a body slot to assign.'
+    return (
       <div style={{
-        backgroundColor: '#16213e',
-        border: '1px solid #2c3e50',
-        borderRadius: isMobile ? '6px' : '8px',
-        padding: isMobile ? '4px' : '8px',
+        minHeight: '100vh',
+        background: 'linear-gradient(180deg, #0e0b1c 0%, #0a0815 50%, #07050d 100%)',
+        color: '#e9e4f5',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 8,
+        padding: '8px 16px 12px 16px',
       }}>
-        <div style={{
-          fontSize: isMobile ? '10px' : '11px',
-          color: '#aaa',
-          letterSpacing: '1px',
-          marginBottom: isMobile ? '2px' : '6px',
-          paddingLeft: isMobile ? '4px' : '8px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}>
-          <span>
-            HAND
-            {selectedCardId && (
-              <span style={{ color: '#a29bfe', marginLeft: '8px', fontWeight: 'normal' }}>
-                {isMobile ? 'Tap a slot' : 'Select a body slot to assign modifier'}
-              </span>
-            )}
-          </span>
-          <span style={{ color: '#666', fontSize: isMobile ? '10px' : '12px', display: 'flex', gap: '8px' }}>
-            <span onClick={() => setPileView('draw')} style={{ cursor: 'pointer', color: pileView === 'draw' ? '#a29bfe' : '#666' }}>Draw {combat.drawPile.length}</span>
-            <span>·</span>
-            <span onClick={() => setPileView('discard')} style={{ cursor: 'pointer', color: pileView === 'discard' ? '#a29bfe' : '#666' }}>Discard {combat.discardPile.length}</span>
-            <span>·</span>
-            <span onClick={() => setPileView('exhaust')} style={{ cursor: 'pointer', color: pileView === 'exhaust' ? '#a29bfe' : '#666' }}>Exhaust {combat.exhaustPile.length}</span>
-          </span>
-        </div>
-        <Hand
-          combat={combat}
-          selectedCardId={selectedCardId}
-          onSelectSlotCard={handleSelectSlotCard}
-          compact={isMobile}
+        <CombatTopBar
+          sector={run.sector}
+          round={combat.roundNumber}
+          strain={combat.strain}
+          maxStrain={combat.maxStrain}
+          variant="bar"
         />
-      </div>
-
-      {/* Execute section */}
-      {isMobile ? (
-        // Sticky bottom bar + part badges on mobile
-        <>
-          <div style={{
-            position: 'sticky',
-            bottom: 0,
-            backgroundColor: '#0d0d1a',
-            borderTop: '1px solid #2c3e50',
-            padding: '8px',
-            zIndex: 10,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-          }}>
-            <span style={{ fontSize: '10px', color: '#555', whiteSpace: 'nowrap' }}>
-              Sector {run.sector} · Round {combat.roundNumber}
-            </span>
-            <button
-              onClick={() => setInfoTab('equips')}
-              style={{
-                background: 'none',
-                border: '1px solid #333',
-                borderRadius: '4px',
-                color: '#74b9ff',
-                fontSize: '10px',
-                cursor: 'pointer',
-                padding: '4px 8px',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              Info
-            </button>
-            <button
-              onClick={handleExecute}
-              disabled={animating || combat.phase !== 'planning'}
-              style={{
-                flex: 1,
-                padding: '10px',
-                backgroundColor: !animating && combat.phase === 'planning' ? '#a29bfe' : '#2c3e50',
-                border: 'none',
-                color: !animating && combat.phase === 'planning' ? '#0d0d1a' : '#555',
-                borderRadius: '6px',
-                cursor: !animating && combat.phase === 'planning' ? 'pointer' : 'not-allowed',
-                fontSize: '14px',
-                fontWeight: 'bold',
-                letterSpacing: '2px',
-              }}
-            >
-              EXECUTE
-            </button>
-          </div>
+        <ThreatGrid
+          combat={combat}
+          effectiveTarget={effectiveTarget}
+          combatsCleared={run.combatsCleared}
+          damageNumbers={damageNumbers}
+          displayEnemyHealth={displayEnemyHealth}
+          onTarget={setTargetEnemyId}
+        />
+        {/* Bottom group — pins to the bottom of the viewport so any extra space sits above */}
+        <div style={{
+          marginTop: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 8,
+        }}>
+          <BattleLog combat={combat} lines={3} variant="portrait" />
+          <PlayerZone
+            combat={combat}
+            run={{ health: run.health, maxHealth: run.maxHealth, parts: run.parts, equipment: run.equipment }}
+            selectedCardId={selectedCardId}
+            pushed={pushed}
+            projections={projections}
+            activeSlot={activeSlot}
+            displayHealth={displayHealth}
+            displayBlock={displayBlock}
+            damageNumbers={damageNumbers}
+            onSelectCard={handleSelectSlotCard}
+            onTogglePush={() => setPushed(p => !p)}
+            onAssignSlot={handleAssignSlot}
+          />
           {run.parts.length > 0 && (
             <PartBadges parts={run.parts} activePartIds={activePartIds} />
           )}
-        </>
-      ) : (
-        // Desktop: centered button + round info
-        <>
-          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '12px' }}>
-            <button
-              onClick={handleExecute}
-              disabled={animating || combat.phase !== 'planning'}
+          <ActionBar
+            hint={hint}
+            onExecute={handleExecute}
+            disabled={animating || combat.phase !== 'planning'}
+            onInfo={() => setInfoTab('equips')}
+          />
+        </div>
+        {/* Run Info Overlay */}
+        {infoTab && (
+          <RunInfoOverlay
+            tab={infoTab}
+            deck={run.deck}
+            parts={run.parts}
+            equipment={run.equipment}
+            onClose={() => setInfoTab(null)}
+            onTabChange={setInfoTab}
+          />
+        )}
+        {/* Pile viewer */}
+        {pileView && (() => {
+          const pile = pileView === 'draw' ? combat.drawPile
+            : pileView === 'discard' ? combat.discardPile
+            : combat.exhaustPile
+          return (
+            <div
+              onClick={() => setPileView(null)}
               style={{
-                padding: '14px 48px',
-                backgroundColor: !animating && combat.phase === 'planning' ? '#a29bfe' : '#2c3e50',
-                border: 'none',
-                color: !animating && combat.phase === 'planning' ? '#0d0d1a' : '#555',
-                borderRadius: '8px',
-                cursor: !animating && combat.phase === 'planning' ? 'pointer' : 'not-allowed',
-                fontSize: '16px',
-                fontWeight: 'bold',
-                letterSpacing: '2px',
+                position: 'fixed', inset: 0, zIndex: 100,
+                background: 'rgba(0,0,0,0.7)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                padding: 16,
               }}
             >
-              EXECUTE
-            </button>
-          </div>
-          <div style={{
-            textAlign: 'center',
-            fontSize: '11px',
-            color: '#555',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            gap: '12px',
-          }}>
-            <span>Sector {run.sector}</span>
-            <span>Round {combat.roundNumber}</span>
-            <button
-              onClick={() => setInfoTab('equips')}
-              style={{
-                background: 'none',
-                border: '1px solid #333',
-                borderRadius: '4px',
-                color: '#74b9ff',
-                fontSize: '11px',
-                cursor: 'pointer',
-                padding: '2px 10px',
-                letterSpacing: '1px',
-              }}
-            >
-              Info
-            </button>
-          </div>
-        </>
+              <div
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  background: '#1e1e2e', border: '2px solid #4a4a6a', borderRadius: 10,
+                  padding: 16, maxWidth: 360, width: '100%', maxHeight: '80vh', overflow: 'auto',
+                }}
+              >
+                <div style={{ fontWeight: 'bold', fontSize: 14, color: '#a29bfe', marginBottom: 10, letterSpacing: 1, textTransform: 'uppercase' }}>
+                  {pileView} pile · {pile.length}
+                </div>
+                {pile.map(c => {
+                  const def = ALL_CARDS[c.definitionId]
+                  return (
+                    <div key={c.instanceId} style={{ fontSize: 12, color: '#dfe6e9', padding: '4px 0', borderBottom: '1px solid #2c3e50' }}>
+                      {def?.name ?? c.definitionId}{c.isUpgraded ? '+' : ''}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        })()}
+      </div>
+    )
+  }
+
+  // ─── Landscape Layout (cinematic stage + control deck) ─────────────
+  return (
+    <div style={{
+      height: '100vh',
+      width: '100vw',
+      display: 'flex',
+      background: 'linear-gradient(180deg, #0e0b1c 0%, #07050d 100%)',
+      color: '#e9e4f5',
+      overflow: 'hidden',
+    }}>
+      <CombatStage
+        combat={combat}
+        run={{
+          health: run.health,
+          maxHealth: run.maxHealth,
+          sector: run.sector,
+          combatsCleared: run.combatsCleared,
+        }}
+        displayHealth={displayHealth}
+        displayBlock={displayBlock}
+        displayEnemyHealth={displayEnemyHealth}
+        effectiveTarget={effectiveTarget}
+        damageNumbers={damageNumbers}
+        onTarget={setTargetEnemyId}
+      />
+      <ControlDeck
+        combat={combat}
+        run={{ parts: run.parts, equipment: run.equipment }}
+        selectedCardId={selectedCardId}
+        pushed={pushed}
+        projections={projections}
+        activeSlot={activeSlot}
+        effectiveTarget={effectiveTarget}
+        animating={animating}
+        onSelectCard={handleSelectSlotCard}
+        onTogglePush={() => setPushed(p => !p)}
+        onAssignSlot={handleAssignSlot}
+        onExecute={handleExecute}
+      />
+      {run.parts.length > 0 && (
+        <div style={{
+          position: 'absolute',
+          bottom: 8,
+          left: 12,
+          zIndex: 10,
+        }}>
+          <PartBadges parts={run.parts} activePartIds={activePartIds} />
+        </div>
       )}
 
       {/* Run Info Overlay */}
@@ -1060,8 +1059,6 @@ export default function CombatScreen() {
           `}</style>
         </div>
       )}
-
-      {/* Damage numbers are now rendered inline with their target elements */}
     </div>
   )
 }

@@ -1,0 +1,1192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Still — Combat Scene (Mobile)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=VT323&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Phone frame */
+    --frame-bg: #0a0810;
+    --frame-glow: #2a1f4a;
+    --bezel: #1a1525;
+
+    /* Inside the phone — Still's world */
+    --paper-deep: #0c0a18;
+    --paper-mid: #15122a;
+    --paper-up: #1f1a3a;
+    --ink: #e9e4f5;
+    --ink-2: #a09bbe;
+    --ink-soft: #6b6585;
+    --ink-faint: #3d3858;
+    --line: #2a2546;
+    --line-bright: #3d3868;
+
+    /* Functional */
+    --hp: #e74c3c;
+    --hp-dim: #6e2820;
+    --blk: #74b9ff;
+    --en: #f1c40f;
+    --strain: #e67e22;
+    --accent: #b2a4f5;
+    --target: #ffd84a;
+    --weak: #c39bd3;
+    --vuln: #f5b7b1;
+
+    --sprite-scale: 4;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background:
+      radial-gradient(ellipse 60% 40% at 50% 30%, #1c1735 0%, #0a0612 60%, #050308 100%);
+    color: var(--ink);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Top toolbar ── */
+  .toolbar {
+    position: sticky; top: 0; z-index: 30;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 22px;
+    background: rgba(8,6,16,0.85);
+    border-bottom: 1px solid var(--line);
+    backdrop-filter: blur(10px);
+  }
+  .brand { font-family: 'VT323', monospace; font-size: 24px; letter-spacing: 8px; color: var(--accent); }
+  .brand .sub { color: var(--ink-soft); font-size: 11px; letter-spacing: 2px; margin-left: 12px; font-family: 'JetBrains Mono', monospace; }
+  .var-tabs { display: flex; gap: 4px; }
+  .vt {
+    background: transparent; color: var(--ink-soft);
+    border: 1px solid var(--line); padding: 7px 16px;
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    letter-spacing: 1.5px; cursor: pointer; text-transform: uppercase;
+    border-radius: 4px; transition: all 0.15s;
+  }
+  .vt:hover { color: var(--ink); border-color: var(--ink-2); }
+  .vt.active { background: var(--accent); color: #1a1530; border-color: var(--accent); font-weight: 700; }
+
+  /* ── Stage: phone centered on a dark desk ── */
+  .desk {
+    min-height: calc(100vh - 50px);
+    display: grid;
+    grid-template-columns: 1fr;
+    place-items: center;
+    padding: 32px 16px 64px;
+    position: relative;
+  }
+  .desk::before {
+    content: '';
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(circle 600px at 50% 50%, rgba(178,164,245,0.06), transparent 70%);
+    pointer-events: none;
+  }
+
+  /* The phone */
+  .phone {
+    position: relative;
+    width: 393px;
+    height: 852px;
+    background: var(--bezel);
+    border-radius: 52px;
+    padding: 14px;
+    box-shadow:
+      0 0 0 2px #2a2440 inset,
+      0 30px 80px -10px rgba(0,0,0,0.7),
+      0 0 120px rgba(178,164,245,0.08);
+  }
+  .phone::after {
+    /* dynamic island */
+    content: '';
+    position: absolute;
+    left: 50%; top: 22px;
+    transform: translateX(-50%);
+    width: 120px; height: 32px;
+    background: #000;
+    border-radius: 18px;
+    z-index: 10;
+  }
+  .screen {
+    width: 100%; height: 100%;
+    background: var(--paper-deep);
+    border-radius: 40px;
+    overflow: hidden;
+    position: relative;
+    /* paper / static texture */
+    background-image:
+      radial-gradient(circle at 30% 20%, rgba(178,164,245,0.04), transparent 50%),
+      radial-gradient(circle at 70% 80%, rgba(231,76,60,0.03), transparent 50%),
+      linear-gradient(180deg, #0e0b1c 0%, #0a0815 50%, #07050d 100%);
+  }
+
+  /* ── Phone status bar (iOS-ish) ── */
+  .ios-status {
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 54px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 30px 0;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px; font-weight: 700;
+    color: var(--ink);
+    z-index: 5;
+  }
+  .ios-status .right { display: flex; gap: 6px; align-items: center; opacity: 0.95; }
+  .ios-status svg { width: 14px; height: 10px; }
+
+  /* ── In-game top chrome (under status bar) ── */
+  .topbar {
+    position: absolute; top: 60px; left: 0; right: 0;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 8px;
+    padding: 0 18px;
+    align-items: center;
+    z-index: 4;
+  }
+  .crumb {
+    font-family: 'VT323', monospace;
+    font-size: 16px; letter-spacing: 2.5px;
+    color: var(--ink-soft);
+  }
+  .crumb b { color: var(--ink); }
+  .strain-meter {
+    height: 4px;
+    background: var(--line);
+    border-radius: 2px;
+    overflow: hidden;
+    margin: 0 8px;
+    position: relative;
+  }
+  .strain-meter i {
+    display: block; height: 100%;
+    background: linear-gradient(90deg, var(--strain), #ff6b3d);
+    width: 64%;
+    border-radius: 2px;
+  }
+  .strain-meter .tick {
+    position: absolute; top: -2px; bottom: -2px; width: 1px;
+    background: var(--ink-faint);
+  }
+  .turn-pill {
+    font-family: 'VT323', monospace;
+    font-size: 16px; letter-spacing: 2px;
+    color: var(--ink);
+    border: 1px solid var(--line-bright);
+    background: rgba(178,164,245,0.08);
+    padding: 2px 8px;
+    border-radius: 3px;
+  }
+
+  /* ── THREAT GRID — top half of screen ── */
+  /* Vertical "incoming" framing: enemies are CARDS arrayed at the top,
+     looking at the player who is the phone owner. Different from StS's
+     side-on tableau. */
+  .threats {
+    position: absolute; top: 100px; left: 0; right: 0;
+    padding: 0 16px 8px;
+    z-index: 3;
+  }
+  .threats-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .threats-head .label {
+    font-family: 'VT323', monospace;
+    font-size: 18px; letter-spacing: 4px;
+    color: var(--ink-2);
+  }
+  .threats-head .label b { color: var(--target); }
+  .threats-head .hint {
+    font-size: 9px; letter-spacing: 1.5px;
+    color: var(--ink-faint); text-transform: uppercase;
+  }
+
+  .threat-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .threat {
+    position: relative;
+    background: linear-gradient(180deg, var(--paper-up) 0%, var(--paper-mid) 100%);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px 10px 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    overflow: hidden;
+  }
+  .threat:hover { border-color: var(--ink-soft); transform: translateY(-1px); }
+  .threat.target {
+    border-color: var(--target);
+    box-shadow: 0 0 0 1px var(--target), 0 0 24px rgba(255,216,74,0.18);
+  }
+  .threat.target::before {
+    content: '◉';
+    position: absolute; top: 6px; right: 6px;
+    background: var(--target);
+    color: #1a1300;
+    font-family: 'VT323', monospace;
+    font-size: 11px; line-height: 1;
+    width: 16px; height: 16px;
+    display: grid; place-items: center;
+    border-radius: 50%;
+    font-weight: 700;
+    z-index: 2;
+    box-shadow: 0 0 8px rgba(255,216,74,0.6);
+  }
+  .threat.target .threat-name { padding-right: 22px; }
+
+  .threat-row { display: flex; gap: 8px; }
+  .threat-portrait {
+    width: 48px; height: 48px;
+    background: #07050e;
+    border: 1px solid var(--line-bright);
+    border-radius: 6px;
+    display: grid; place-items: center;
+    flex-shrink: 0;
+    image-rendering: pixelated;
+    /* slight inner shadow */
+    box-shadow: inset 0 0 12px rgba(0,0,0,0.6);
+  }
+  .threat-portrait canvas {
+    image-rendering: pixelated;
+    transform: scale(0.85);
+  }
+  .threat-info { flex: 1; min-width: 0; }
+  .threat-name {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--ink);
+    line-height: 1;
+    margin-bottom: 4px;
+    text-overflow: ellipsis; overflow: hidden; white-space: nowrap;
+  }
+  .threat-hp {
+    height: 5px;
+    background: #1a0e10;
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 3px;
+  }
+  .threat-hp i {
+    display: block; height: 100%;
+    background: linear-gradient(90deg, var(--hp), #ff6b6b);
+  }
+  .threat-stats {
+    font-size: 9px; letter-spacing: 0.5px;
+    color: var(--ink-soft);
+    display: flex; gap: 6px;
+  }
+  .threat-stats b { color: var(--ink); font-weight: 700; }
+  .threat-stats .blk { color: var(--blk); }
+
+  /* Intent — appears as a stamp at the bottom of the card */
+  .intent-stamp {
+    margin-top: 8px;
+    display: flex; align-items: center; gap: 6px;
+    padding: 5px 8px;
+    background: rgba(231,76,60,0.1);
+    border: 1px dashed rgba(231,76,60,0.4);
+    border-radius: 4px;
+  }
+  .intent-stamp.block {
+    background: rgba(116,185,255,0.1);
+    border-color: rgba(116,185,255,0.4);
+  }
+  .intent-stamp.buff {
+    background: rgba(241,196,15,0.1);
+    border-color: rgba(241,196,15,0.4);
+  }
+  .intent-stamp .glyph {
+    font-family: 'VT323', monospace;
+    font-size: 18px;
+    line-height: 1;
+    color: var(--hp);
+  }
+  .intent-stamp.block .glyph { color: var(--blk); }
+  .intent-stamp.buff .glyph { color: var(--en); }
+  .intent-stamp .text {
+    font-size: 10px;
+    color: var(--ink);
+    letter-spacing: 0.3px;
+    line-height: 1.1;
+  }
+  .intent-stamp .text b { color: var(--ink); font-weight: 700; }
+
+  .threat-statuses { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
+  .status-chip {
+    font-size: 8px; letter-spacing: 1px;
+    padding: 1px 5px;
+    border-radius: 2px;
+    font-weight: 700;
+  }
+  .status-chip.deb { background: rgba(195,155,211,0.15); color: var(--weak); border: 1px solid rgba(195,155,211,0.3); }
+  .status-chip.buf { background: rgba(241,196,15,0.12); color: var(--en); border: 1px solid rgba(241,196,15,0.3); }
+  .status-chip.vul { background: rgba(245,183,177,0.15); color: var(--vuln); border: 1px solid rgba(245,183,177,0.3); }
+
+  /* ── BATTLE LOG strip (just below threats) ── */
+  .battle-log {
+    position: absolute;
+    left: 16px; right: 16px;
+    bottom: 390px;
+    height: 52px;
+    background: rgba(0,0,0,0.4);
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    padding: 6px 10px;
+    overflow: hidden;
+    z-index: 3;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9.5px;
+    line-height: 1.5;
+    color: var(--ink-soft);
+  }
+  .battle-log .line { display: block; }
+  .battle-log .line.recent { color: var(--ink); }
+  .battle-log .line .you { color: var(--accent); font-weight: 700; }
+  .battle-log .line .dmg { color: var(--hp); font-weight: 700; }
+  .battle-log .line .blk { color: var(--blk); }
+  .battle-log .line .meta { color: var(--ink-faint); }
+
+  /* ── PLAYER ZONE — bottom half ──
+     The player isn't a sprite. The slots ARE the player's body, arrayed
+     in a humanoid silhouette. Around them: hand on left edge, status on
+     right edge, execute at the very bottom. */
+  .player-zone {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 380px;
+    z-index: 4;
+    background: linear-gradient(180deg, transparent 0%, rgba(15,12,28,0.6) 30%, var(--paper-deep) 100%);
+    padding: 16px 14px 22px;
+    display: grid;
+    grid-template-columns: 64px 1fr 64px;
+    grid-template-rows: auto 1fr auto;
+    gap: 10px;
+  }
+  /* The body silhouette occupies the central column */
+  .body-rig {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    position: relative;
+    /* dotted humanoid wire — purely decorative */
+  }
+  .body-rig::before {
+    content: '';
+    position: absolute;
+    left: 50%; top: 0;
+    transform: translateX(-50%);
+    width: 1px; height: 100%;
+    background: repeating-linear-gradient(180deg, var(--line-bright) 0 4px, transparent 4px 8px);
+    z-index: 0;
+  }
+  /* Faint Still sprite ghost behind the slots — visual anchor that
+     the slots ARE this character's body. Sits below the dotted wire. */
+  .body-ghost {
+    position: absolute;
+    left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: -1;
+    pointer-events: none;
+    image-rendering: pixelated;
+    /* Force a large CSS size — slot row reads as draped over the body */
+    width: 180px; height: auto;
+    opacity: 0.18;
+    filter: drop-shadow(0 0 12px rgba(178,164,245,0.35)) saturate(0.7);
+    animation: ghost-bob 4s ease-in-out infinite;
+  }
+  @keyframes ghost-bob {
+    0%, 100% { transform: translate(-50%, calc(-50% - 1px)); }
+    50%      { transform: translate(-50%, calc(-50% + 3px)); }
+  }
+  /* Variation B is a stacked list — ghost reads as junk there, hide it */
+  body[data-variation="B"] .body-ghost { display: none; }
+  /* Variation C has a glowing core — ghost would clash, dim further */
+  body[data-variation="C"] .body-ghost { opacity: 0.10; }
+
+  /* slot = body part */
+  .slot {
+    position: absolute;
+    width: 78px;
+    background: linear-gradient(180deg, var(--paper-up) 0%, var(--paper-mid) 100%);
+    border: 1px solid var(--line-bright);
+    border-radius: 8px;
+    padding: 6px 6px 5px;
+    cursor: pointer;
+    transition: all 0.15s;
+    z-index: 1;
+  }
+  .slot:hover { border-color: var(--accent); }
+  body.has-selected .slot {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent), 0 0 16px rgba(178,164,245,0.3);
+    animation: pulse-slot 1.4s ease-in-out infinite;
+  }
+  @keyframes pulse-slot {
+    0%, 100% { box-shadow: 0 0 0 1px var(--accent), 0 0 12px rgba(178,164,245,0.25); }
+    50% { box-shadow: 0 0 0 1px var(--accent), 0 0 24px rgba(178,164,245,0.5); }
+  }
+  .slot.modded {
+    border-color: var(--accent);
+    background: linear-gradient(180deg, rgba(178,164,245,0.18), rgba(178,164,245,0.08));
+  }
+  .slot .slot-label {
+    font-family: 'VT323', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    line-height: 1;
+    margin-bottom: 3px;
+  }
+  .slot .equip {
+    font-size: 9.5px;
+    color: var(--ink);
+    line-height: 1.15;
+    font-weight: 700;
+    margin-bottom: 2px;
+  }
+  .slot .action {
+    font-size: 8.5px;
+    color: var(--ink-2);
+    line-height: 1.15;
+  }
+  .slot .mod-pip {
+    position: absolute;
+    top: -6px; right: -6px;
+    background: var(--accent);
+    color: #1a1530;
+    font-family: 'VT323', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 1px 5px;
+    border-radius: 4px;
+    box-shadow: 0 0 0 2px var(--paper-deep);
+  }
+
+  /* Body slot positions — humanoid layout */
+  /* Layout A — Diorama (default) — body parts arranged like a paper doll */
+  body[data-variation="A"] .slot.head { top: 0;    left: 50%; transform: translateX(-50%); width: 96px; }
+  body[data-variation="A"] .slot.tors { top: 76px;  left: 50%; transform: translateX(-50%); width: 84px; }
+  body[data-variation="A"] .slot.armL { top: 84px;  left: -14px; width: 62px; }
+  body[data-variation="A"] .slot.armR { top: 84px;  right: -14px; width: 62px; }
+  body[data-variation="A"] .slot.legs { top: 200px; left: 50%; transform: translateX(-50%); width: 96px; }
+
+  /* Layout B — Stacked list. Body parts in a clean vertical list (less metaphorical, more functional). */
+  body[data-variation="B"] .body-rig::before { display: none; }
+  body[data-variation="B"] .slot {
+    position: relative; width: auto; left: auto; right: auto; top: auto;
+    transform: none !important;
+    display: grid;
+    grid-template-columns: 50px 1fr auto;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    margin-bottom: 5px;
+  }
+  body[data-variation="B"] .slot .slot-label { margin: 0; font-size: 13px; }
+  body[data-variation="B"] .slot .equip { margin: 0; font-size: 10px; }
+  body[data-variation="B"] .slot .action { margin: 0; font-size: 9px; color: var(--ink-soft); }
+  body[data-variation="B"] .slot.modded::after {
+    content: '◆';
+    position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+    color: var(--accent); font-size: 14px;
+  }
+
+  /* Layout C — Compact ring around an "energy core". Head top, torso center, arms left/right, legs bottom. */
+  body[data-variation="C"] .body-rig::before {
+    content: '';
+    width: 60px; height: 60px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(178,164,245,0.35), transparent 70%);
+    border: 1px solid var(--accent);
+    left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    background-image: none;
+    animation: pulse-core 2s ease-in-out infinite;
+  }
+  body[data-variation="C"] .body-rig::after {
+    content: 'CORE';
+    position: absolute;
+    left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'VT323', monospace;
+    font-size: 13px; letter-spacing: 2px;
+    color: var(--accent);
+  }
+  @keyframes pulse-core {
+    0%, 100% { box-shadow: 0 0 12px rgba(178,164,245,0.4); }
+    50%      { box-shadow: 0 0 28px rgba(178,164,245,0.8); }
+  }
+  body[data-variation="C"] .slot { width: 90px; }
+  body[data-variation="C"] .slot.head { top: 0;   left: 50%; transform: translateX(-50%); }
+  body[data-variation="C"] .slot.tors { top: 50%; left: 50%; transform: translate(-50%,-50%); display: none; }
+  body[data-variation="C"] .slot.armL { top: 50%; left: -10px; transform: translateY(-50%); }
+  body[data-variation="C"] .slot.armR { top: 50%; right: -10px; transform: translateY(-50%); }
+  body[data-variation="C"] .slot.legs { bottom: 0; left: 50%; transform: translateX(-50%); }
+  /* Variation C tucks torso into the core; only 4 slots visible. */
+
+  /* ── Hand — vertical strip on the LEFT edge, NOT a fan ── */
+  .hand-rail {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: stretch;
+    padding-top: 4px;
+    overflow-y: auto;
+  }
+  .hand-rail::-webkit-scrollbar { width: 0; }
+  .hand-rail .hand-label {
+    font-family: 'VT323', monospace;
+    font-size: 12px;
+    letter-spacing: 2px;
+    color: var(--ink-faint);
+    text-align: center;
+    line-height: 1;
+    margin-bottom: 2px;
+  }
+  .card {
+    background: linear-gradient(180deg, #2a2546 0%, #1a1535 100%);
+    border: 1px solid var(--line-bright);
+    border-radius: 6px;
+    padding: 5px 5px 4px;
+    cursor: pointer;
+    transition: all 0.12s;
+    position: relative;
+    text-align: left;
+  }
+  .card:hover { border-color: var(--accent); transform: translateX(2px); }
+  .card.selected {
+    border-color: var(--accent);
+    background: linear-gradient(180deg, rgba(178,164,245,0.32), rgba(178,164,245,0.18));
+    box-shadow: 0 0 16px rgba(178,164,245,0.4);
+    transform: translateX(4px);
+  }
+  .card .top {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 2px;
+  }
+  .card .name {
+    font-size: 9.5px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: 0.3px;
+    line-height: 1;
+  }
+  .card .cost {
+    font-family: 'VT323', monospace;
+    font-size: 13px;
+    line-height: 1;
+    color: var(--en);
+    font-weight: 700;
+  }
+  .card .desc {
+    font-size: 8px;
+    color: var(--ink-2);
+    line-height: 1.2;
+  }
+  .card .tag {
+    font-size: 7px;
+    color: var(--ink-faint);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  /* ── Stats column — RIGHT edge ── */
+  .stats-rail {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: stretch;
+    padding-top: 4px;
+  }
+  .stat-pill {
+    background: linear-gradient(180deg, var(--paper-up), var(--paper-mid));
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 6px 5px 5px;
+    text-align: center;
+  }
+  .stat-pill .lbl {
+    font-family: 'VT323', monospace;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    color: var(--ink-faint);
+    line-height: 1;
+    margin-bottom: 1px;
+  }
+  .stat-pill .val {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    line-height: 1;
+    white-space: nowrap;
+  }
+  .stat-pill .val .max {
+    display: block;
+    font-size: 8px;
+    color: var(--ink-soft);
+    font-weight: 400;
+    margin-top: 2px;
+    letter-spacing: 0.5px;
+  }
+  .stat-pill.hp .val { color: var(--hp); }
+  .stat-pill.blk .val { color: var(--blk); }
+  .stat-pill.en .val { color: var(--en); }
+  .stat-pill .max {
+    font-size: 9px;
+    color: var(--ink-soft);
+    font-weight: 400;
+  }
+  .pile-mini {
+    display: flex; justify-content: space-around;
+    font-size: 8px; color: var(--ink-soft);
+    padding: 4px 0 2px;
+  }
+  .pile-mini b { color: var(--ink); font-family: 'Space Grotesk', sans-serif; }
+
+  /* ── Bottom action bar (under the body) ── */
+  .actionbar {
+    grid-column: 1 / span 3;
+    grid-row: 3;
+    display: grid;
+    grid-template-columns: 1fr 140px;
+    gap: 8px;
+    align-items: stretch;
+  }
+  .hint-strip {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 7px 10px;
+    display: flex; align-items: center; gap: 8px;
+    font-size: 9px;
+    color: var(--ink-2);
+    line-height: 1.2;
+  }
+  .hint-strip .icon {
+    width: 20px; height: 20px;
+    border: 1px solid var(--accent); color: var(--accent);
+    border-radius: 4px;
+    display: grid; place-items: center;
+    font-family: 'VT323', monospace; font-size: 14px;
+    flex-shrink: 0;
+  }
+  .execute {
+    background: linear-gradient(180deg, #b53a2c 0%, #8a1d12 100%);
+    border: 1px solid #d54f3f;
+    border-radius: 8px;
+    color: #fff5f0;
+    cursor: pointer;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px; font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 0;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.15), 0 4px 12px rgba(181,58,44,0.4);
+    transition: all 0.12s;
+  }
+  .execute:hover { transform: translateY(-1px); box-shadow: inset 0 1px 0 rgba(255,255,255,0.15), 0 6px 16px rgba(181,58,44,0.6); }
+  .execute:active { transform: translateY(1px); }
+  .execute .sub { display: block; font-size: 8px; font-weight: 400; letter-spacing: 1px; opacity: 0.7; margin-top: 1px; }
+
+  /* ── Floating damage numbers ── */
+  .float-dmg {
+    position: absolute;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 18px;
+    color: var(--target);
+    text-shadow: 0 0 8px rgba(255,216,74,0.6), 0 2px 0 #000;
+    pointer-events: none;
+    animation: float-up 1.1s ease-out forwards;
+    z-index: 20;
+  }
+  @keyframes float-up {
+    0% { transform: translate(-50%, 0); opacity: 0; }
+    20% { opacity: 1; }
+    100% { transform: translate(-50%, -32px); opacity: 0; }
+  }
+  .threat.shake { animation: shake 0.32s ease-out; }
+  @keyframes shake {
+    0%, 100% { transform: translate(0); }
+    25% { transform: translate(-2px, -1px); }
+    50% { transform: translate(2px, 1px); }
+    75% { transform: translate(-1px, 0); }
+  }
+
+  /* ── Helper: variation B uses different layout for player zone ── */
+  body[data-variation="B"] .player-zone {
+    grid-template-columns: 76px 1fr 64px;
+  }
+  body[data-variation="B"] .body-rig {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    padding: 0;
+  }
+
+  /* Compact threat row for variation B (saves vertical space) */
+  body[data-variation="B"] .threat {
+    padding: 8px;
+  }
+  body[data-variation="B"] .intent-stamp { padding: 4px 6px; }
+
+  /* ── Caption under the phone ── */
+  .caption {
+    margin-top: 22px;
+    text-align: center;
+    color: var(--ink-soft);
+    font-size: 11px;
+    letter-spacing: 1.2px;
+    max-width: 460px;
+    line-height: 1.6;
+  }
+  .caption b { color: var(--ink); }
+
+  /* Notes pinned beside the phone */
+  .annotations {
+    position: absolute;
+    color: var(--ink-faint);
+    font-size: 10px;
+    line-height: 1.4;
+    letter-spacing: 0.4px;
+    max-width: 200px;
+    pointer-events: none;
+  }
+  .annotations.left { right: calc(50% + 230px); top: 50%; text-align: right; transform: translateY(-50%); }
+  .annotations.right { left: calc(50% + 230px); top: 50%; transform: translateY(-50%); }
+  .annotations h4 {
+    color: var(--accent);
+    font-family: 'VT323', monospace;
+    font-size: 14px;
+    letter-spacing: 2px;
+    margin: 0 0 4px;
+  }
+  .annotations p { margin: 0 0 14px; }
+  .annotations .arrow { color: var(--ink-soft); }
+  @media (max-width: 1100px) {
+    .annotations { display: none; }
+  }
+</style>
+</head>
+<body data-variation="A">
+
+<div class="toolbar">
+  <div class="brand">STILL<span class="sub">// combat scene · mobile 393×852</span></div>
+  <div class="var-tabs">
+    <button class="vt active" data-var="A">A · Paper Doll</button>
+    <button class="vt" data-var="B">B · Vertical List</button>
+    <button class="vt" data-var="C">C · Energy Core</button>
+  </div>
+</div>
+
+<div class="desk">
+
+  <!-- LEFT annotation -->
+  <div class="annotations left">
+    <h4>// THREAT GRID</h4>
+    <p>Enemies are <b style="color:var(--ink);">framed cards</b>, not standing sprites. Reads as "incoming threats" not "opponents on a stage". Tap to retarget.</p>
+    <h4>// HAND RAIL</h4>
+    <p>Vertical strip on the left edge. <b style="color:var(--ink);">Not a fan</b>. Tap a card to select; tap a body slot to assign as a modifier.</p>
+  </div>
+
+  <!-- RIGHT annotation -->
+  <div class="annotations right">
+    <h4>// PLAYER = CHROME</h4>
+    <p>No player sprite. The <b style="color:var(--ink);">slots are the body</b>, arranged in a humanoid silhouette. The phone is Still.</p>
+    <h4>// VARIATIONS</h4>
+    <p><b style="color:var(--ink);">A</b> — paper-doll silhouette<br>
+       <b style="color:var(--ink);">B</b> — clean vertical list<br>
+       <b style="color:var(--ink);">C</b> — ring around energy core</p>
+  </div>
+
+  <div class="phone">
+    <div class="screen">
+
+      <!-- iOS status bar -->
+      <div class="ios-status">
+        <span>9:41</span>
+        <div class="right">
+          <svg viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="6" width="3" height="6" rx="0.5"/><rect x="5" y="4" width="3" height="8" rx="0.5"/><rect x="10" y="2" width="3" height="10" rx="0.5"/><rect x="15" y="0" width="3" height="12" rx="0.5"/></svg>
+          <svg viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1"><rect x="0.5" y="0.5" width="20" height="11" rx="2.5"/><rect x="2" y="2" width="16" height="8" rx="1.5" fill="currentColor"/><rect x="21.5" y="3.5" width="2" height="5" rx="1" fill="currentColor"/></svg>
+        </div>
+      </div>
+
+      <!-- Game top bar -->
+      <div class="topbar">
+        <div class="crumb">SECTOR <b>2</b> · ROUND <b>3</b></div>
+        <div class="strain-meter" title="Strain">
+          <i></i>
+          <span class="tick" style="left:25%;"></span>
+          <span class="tick" style="left:50%;"></span>
+          <span class="tick" style="left:75%;"></span>
+        </div>
+        <div class="turn-pill">PLAN</div>
+      </div>
+
+      <!-- THREATS -->
+      <div class="threats">
+        <div class="threats-head">
+          <div class="label">// INCOMING <b>×4</b></div>
+          <div class="hint">tap to retarget</div>
+        </div>
+        <div class="threat-grid" id="threat-grid"></div>
+      </div>
+
+      <!-- BATTLE LOG -->
+      <div class="battle-log" id="battle-log">
+        <span class="line"><span class="meta">R2</span> Drone struck <span class="you">Still</span> for <span class="dmg">6</span></span>
+        <span class="line"><span class="meta">R2</span> <span class="you">Still</span> blocked <span class="blk">8</span> · Counter dealt <span class="dmg">4</span> back</span>
+        <span class="line recent"><span class="meta">R3</span> <span class="you">Still</span> drew 4 cards</span>
+      </div>
+
+      <!-- PLAYER ZONE -->
+      <div class="player-zone">
+
+        <!-- HAND on the left -->
+        <div class="hand-rail" id="hand">
+          <div class="hand-label">HAND · 4</div>
+
+          <button class="card" data-card="strike">
+            <div class="top"><span class="name">Strike</span><span class="cost">1</span></div>
+            <div class="desc">+3 dmg to slot</div>
+            <div class="tag">// boost</div>
+          </button>
+          <button class="card" data-card="swift">
+            <div class="top"><span class="name">Swift</span><span class="cost">0</span></div>
+            <div class="desc">Slot fires twice</div>
+            <div class="tag">// repeat</div>
+          </button>
+          <button class="card" data-card="vulnsh">
+            <div class="top"><span class="name">Vuln. Sh.</span><span class="cost">1</span></div>
+            <div class="desc">Apply Vuln 2</div>
+            <div class="tag">// debuff</div>
+          </button>
+          <button class="card" data-card="iron">
+            <div class="top"><span class="name">Iron</span><span class="cost">1</span></div>
+            <div class="desc">+5 block</div>
+            <div class="tag">// armor</div>
+          </button>
+        </div>
+
+        <!-- BODY in the center -->
+        <div class="body-rig">
+          <canvas class="body-ghost" data-sprite="STILL"></canvas>
+          <div class="slot head">
+            <div class="slot-label">Head</div>
+            <div class="equip">Optic Coil</div>
+            <div class="action">Mark · Vuln 1</div>
+          </div>
+          <div class="slot armL modded">
+            <div class="slot-label">Arm L</div>
+            <div class="equip">Pulse Fist</div>
+            <div class="action">Atk 6</div>
+            <span class="mod-pip">×2</span>
+          </div>
+          <div class="slot armR">
+            <div class="slot-label">Arm R</div>
+            <div class="equip">Servo Blade</div>
+            <div class="action">Atk 4</div>
+          </div>
+          <div class="slot tors">
+            <div class="slot-label">Torso</div>
+            <div class="equip">Plate Mk II</div>
+            <div class="action">Block 8 · Counter 4</div>
+          </div>
+          <div class="slot legs">
+            <div class="slot-label">Legs</div>
+            <div class="equip">Recoil Pads</div>
+            <div class="action">Dodge · +1 EN</div>
+          </div>
+        </div>
+
+        <!-- STATS on the right -->
+        <div class="stats-rail">
+          <div class="stat-pill hp">
+            <div class="lbl">HP</div>
+            <div class="val">42<span class="max">of 60</span></div>
+          </div>
+          <div class="stat-pill blk">
+            <div class="lbl">BLK</div>
+            <div class="val">8</div>
+          </div>
+          <div class="stat-pill en">
+            <div class="lbl">EN</div>
+            <div class="val">3<span class="max">of 3</span></div>
+          </div>
+          <div class="pile-mini">
+            <span>D <b>12</b></span>
+            <span>X <b>5</b></span>
+          </div>
+        </div>
+
+        <!-- ACTION BAR -->
+        <div class="actionbar">
+          <div class="hint-strip">
+            <span class="icon">i</span>
+            <span id="hint-text">Tap a card, then tap a body slot to assign. Re-tap a card to deselect.</span>
+          </div>
+          <button class="execute" id="execute">
+            Execute
+            <span class="sub">end planning</span>
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <div class="caption">
+    Vertical "incoming" framing. Player is the chrome. <b>No fanned hand, no side-on tableau.</b><br>
+    Use the tabs above to switch body-rig variations.
+  </div>
+
+</div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+
+<script>
+/* ───────── Sprite data + renderer ───────── */
+(function () {
+  const SPRITES = {};
+  const S = (art, palette) => ({ art, palette });
+  SPRITES.STILL = S(['....ppPPPPpp....','...pPPPPPPPPp...','..pPP.BPPB.PPp..','..pPPPPPPPPPPp..','..ppPPWPPWPPpp..','....pPPPPPPp....','.GpPPPPPPPPPPpG.','.GpPWPPPPPPWPpG.','.GpPPGggggGPPpG.','.GpPPPPPPPPPPpG.','..GpPPPPPPPPpG..','..GGpPPPPPPpGG..','...Gpp....ppG...','...Gpp....ppG...','...Gpp....ppG...','..GGpp....ppGG..'], { '.': null, P: '#b2a4f5', p: '#7c6fd4', d: '#5a4fb0', B: '#74b9ff', W: '#dfe6e9', G: '#636e72', g: '#2d3436' });
+  SPRITES['wandering-drone'] = S(['....yyyy....','..yyYYYYyy..','.yYYYwYYYYy.','.yYYYYYYYYy.','yYYYYYYYYYYy','yYYwYYYYwYYy','yYYYYYYYYYYy','.yYrYYYYrYy.','.yYYYYYYYYy.','..yyYYYYyy..','....llll....','....llll....'], { '.': null, Y: '#b8a86a', y: '#7a6e3c', w: '#f5e6a0', r: '#e07830', l: '#5a5030' });
+  SPRITES['rust-guard']      = S(['....OOOO....','...OOooOO...','..OOwOOwOO..','..OOOOOOOO..','..OOOOOOOO..','.OOOOOOOOOO.','.OOoooooOOO.','.OOOOOOOOOO.','..OO....OO..','.OOO....OOO.','.OOO....OOO.','.OOO....OOO.','..OO....OO..','..OO....OO..','..oo....oo..','..oo....oo..'], { '.': null, O: '#d35400', o: '#7d3c00', w: '#fad7a0' });
+  SPRITES['glitch-node']     = S(['....GcGG....','..GGccccGG..','.GccCCCCccG.','.GcCCwwCCcG.','GccCwwwwCccG','GcCCwwwwCCcG','GcCCwwwwCCcG','GccCwwwwCccG','.GcCCwwCCcG.','.GccCCCCccG.','..GGccccGG..','....GcGG....'], { '.': null, G: '#6c3483', c: '#9b59b6', C: '#c39bd3', w: '#d2f5ff' });
+  SPRITES['fracture-mite']   = S(['r..rRRRRr..r','rr.rRRRRr.rr','.rrRRRRRRrr.','.rRRwRRwRRr.','rRRRRRRRRRRr','rRRRRRRRRRRr','.rRRRRRRRRr.','rR.rRRRRr.Rr','R..rR..Rr..R','r..rr..rr..r','...rr..rr...','...r....r...'], { '.': null, R: '#c0392b', r: '#7b241c', w: '#f5b7b1' });
+  function render(canvas, key, scale) {
+    const sprite = SPRITES[key]; if (!sprite) return;
+    const art = sprite.art, palette = sprite.palette;
+    const w = art[0].length, h = art.length;
+    canvas.width = w * scale; canvas.height = h * scale;
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (let y = 0; y < h; y++) {
+      const row = art[y];
+      for (let x = 0; x < w; x++) {
+        const ch = row[x]; const color = palette[ch];
+        if (!color) continue;
+        ctx.fillStyle = color;
+        ctx.fillRect(x * scale, y * scale, scale, scale);
+      }
+    }
+  }
+  window.SPRITES = SPRITES; window.renderSprite = render;
+})();
+</script>
+
+<script>
+/* ───────── Wiring ───────── */
+(function () {
+  const enemies = [
+    { id: 'rust-guard',      name: 'Rust Guard', hp: 28, hpMax: 40, blk: 0, intent: { kind: 'attack', text: 'Atk 9 · Weak +1', glyph: '↯' }, statuses: [{ k: 'deb', t: 'WEAK 1' }], target: true },
+    { id: 'wandering-drone', name: 'Drone',      hp: 14, hpMax: 16, blk: 0, intent: { kind: 'attack', text: 'Atk 6 ×2',         glyph: '↯' }, statuses: [], target: false },
+    { id: 'glitch-node',     name: 'Glitch',     hp: 22, hpMax: 22, blk: 8, intent: { kind: 'block',  text: 'Block 8 · Buff',   glyph: '⛨' }, statuses: [{ k: 'buf', t: 'BLK 8' }], target: false },
+    { id: 'fracture-mite',   name: 'Mite',       hp: 9,  hpMax: 12, blk: 0, intent: { kind: 'attack', text: 'Atk 4',            glyph: '↯' }, statuses: [{ k: 'vul', t: 'VULN 2' }], target: false },
+  ];
+
+  const grid = document.getElementById('threat-grid');
+  function buildThreats() {
+    grid.innerHTML = '';
+    enemies.forEach((en, i) => {
+      const t = document.createElement('div');
+      t.className = 'threat' + (en.target ? ' target' : '');
+      t.dataset.idx = i;
+      const hpPct = Math.round((en.hp / en.hpMax) * 100);
+      t.innerHTML =
+        '<div class="threat-row">' +
+          '<div class="threat-portrait"><canvas data-sprite="' + en.id + '"></canvas></div>' +
+          '<div class="threat-info">' +
+            '<div class="threat-name">' + en.name + '</div>' +
+            '<div class="threat-hp"><i style="width:' + hpPct + '%;"></i></div>' +
+            '<div class="threat-stats"><span><b>' + en.hp + '</b>/' + en.hpMax + '</span>' +
+              (en.blk ? '<span class="blk">⛨ ' + en.blk + '</span>' : '') +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="intent-stamp ' + en.intent.kind + '">' +
+          '<span class="glyph">' + en.intent.glyph + '</span>' +
+          '<div class="text">' + en.intent.text + '</div>' +
+        '</div>' +
+        (en.statuses.length
+          ? '<div class="threat-statuses">' + en.statuses.map(s => '<span class="status-chip ' + s.k + '">' + s.t + '</span>').join('') + '</div>'
+          : '');
+      t.addEventListener('click', () => {
+        enemies.forEach(e => e.target = false);
+        en.target = true;
+        buildThreats();
+        renderAllSprites();
+      });
+      grid.appendChild(t);
+    });
+  }
+  function renderAllSprites() {
+    const scale = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sprite-scale')) || 4;
+    document.querySelectorAll('canvas[data-sprite]').forEach(c => window.renderSprite(c, c.dataset.sprite, scale));
+  }
+  window.__rerenderSprites = renderAllSprites;
+
+  /* ── Card → Slot interaction ── */
+  document.getElementById('hand').addEventListener('click', (e) => {
+    const card = e.target.closest('.card'); if (!card) return;
+    const wasSel = card.classList.contains('selected');
+    document.querySelectorAll('.card.selected').forEach(c => c.classList.remove('selected'));
+    if (!wasSel) {
+      card.classList.add('selected');
+      document.body.classList.add('has-selected');
+      document.getElementById('hint-text').textContent = 'Now tap a body slot to assign "' + card.querySelector('.name').textContent + '"';
+    } else {
+      document.body.classList.remove('has-selected');
+      document.getElementById('hint-text').textContent = 'Tap a card, then tap a body slot to assign. Re-tap a card to deselect.';
+    }
+  });
+
+  document.querySelectorAll('.slot').forEach(slot => {
+    slot.addEventListener('click', () => {
+      const sel = document.querySelector('.card.selected');
+      if (!sel) return;
+      slot.classList.add('modded');
+      // small mod pip
+      let pip = slot.querySelector('.mod-pip');
+      if (!pip) { pip = document.createElement('span'); pip.className = 'mod-pip'; slot.appendChild(pip); }
+      pip.textContent = sel.querySelector('.name').textContent.slice(0, 4);
+      sel.classList.remove('selected');
+      document.body.classList.remove('has-selected');
+      document.getElementById('hint-text').textContent = 'Assigned. Tap Execute when ready.';
+    });
+  });
+
+  /* ── Execute ── */
+  document.getElementById('execute').addEventListener('click', () => {
+    const target = document.querySelector('.threat.target');
+    if (!target) return;
+    target.classList.add('shake');
+    const dmgs = ['12', '6', '8', '4'];
+    dmgs.forEach((d, i) => {
+      setTimeout(() => {
+        const f = document.createElement('div');
+        f.className = 'float-dmg';
+        f.textContent = '-' + d;
+        const r = target.getBoundingClientRect();
+        const sr = document.querySelector('.screen').getBoundingClientRect();
+        f.style.left = (r.left - sr.left + r.width / 2) + 'px';
+        f.style.top  = (r.top  - sr.top  + 8) + 'px';
+        document.querySelector('.screen').appendChild(f);
+        setTimeout(() => f.remove(), 1100);
+      }, i * 130);
+    });
+    setTimeout(() => target.classList.remove('shake'), 350);
+  });
+
+  /* ── Variation switcher ── */
+  document.querySelectorAll('.vt').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('.vt').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      document.body.dataset.variation = b.dataset.var;
+      window.__tweakSet && window.__tweakSet({ variation: b.dataset.var });
+    });
+  });
+
+  buildThreats();
+  renderAllSprites();
+})();
+</script>
+
+<script type="text/babel">
+/* ───────── Tweaks panel ───────── */
+const { useEffect } = React;
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "variation": "A",
+  "spriteScale": 5,
+  "showAnnotations": true,
+  "showLog": true,
+  "executeLabel": "Execute"
+}/*EDITMODE-END*/;
+
+function App() {
+  const [tweaks, setTweak] = useTweaks(TWEAK_DEFAULTS);
+  window.__tweakSet = setTweak;
+
+  useEffect(() => {
+    document.body.dataset.variation = tweaks.variation;
+    document.querySelectorAll('.vt').forEach(b => {
+      b.classList.toggle('active', b.dataset.var === tweaks.variation);
+    });
+  }, [tweaks.variation]);
+
+  useEffect(() => {
+    document.documentElement.style.setProperty('--sprite-scale', tweaks.spriteScale);
+    window.__rerenderSprites && window.__rerenderSprites();
+  }, [tweaks.spriteScale]);
+
+  useEffect(() => {
+    document.querySelectorAll('.annotations').forEach(el => {
+      el.style.display = tweaks.showAnnotations ? '' : 'none';
+    });
+  }, [tweaks.showAnnotations]);
+
+  useEffect(() => {
+    const el = document.getElementById('battle-log');
+    if (el) el.style.display = tweaks.showLog ? '' : 'none';
+  }, [tweaks.showLog]);
+
+  useEffect(() => {
+    const ex = document.getElementById('execute');
+    if (ex) ex.firstChild.textContent = tweaks.executeLabel + ' ';
+  }, [tweaks.executeLabel]);
+
+  return (
+    <TweaksPanel title="Tweaks">
+      <TweakSection title="Layout">
+        <TweakRadio
+          label="Body rig"
+          value={tweaks.variation}
+          onChange={v => setTweak('variation', v)}
+          options={[
+            { value: 'A', label: 'Doll' },
+            { value: 'B', label: 'List' },
+            { value: 'C', label: 'Core' },
+          ]}
+        />
+      </TweakSection>
+      <TweakSection title="Visuals">
+        <TweakSlider label="Sprite scale" min={3} max={6} step={1} value={tweaks.spriteScale} onChange={v => setTweak('spriteScale', v)} />
+        <TweakToggle label="Show side annotations" checked={tweaks.showAnnotations} onChange={v => setTweak('showAnnotations', v)} />
+        <TweakToggle label="Show battle log" checked={tweaks.showLog} onChange={v => setTweak('showLog', v)} />
+      </TweakSection>
+      <TweakSection title="Copy">
+        <TweakText label="Execute label" value={tweaks.executeLabel} onChange={v => setTweak('executeLabel', v)} />
+      </TweakSection>
+    </TweaksPanel>
+  );
+}
+
+const root = document.createElement('div');
+document.body.appendChild(root);
+ReactDOM.createRoot(root).render(<App />);
+</script>
+
+</body>
+</html>

@@ -5,23 +5,35 @@ import type { ModifierCardDefinition } from '../game/types'
 const boost: ModifierCardDefinition = {
   id: 'boost',
   name: 'Boost',
-  description: '+50% to one slot\'s output.',
+  description: '+50% to one slot\'s output. Push: +100%.',
   energyCost: 2,
   category: {
     type: 'slot',
     modifier: 'Amplify',
     effect: { type: 'amplify', multiplier: 1.5 },
   },
+  pushCost: 1,
+  pushedCategory: {
+    type: 'slot',
+    modifier: 'Amplify',
+    effect: { type: 'amplify', multiplier: 2.0 },
+  },
   keywords: [],
   upgraded: {
     id: 'boost',
     name: 'Boost+',
-    description: '+100% to one slot\'s output.',
+    description: '+100% to one slot\'s output. Push: +150%.',
     energyCost: 1,
     category: {
       type: 'slot',
       modifier: 'Amplify',
       effect: { type: 'amplify', multiplier: 2.0 },
+    },
+    pushCost: 1,
+    pushedCategory: {
+      type: 'slot',
+      modifier: 'Amplify',
+      effect: { type: 'amplify', multiplier: 2.5 },
     },
     keywords: [],
   },
@@ -30,7 +42,7 @@ const boost: ModifierCardDefinition = {
 const emergencyStrike: ModifierCardDefinition = {
   id: 'emergency-strike',
   name: 'Emergency Strike',
-  description: 'Override: deal 8 damage to ALL enemies.',
+  description: 'Override: deal 8 damage to ALL enemies. Push: 14.',
   energyCost: 2,
   category: {
     type: 'slot',
@@ -40,11 +52,20 @@ const emergencyStrike: ModifierCardDefinition = {
       action: { type: 'damage', baseValue: 8, targetMode: 'all_enemies' },
     },
   },
+  pushCost: 1,
+  pushedCategory: {
+    type: 'slot',
+    modifier: 'Override',
+    effect: {
+      type: 'override',
+      action: { type: 'damage', baseValue: 14, targetMode: 'all_enemies' },
+    },
+  },
   keywords: [],
   upgraded: {
     id: 'emergency-strike',
     name: 'Emergency Strike+',
-    description: 'Override: deal 10 damage to ALL enemies.',
+    description: 'Override: deal 10 damage to ALL enemies. Push: 16.',
     energyCost: 1,
     category: {
       type: 'slot',
@@ -52,6 +73,15 @@ const emergencyStrike: ModifierCardDefinition = {
       effect: {
         type: 'override',
         action: { type: 'damage', baseValue: 10, targetMode: 'all_enemies' },
+      },
+    },
+    pushCost: 1,
+    pushedCategory: {
+      type: 'slot',
+      modifier: 'Override',
+      effect: {
+        type: 'override',
+        action: { type: 'damage', baseValue: 16, targetMode: 'all_enemies' },
       },
     },
     keywords: [],
@@ -179,23 +209,35 @@ const spreadShot: ModifierCardDefinition = {
 const echoProtocol: ModifierCardDefinition = {
   id: 'echo-protocol',
   name: 'Echo Protocol',
-  description: 'Repeat: slot action fires twice.',
+  description: 'Repeat: slot action fires twice. Push: fires three times.',
   energyCost: 2,
   category: {
     type: 'slot',
     modifier: 'Repeat',
     effect: { type: 'repeat', extraFirings: 1 },
   },
+  pushCost: 2,
+  pushedCategory: {
+    type: 'slot',
+    modifier: 'Repeat',
+    effect: { type: 'repeat', extraFirings: 2 },
+  },
   keywords: [],
   upgraded: {
     id: 'echo-protocol',
     name: 'Echo Protocol+',
-    description: 'Repeat: slot action fires three times.',
+    description: 'Repeat: slot action fires three times. Push: fires four times.',
     energyCost: 1,
     category: {
       type: 'slot',
       modifier: 'Repeat',
       effect: { type: 'repeat', extraFirings: 2 },
+    },
+    pushCost: 2,
+    pushedCategory: {
+      type: 'slot',
+      modifier: 'Repeat',
+      effect: { type: 'repeat', extraFirings: 3 },
     },
     keywords: [],
   },
@@ -341,7 +383,7 @@ const shieldBash: ModifierCardDefinition = {
 const emergencyShield: ModifierCardDefinition = {
   id: 'emergency-shield',
   name: 'Emergency Shield',
-  description: 'Override: gain 12 Block.',
+  description: 'Override: gain 12 Block. Push: 18 Block.',
   energyCost: 2,
   category: {
     type: 'slot',
@@ -351,11 +393,20 @@ const emergencyShield: ModifierCardDefinition = {
       action: { type: 'block', baseValue: 12, targetMode: 'self' },
     },
   },
+  pushCost: 1,
+  pushedCategory: {
+    type: 'slot',
+    modifier: 'Override',
+    effect: {
+      type: 'override',
+      action: { type: 'block', baseValue: 18, targetMode: 'self' },
+    },
+  },
   keywords: [],
   upgraded: {
     id: 'emergency-shield',
     name: 'Emergency Shield+',
-    description: 'Override: gain 16 Block.',
+    description: 'Override: gain 16 Block. Push: 22 Block.',
     energyCost: 1,
     category: {
       type: 'slot',
@@ -363,6 +414,15 @@ const emergencyShield: ModifierCardDefinition = {
       effect: {
         type: 'override',
         action: { type: 'block', baseValue: 16, targetMode: 'self' },
+      },
+    },
+    pushCost: 1,
+    pushedCategory: {
+      type: 'slot',
+      modifier: 'Override',
+      effect: {
+        type: 'override',
+        action: { type: 'block', baseValue: 22, targetMode: 'self' },
       },
     },
     keywords: [],
@@ -374,7 +434,7 @@ const emergencyShield: ModifierCardDefinition = {
 const deepFreeze: ModifierCardDefinition = {
   id: 'deep-freeze',
   name: 'Deep Freeze',
-  description: 'Gain 10 Block.',
+  description: 'Gain 10 Block. Push: 14 Block + Weak 1 to all enemies.',
   energyCost: 2,
   category: {
     type: 'system',
@@ -382,16 +442,36 @@ const deepFreeze: ModifierCardDefinition = {
     effects: [{ type: 'gainBlock', value: 10 }],
     homeSlot: 'Torso',
   },
+  pushCost: 1,
+  pushedCategory: {
+    type: 'system',
+    modifier: 'Utility',
+    effects: [
+      { type: 'gainBlock', value: 14 },
+      { type: 'applyStatus', status: 'Weak', stacks: 1, target: 'all_enemies' },
+    ],
+    homeSlot: 'Torso',
+  },
   keywords: [],
   upgraded: {
     id: 'deep-freeze',
     name: 'Deep Freeze+',
-    description: 'Gain 14 Block.',
+    description: 'Gain 14 Block. Push: 18 Block + Weak 2 to all enemies.',
     energyCost: 1,
     category: {
       type: 'system',
       modifier: 'Utility',
       effects: [{ type: 'gainBlock', value: 14 }],
+      homeSlot: 'Torso',
+    },
+    pushCost: 1,
+    pushedCategory: {
+      type: 'system',
+      modifier: 'Utility',
+      effects: [
+        { type: 'gainBlock', value: 18 },
+        { type: 'applyStatus', status: 'Weak', stacks: 2, target: 'all_enemies' },
+      ],
       homeSlot: 'Torso',
     },
     keywords: [],
@@ -457,7 +537,7 @@ const quickScan: ModifierCardDefinition = {
 const thermalSurge: ModifierCardDefinition = {
   id: 'thermal-surge',
   name: 'Thermal Surge',
-  description: 'Gain 1 Strength and 1 Dexterity.',
+  description: 'Gain 1 Strength and 1 Dexterity. Push: 2 of each.',
   energyCost: 2,
   category: {
     type: 'system',
@@ -468,11 +548,21 @@ const thermalSurge: ModifierCardDefinition = {
     ],
     homeSlot: 'Head',
   },
+  pushCost: 2,
+  pushedCategory: {
+    type: 'system',
+    modifier: 'Utility',
+    effects: [
+      { type: 'applyStatus', status: 'Strength', stacks: 2, target: 'self' },
+      { type: 'applyStatus', status: 'Dexterity', stacks: 2, target: 'self' },
+    ],
+    homeSlot: 'Head',
+  },
   keywords: [],
   upgraded: {
     id: 'thermal-surge',
     name: 'Thermal Surge+',
-    description: 'Gain 2 Strength and 1 Dexterity.',
+    description: 'Gain 2 Strength and 1 Dexterity. Push: 3 Str and 2 Dex.',
     energyCost: 1,
     category: {
       type: 'system',
@@ -480,6 +570,16 @@ const thermalSurge: ModifierCardDefinition = {
       effects: [
         { type: 'applyStatus', status: 'Strength', stacks: 2, target: 'self' },
         { type: 'applyStatus', status: 'Dexterity', stacks: 1, target: 'self' },
+      ],
+      homeSlot: 'Head',
+    },
+    pushCost: 2,
+    pushedCategory: {
+      type: 'system',
+      modifier: 'Utility',
+      effects: [
+        { type: 'applyStatus', status: 'Strength', stacks: 3, target: 'self' },
+        { type: 'applyStatus', status: 'Dexterity', stacks: 2, target: 'self' },
       ],
       homeSlot: 'Head',
     },

@@ -299,14 +299,21 @@ export function resolveBodyAction(
     foresight: 0,
   }
 
-  // Resolve both modifier definitions
+  // Resolve both modifier definitions, respecting upgrade + push state.
   function resolveModDef(instanceId: string | null): ModifierCardDefinition | null {
     if (!instanceId) return null
     const cardInst = [...combat.hand].find(c => c.instanceId === instanceId)
       ?? findAssignedCard(combat, instanceId)
     if (!cardInst) return null
-    const def = cardDefs[cardInst.definitionId]
-    if (def?.category.type === 'slot') return def
+    const baseDef = cardDefs[cardInst.definitionId]
+    if (!baseDef) return null
+    // 1. Apply upgraded variant if applicable.
+    let def: ModifierCardDefinition = cardInst.isUpgraded && baseDef.upgraded ? baseDef.upgraded : baseDef
+    // 2. If the card was pushed, swap to its pushed category.
+    if (combat.pushedCards[instanceId] && def.pushCost != null && def.pushedCategory != null) {
+      def = { ...def, category: def.pushedCategory }
+    }
+    if (def.category.type === 'slot') return def
     return null
   }
 

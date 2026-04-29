@@ -23,18 +23,13 @@ import {
   startTurn,
   allEnemiesDefeated,
   isStillDefeated,
+  STRAIN_DECAY_BETWEEN_COMBATS,
+  hasForfeited,
+  applyForfeit,
   type CombatContext,
 } from '../game/combat'
 
 import { ALL_CARDS } from '../data/cards'
-import {
-  initStrainCombat,
-  toggleSlotPush as toggleSlotPushFn,
-  toggleVent as toggleVentFn,
-  selectTarget,
-  executeStrainTurn as execStrainTurn,
-} from '../game/strainCombat'
-import { STARTING_SLOT_LAYOUT } from '../data/actions'
 import { ALL_ENEMIES } from '../data/enemies'
 import { generateGridMaze } from '../game/mapGen'
 import { saveRunState, loadRunState, clearRunState } from '../game/persistence'
@@ -70,12 +65,13 @@ interface RunActions {
 
   // Combat flow
   startCombat: (enemies: EnemyInstance[]) => void
-  playCard: (instanceId: string, targetSlot?: BodySlot, targetEnemyId?: string) => void
+  playCard: (instanceId: string, targetSlot?: BodySlot, targetEnemyId?: string, pushed?: boolean) => void
   unassignSlotModifier: (slot: BodySlot) => void
   executeTurn: (targetEnemyId?: string) => void
   setCombatPhase: (phase: CombatPhase) => void
   setEnemies: (enemies: EnemyInstance[]) => void
   applyCombatResult: (combat: CombatState, stillHealth: number) => void
+  finishCombat: () => void
 
   // Map
   setMap: (map: GridMaze) => void
@@ -91,15 +87,9 @@ interface RunActions {
   // Companions
   acquireCompanion: (id: string) => void
 
-  // Strain combat — unified action slots
-  startStrainCombat: (enemies: EnemyInstance[]) => void
-  toggleSlotPush: (index: number) => void
-  toggleVent: () => void
-  selectStrainTarget: (enemyInstanceId: string) => void
-  executeStrainTurn: () => void
-  applyGrowthAction: (actionId: string, slotIndex: number, strainCost: number) => void
+  // Strain (between combats — during combat, lives on CombatState)
   applyComfortReward: (rewardId: string) => void
-  swapSlots: (from: number, to: number) => void
+  applyGrowthStrainCost: (tier: 'common' | 'uncommon' | 'rare') => void
 
   // Persistence
   saveRun: () => void
@@ -124,12 +114,8 @@ const emptyRunState: RunState = {
   combatsCleared: 0,
   lastCollapseMessage: null,
   carriedPartSector: null,
-  // Strain combat — unified action slots
+  // Strain — persists between combats; lives on CombatState during combat
   strain: 2,
-  strainCombat: null,
-  growth: { rewards: [] },
-  slotLayout: { slots: [...STARTING_SLOT_LAYOUT] },
-  acquiredActions: [],
 }
 
 /** Filter out inert carried parts (S2 part in S1) */
@@ -239,7 +225,9 @@ export const useRunStore = create<RunState & RunActions>()(
           state.drawCount,
           enemies,
           [],
-          activeParts
+          activeParts,
+          Math.random,
+          state.strain,
         )
         state.combat = combat
 
@@ -258,7 +246,7 @@ export const useRunStore = create<RunState & RunActions>()(
         }
       }),
 
-    playCard: (instanceId, targetSlot, targetEnemyId) =>
+    playCard: (instanceId, targetSlot, targetEnemyId, pushed = false) =>
       set((state) => {
         if (!state.combat) return
         const cardInst = state.combat.hand.find(c => c.instanceId === instanceId)
@@ -283,12 +271,17 @@ export const useRunStore = create<RunState & RunActions>()(
           combatsCleared: state.combatsCleared,
         }
 
-        const result = playModifierCard(ctx, cardDef, instanceId, targetSlot)
+        const result = playModifierCard(ctx, cardDef, instanceId, targetSlot, pushed)
         Object.assign(state.combat, result.combat)
         state.health = result.stillHealth
         // System card killed last enemy — skip to reward
         if (allEnemiesDefeated(state.combat)) {
           state.combat.phase = 'reward'
+          return
+        }
+        // Pushed card spiked strain past the cap → forfeit immediately
+        if (hasForfeited(state.combat)) {
+          applyForfeit(state.combat)
         }
       }),
 
@@ -367,6 +360,14 @@ export const useRunStore = create<RunState & RunActions>()(
           return
         }
 
+        // Check forfeit after body actions (push strain, vent resets cap-adjacent cases)
+        if (hasForfeited(bodyResult.combat)) {
+          Object.assign(state.combat, bodyResult.combat)
+          applyForfeit(state.combat)
+          state.combat.combatLog = allEvents
+          return
+        }
+
         // Phase 2: Enemy turn
         const enemyCtx: CombatContext = {
           ...baseCtx,
@@ -383,6 +384,14 @@ export const useRunStore = create<RunState & RunActions>()(
           Object.assign(state.combat, enemyResult.combat)
           state.combat.combatLog = allEvents
           state.combat.phase = 'finished'
+          return
+        }
+
+        // Check forfeit after enemy turn (StrainTick intent can push over)
+        if (hasForfeited(enemyResult.combat)) {
+          Object.assign(state.combat, enemyResult.combat)
+          applyForfeit(state.combat)
+          state.combat.combatLog = allEvents
           return
         }
 
@@ -413,6 +422,14 @@ export const useRunStore = create<RunState & RunActions>()(
           return
         }
 
+        // Check forfeit after end-of-turn strain changes
+        if (hasForfeited(endResult.combat)) {
+          Object.assign(state.combat, endResult.combat)
+          applyForfeit(state.combat)
+          state.combat.combatLog = allEvents
+          return
+        }
+
         // Phase 4: Start next turn (passive cooling, block reset, draw)
         const inspiredBonus = (endResult as any)._inspiredBonus ?? 0
         const startCtx: CombatContext = {
@@ -440,6 +457,16 @@ export const useRunStore = create<RunState & RunActions>()(
       set((state) => {
         state.combat = combat
         state.health = stillHealth
+      }),
+
+    // End the combat: copy CombatState.strain back to RunState.strain, apply between-combat decay, clear combat
+    finishCombat: () =>
+      set((state) => {
+        if (state.combat) {
+          const endStrain = Math.max(0, Math.min(state.combat.strain, state.combat.maxStrain))
+          state.strain = Math.max(0, endStrain - STRAIN_DECAY_BETWEEN_COMBATS)
+        }
+        state.combat = null
       }),
 
     setMap: (map) =>
@@ -503,48 +530,7 @@ export const useRunStore = create<RunState & RunActions>()(
         }
       }),
 
-    // ─── Strain Combat — Unified Action Slots ─────────────────────────────
-    startStrainCombat: (enemies) =>
-      set((state) => {
-        state.strainCombat = initStrainCombat(enemies, state.strain, state.slotLayout)
-      }),
-
-    toggleSlotPush: (index) =>
-      set((state) => {
-        if (!state.strainCombat || state.strainCombat.phase !== 'planning') return
-        state.strainCombat = toggleSlotPushFn(state.strainCombat, index)
-      }),
-
-    toggleVent: () =>
-      set((state) => {
-        if (!state.strainCombat || state.strainCombat.phase !== 'planning') return
-        state.strainCombat = toggleVentFn(state.strainCombat)
-      }),
-
-    selectStrainTarget: (enemyInstanceId) =>
-      set((state) => {
-        if (!state.strainCombat || state.strainCombat.phase !== 'planning') return
-        state.strainCombat = selectTarget(state.strainCombat, enemyInstanceId)
-      }),
-
-    executeStrainTurn: () =>
-      set((state) => {
-        if (!state.strainCombat || state.strainCombat.phase !== 'planning') return
-        const result = execStrainTurn(state.strainCombat, state.health)
-        state.strainCombat = result.combat
-        state.health = result.health
-        state.strain = result.combat.strain
-      }),
-
-    applyGrowthAction: (actionId, slotIndex, strainCost) =>
-      set((state) => {
-        state.strain = Math.min(state.strain + strainCost, 20)
-        state.slotLayout.slots[slotIndex] = actionId
-        if (!state.acquiredActions.includes(actionId)) {
-          state.acquiredActions.push(actionId)
-        }
-      }),
-
+    // ─── Strain (between combats) ─────────────────────────────────────────
     applyComfortReward: (rewardId) =>
       set((state) => {
         if (rewardId === 'heal') {
@@ -556,11 +542,16 @@ export const useRunStore = create<RunState & RunActions>()(
         }
       }),
 
-    swapSlots: (from, to) =>
+    applyGrowthStrainCost: (tier) =>
       set((state) => {
-        const temp = state.slotLayout.slots[from]
-        state.slotLayout.slots[from] = state.slotLayout.slots[to]
-        state.slotLayout.slots[to] = temp
+        const cost = tier === 'common' ? 2 : tier === 'uncommon' ? 3 : 4
+        // Write to CombatState.strain when we're in the reward phase (strain is authoritative there);
+        // otherwise to RunState.strain (shop events etc.)
+        if (state.combat && state.combat.phase === 'reward') {
+          state.combat.strain = Math.min(state.combat.strain + cost, state.combat.maxStrain)
+        } else {
+          state.strain = Math.min(state.strain + cost, 20)
+        }
       }),
 
     saveRun: () => {
@@ -586,25 +577,29 @@ export const useRunStore = create<RunState & RunActions>()(
         lastCollapseMessage: state.lastCollapseMessage,
         carriedPartSector: state.carriedPartSector,
         strain: state.strain,
-        strainCombat: null,
-        growth: state.growth,
-        slotLayout: state.slotLayout,
-        acquiredActions: state.acquiredActions,
       }
       saveRunState(toSave)
     },
 
     restoreRun: () => {
       try {
-        const saved = loadRunState<RunState>()
+        const saved = loadRunState<RunState & { slotLayout?: unknown }>()
         if (!saved || !saved.active || !saved.map) return false
-        // Legacy saves without carriedPartSector — discard so a fresh run starts with gating
-        if (saved.carriedPartSector === undefined || !saved.slotLayout) {
+        // Legacy guards:
+        // - pre-carriedPartSector saves → discard
+        // - unified-action-slots saves (had slotLayout, no deck) → discard
+        if (saved.carriedPartSector === undefined) {
           clearRunState()
           return false
         }
+        if (saved.slotLayout && (!saved.deck || saved.deck.length === 0)) {
+          clearRunState()
+          return false
+        }
+        // Strip any stale unified-slot fields from the restored payload
+        const { slotLayout: _sl, ...clean } = saved as unknown as Record<string, unknown>
         set((state) => {
-          Object.assign(state, { ...saved, combat: null })
+          Object.assign(state, { ...clean, combat: null })
         })
         return true
       } catch {

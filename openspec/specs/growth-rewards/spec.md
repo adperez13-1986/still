@@ -2,26 +2,30 @@
 
 ## Purpose
 
-After combat victory, the player can take growth rewards (findable actions) at a strain cost, or comfort rewards (heal, strain relief, or companion moment) for free.
+After combat victory, the player can take growth rewards (cards, parts, or equipment from the deckbuilder drop pools) at a strain cost, or comfort rewards (heal, strain relief, or companion moment) for free.
 
 ## Requirements
 
-### Requirement: Growth rewards are new actions
+### Requirement: Growth rewards are cards, parts, or equipment
 
-Growth rewards SHALL offer findable actions from the action pool. The player takes the action and decides where to slot it.
+Growth rewards SHALL offer card/part/equipment drops from the existing weighted reward pools. Taking a growth reward accrues strain proportional to the item's rarity tier.
 
 #### Scenario: Growth reward offered
-- **WHEN** the reward screen displays a growth option
-- **THEN** it shows a findable action with its type, base/pushed values, and strain cost to take
+- **WHEN** the reward screen displays growth options
+- **THEN** up to 3 growth options are shown: each is a card, part, or equipment drop (weighted by the run's sector and existing drop tables)
 
-#### Scenario: Growth reward accepted
+#### Scenario: Strain cost by tier
 - **WHEN** the player accepts a growth reward
-- **THEN** strain increases by the action's take cost (3-5). The player chooses which slot to place it in (replacing an existing action if all slots full). The slot arrangement screen appears.
+- **THEN** strain increases by: 2 for common, 3 for uncommon, 4 for rare
 
-#### Scenario: Growth unavailable
-- **WHEN** the player's strain + action cost would reach 20
-- **THEN** the growth option is greyed out. Only comfort is available.
+#### Scenario: Growth unavailable at high strain
+- **WHEN** the player's current strain + any growth option's tier cost would reach 20
+- **THEN** that specific growth option is greyed out (cannot select). If all growth options are greyed out, the screen shows only comfort options.
 
-#### Scenario: Multiple growth options
-- **WHEN** the reward screen is displayed
-- **THEN** up to 3 findable actions are offered (from the unacquired pool), sorted by type variety. Player picks one or chooses comfort.
+### Requirement: Comfort rewards unchanged
+
+Comfort options remain the same as the current implementation: Heal (+8 HP), Relief (-4 strain), Companion moment (-2 strain + narrative).
+
+#### Scenario: Comfort selection
+- **WHEN** the player picks a comfort reward
+- **THEN** the selected effect applies and the run continues

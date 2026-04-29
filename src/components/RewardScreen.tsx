@@ -4,10 +4,29 @@ import { ALL_CARDS } from '../data/cards'
 import { ALL_PARTS, ALL_EQUIPMENT } from '../data/parts'
 import type { ResolvedDrop } from '../game/drops'
 
+export type RewardTier = 'common' | 'uncommon' | 'rare'
+
+export interface ComfortOption {
+  id: string
+  label: string
+  description: string
+}
+
 interface Props {
   drops: ResolvedDrop[]
-  onChoose: (cardId?: string, skippedPartIds?: string[], skippedEquipIds?: string[]) => void
+  strain: number
+  maxStrain: number
+  comfort: ComfortOption
+  onChoose: (
+    cardId: string | undefined,
+    skippedPartIds: string[],
+    skippedEquipIds: string[],
+    acceptedTiers: RewardTier[],
+  ) => void
+  onComfort: (id: string) => void
 }
+
+const STRAIN_COST_BY_TIER: Record<RewardTier, number> = { common: 2, uncommon: 3, rare: 4 }
 
 function useLongPress(onLongPress: () => void, ms = 500) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -44,7 +63,7 @@ interface DetailPopover {
   color: string
 }
 
-export default function RewardScreen({ drops, onChoose }: Props) {
+export default function RewardScreen({ drops, strain, maxStrain, comfort, onChoose, onComfort }: Props) {
   const cardDrops = drops.filter((d) => d.type === 'card')
   const shardDrop = drops.find((d) => d.type === 'shards')
   const allPartDrops = drops.filter((d) => d.type === 'part')
@@ -55,6 +74,21 @@ export default function RewardScreen({ drops, onChoose }: Props) {
   const skippedParts = new Set(allPartDrops.filter(d => d.type === 'part' && !acceptedParts.has(d.partId)).map(d => d.type === 'part' ? d.partId : ''))
   const skippedEquips = new Set(allEquipDrops.filter(d => d.type === 'equipment' && !acceptedEquips.has(d.equipmentId)).map(d => d.type === 'equipment' ? d.equipmentId : ''))
   const [detail, setDetail] = useState<DetailPopover | null>(null)
+
+  const cardTier: RewardTier = 'common'
+  const CARD_STRAIN_COST = STRAIN_COST_BY_TIER[cardTier]
+
+  const acceptedBaseTiers: RewardTier[] = [
+    ...allPartDrops.flatMap((d) => d.type === 'part' && acceptedParts.has(d.partId)
+      ? [ALL_PARTS[d.partId]?.rarity].filter((r): r is RewardTier => !!r) : []),
+    ...allEquipDrops.flatMap((d) => d.type === 'equipment' && acceptedEquips.has(d.equipmentId)
+      ? [ALL_EQUIPMENT[d.equipmentId]?.rarity].filter((r): r is RewardTier => !!r) : []),
+  ]
+  const baseStrainDelta = acceptedBaseTiers.reduce((sum, t) => sum + STRAIN_COST_BY_TIER[t], 0)
+  const projectedNoCard = Math.min(maxStrain, strain + baseStrainDelta)
+  const projectedWithCard = Math.min(maxStrain, projectedNoCard + CARD_STRAIN_COST)
+  const cardWouldOvercap = strain + baseStrainDelta + CARD_STRAIN_COST >= maxStrain
+  const anyAcceptedBlocksByCap = strain + baseStrainDelta >= maxStrain
 
   return (
     <div style={{
@@ -69,6 +103,26 @@ export default function RewardScreen({ drops, onChoose }: Props) {
       padding: '40px',
     }}>
       <h2 style={{ letterSpacing: '3px', color: '#a29bfe', marginBottom: 0 }}>REWARD</h2>
+
+      {/* Strain preview */}
+      <div style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+        fontSize: 12, color: '#aaa',
+      }}>
+        <span>
+          Strain {strain}
+          {projectedNoCard !== strain && (
+            <span style={{ color: '#e67e22' }}> → {projectedNoCard}</span>
+          )}
+          {cardDrops.length > 0 && !cardWouldOvercap && (
+            <span style={{ color: '#636e72' }}> (with card → {projectedWithCard})</span>
+          )}
+          <span style={{ color: '#555' }}> / {maxStrain}</span>
+        </span>
+        <span style={{ fontSize: 10, color: '#555' }}>
+          Growth costs strain. Common +2, Uncommon +3, Rare +4.
+        </span>
+      </div>
 
       {/* Drop summary */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', justifyContent: 'center' }}>
@@ -90,17 +144,22 @@ export default function RewardScreen({ drops, onChoose }: Props) {
           const part = ALL_PARTS[d.partId]
           if (!part) return null
           const isAccepted = acceptedParts.has(d.partId)
+          const tier = part.rarity as RewardTier
+          const cost = STRAIN_COST_BY_TIER[tier]
+          // If not already accepted, check whether toggling it on would overcap
+          const otherDelta = isAccepted ? baseStrainDelta - cost : baseStrainDelta
+          const wouldOvercap = !isAccepted && strain + otherDelta + cost >= maxStrain
           return (
             <DropBadge
               key={d.partId}
-              label={isAccepted ? `Taking: ${part.name}` : `Found: ${part.name}`}
-              color={isAccepted ? '#2ecc71' : '#888'}
+              label={`${isAccepted ? 'Taking' : 'Found'}: ${part.name} · +${cost}s`}
+              color={isAccepted ? '#2ecc71' : wouldOvercap ? '#555' : '#888'}
               onLongPress={() => setDetail({
                 name: part.name,
                 description: part.description,
                 color: '#2ecc71',
               })}
-              onToggle={() => {
+              onToggle={wouldOvercap ? undefined : () => {
                 setAcceptedParts(prev => {
                   const next = new Set(prev)
                   if (next.has(d.partId)) next.delete(d.partId)
@@ -117,18 +176,22 @@ export default function RewardScreen({ drops, onChoose }: Props) {
           const equip = ALL_EQUIPMENT[d.equipmentId]
           if (!equip) return null
           const isAccepted = acceptedEquips.has(d.equipmentId)
+          const tier = equip.rarity as RewardTier
+          const cost = STRAIN_COST_BY_TIER[tier]
+          const otherDelta = isAccepted ? baseStrainDelta - cost : baseStrainDelta
+          const wouldOvercap = !isAccepted && strain + otherDelta + cost >= maxStrain
           return (
             <DropBadge
               key={d.equipmentId}
-              label={isAccepted ? `Taking: ${equip.name}` : `Found: ${equip.name}`}
-              color={isAccepted ? '#3498db' : '#888'}
+              label={`${isAccepted ? 'Taking' : 'Found'}: ${equip.name} · +${cost}s`}
+              color={isAccepted ? '#3498db' : wouldOvercap ? '#555' : '#888'}
               onLongPress={() => setDetail({
                 name: equip.name,
                 description: equip.description,
                 slot: equip.slot,
                 color: '#3498db',
               })}
-              onToggle={() => {
+              onToggle={wouldOvercap ? undefined : () => {
                 setAcceptedEquips(prev => {
                   const next = new Set(prev)
                   if (next.has(d.equipmentId)) next.delete(d.equipmentId)
@@ -201,7 +264,7 @@ export default function RewardScreen({ drops, onChoose }: Props) {
       {cardDrops.length > 0 ? (
         <>
           <p style={{ textAlign: 'center', color: '#888', fontSize: '13px', margin: 0 }}>
-            Choose a card to add to your deck:
+            Choose a card to add to your deck (+{CARD_STRAIN_COST} strain):
           </p>
           <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', justifyContent: 'center' }}>
             {cardDrops.map((drop) => {
@@ -209,17 +272,25 @@ export default function RewardScreen({ drops, onChoose }: Props) {
               const def = ALL_CARDS[drop.cardId]
               if (!def) return null
               return (
-                <CardDisplay
+                <div
                   key={drop.cardId}
-                  card={def}
-                  onClick={() => onChoose(drop.cardId, [...skippedParts], [...skippedEquips])}
-                />
+                  style={{
+                    opacity: cardWouldOvercap ? 0.4 : 1,
+                    cursor: cardWouldOvercap ? 'not-allowed' : 'pointer',
+                    pointerEvents: cardWouldOvercap ? 'none' : 'auto',
+                  }}
+                >
+                  <CardDisplay
+                    card={def}
+                    onClick={() => onChoose(drop.cardId, [...skippedParts], [...skippedEquips], [...acceptedBaseTiers, cardTier])}
+                  />
+                </div>
               )
             })}
           </div>
 
           <button
-            onClick={() => onChoose(undefined, [...skippedParts], [...skippedEquips])}
+            onClick={() => onChoose(undefined, [...skippedParts], [...skippedEquips], acceptedBaseTiers)}
             style={{
               padding: '10px 32px',
               backgroundColor: 'transparent',
@@ -235,14 +306,15 @@ export default function RewardScreen({ drops, onChoose }: Props) {
         </>
       ) : (
         <button
-          onClick={() => onChoose(undefined, [...skippedParts], [...skippedEquips])}
+          onClick={() => onChoose(undefined, [...skippedParts], [...skippedEquips], acceptedBaseTiers)}
+          disabled={anyAcceptedBlocksByCap}
           style={{
             padding: '12px 48px',
             backgroundColor: '#16213e',
-            border: '1px solid #a29bfe',
-            color: '#a29bfe',
+            border: `1px solid ${anyAcceptedBlocksByCap ? '#555' : '#a29bfe'}`,
+            color: anyAcceptedBlocksByCap ? '#555' : '#a29bfe',
             borderRadius: '8px',
-            cursor: 'pointer',
+            cursor: anyAcceptedBlocksByCap ? 'not-allowed' : 'pointer',
             fontSize: '15px',
             fontWeight: 'bold',
             letterSpacing: '1px',
@@ -251,6 +323,33 @@ export default function RewardScreen({ drops, onChoose }: Props) {
           Continue
         </button>
       )}
+
+      {/* Comfort option — skip growth for a small recovery */}
+      <div style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+        marginTop: 12, borderTop: '1px solid #2d3436', paddingTop: 16, width: '100%', maxWidth: 420,
+      }}>
+        <span style={{ fontSize: 10, color: '#555', letterSpacing: 2 }}>OR</span>
+        <button
+          onClick={() => onComfort(comfort.id)}
+          style={{
+            padding: '10px 24px',
+            background: '#1a1a2e',
+            border: '1px solid #636e72',
+            borderRadius: 6,
+            color: '#dfe6e9',
+            cursor: 'pointer',
+            fontSize: 13,
+            minWidth: 220,
+          }}
+        >
+          <div style={{ fontSize: 10, color: '#636e72', letterSpacing: 1, marginBottom: 4, fontWeight: 600 }}>
+            COMFORT · skip all drops
+          </div>
+          <div style={{ fontWeight: 600, marginBottom: 2 }}>{comfort.label}</div>
+          <div style={{ fontSize: 11, color: '#aaa' }}>{comfort.description}</div>
+        </button>
+      </div>
     </div>
   )
 }

@@ -6,13 +6,11 @@ import { useRunStore } from '../store/runStore'
 import { usePermanentStore } from '../store/permanentStore'
 import MapScreen from './MapScreen'
 import CombatScreen from './CombatScreen'
-import StrainCombatScreen from './StrainCombatScreen'
 import RestScreen from './RestScreen'
 import ShopScreen from './ShopScreen'
 import EventScreen from './EventScreen'
 import CardPicker from './CardPicker'
 import RunInfoOverlay from './RunInfoOverlay'
-import SlotRearrangement from './SlotRearrangement'
 import { generateGridMaze, findPath } from '../game/mapGen'
 import { makeEnemyInstance, makeCardInstance } from '../game/combat'
 import {
@@ -24,7 +22,6 @@ import {
 import { STARTING_CARDS, SECTOR1_CARD_POOL, SECTOR2_CARD_POOL } from '../data/cards'
 import { rollWeightedCards } from '../game/drops'
 import { ALL_PARTS, ALL_EQUIPMENT, STARTING_HEAD, STARTING_TORSO, STARTING_ARMS, STARTING_LEGS } from '../data/parts'
-import { STARTING_SLOT_LAYOUT } from '../data/actions'
 
 function pickEnemiesForRoom(room: GridRoom, sector: number, _combatsCleared: number) {
   if (room.type === 'Boss') {
@@ -65,7 +62,6 @@ export default function RunScreen() {
   const location = useLocation()
   const [roomDone, setRoomDone] = useState(false)
   const [infoTab, setInfoTab] = useState<'deck' | 'equips' | null>(null)
-  const [showSlots, setShowSlots] = useState(false)
   const [eventCardRemoval, setEventCardRemoval] = useState<number | null>(null)
   const [autoPath, setAutoPath] = useState<[number, number][] | null>(null)
   const walkingRef = useRef(false)
@@ -142,10 +138,6 @@ export default function RunScreen() {
         carriedPartSector: null,
         isDebug: true,
         strain: 2,
-        strainCombat: null,
-        growth: { rewards: [] },
-        slotLayout: { slots: [...STARTING_SLOT_LAYOUT] },
-        acquiredActions: [],
       })
       run.saveRun()
       return
@@ -199,10 +191,6 @@ export default function RunScreen() {
       lastCollapseMessage: null,
       carriedPartSector: archiveEntry?.sector ?? null,
       strain: 2,
-      strainCombat: null,
-      growth: { rewards: [] },
-      slotLayout: { slots: [...STARTING_SLOT_LAYOUT] },
-      acquiredActions: [],
     })
     run.saveRun()
   }, [])
@@ -248,7 +236,7 @@ export default function RunScreen() {
         const remaining = path.slice(i + 1)
         setAutoPath(remaining.length > 0 ? remaining : null)
         walkingRef.current = false
-        useRunStore.getState().startStrainCombat(enemies)
+        useRunStore.getState().startCombat(enemies)
         return
       }
 
@@ -278,11 +266,6 @@ export default function RunScreen() {
         Preparing...
       </div>
     )
-  }
-
-  // Strain combat prototype — takes priority when active
-  if (run.strainCombat) {
-    return <StrainCombatScreen />
   }
 
   // Combat active — handled entirely by CombatScreen
@@ -366,21 +349,6 @@ export default function RunScreen() {
         >
           Equips
         </button>
-        <button
-          onClick={() => setShowSlots(true)}
-          style={{
-            padding: '8px 16px',
-            backgroundColor: '#16213e',
-            border: '1px solid #e67e22',
-            borderRadius: '6px',
-            color: '#e67e22',
-            fontSize: '12px',
-            cursor: 'pointer',
-            letterSpacing: '1px',
-          }}
-        >
-          Slots
-        </button>
       </div>
       {infoTab && (
         <RunInfoOverlay
@@ -391,9 +359,6 @@ export default function RunScreen() {
           onClose={() => setInfoTab(null)}
           onTabChange={setInfoTab}
         />
-      )}
-      {showSlots && (
-        <SlotRearrangement onClose={() => setShowSlots(false)} />
       )}
     </>
   )

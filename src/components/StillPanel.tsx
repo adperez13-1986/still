@@ -11,10 +11,12 @@ interface Props {
   block: number
   statusEffects: StatusEffect[]
   compact?: boolean
+  strain?: number
+  maxStrain?: number
 }
 
 export default function StillPanel({
-  health, maxHealth, energy, maxEnergy, block, statusEffects, compact,
+  health, maxHealth, energy, maxEnergy, block, statusEffects, compact, strain, maxStrain,
 }: Props) {
   const healthPct = Math.max(0, (health / maxHealth) * 100)
   const healthColor = healthPct > 50 ? '#27ae60' : healthPct > 25 ? '#f39c12' : '#c0392b'
@@ -77,6 +79,15 @@ export default function StillPanel({
         <span style={{ fontWeight: 'bold', color: '#e67e22' }}>
           E {energy}/{maxEnergy}
         </span>
+        {/* Strain */}
+        {strain != null && maxStrain != null && (
+          <span style={{
+            fontWeight: 'bold',
+            color: strain <= 7 ? '#636e72' : strain <= 14 ? '#e67e22' : '#e74c3c',
+          }}>
+            S {strain}/{maxStrain}
+          </span>
+        )}
         {/* Block */}
         {block > 0 && (
           <span style={{ color: '#74b9ff', fontWeight: 'bold' }}>Blk {block}</span>
@@ -179,6 +190,25 @@ export default function StillPanel({
           {energy} / {maxEnergy}
         </span>
       </div>
+
+      {/* Strain indicator */}
+      {strain != null && maxStrain != null && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          marginBottom: '8px',
+          fontSize: '13px',
+        }}>
+          <span style={{ color: '#aaa' }}>Strain</span>
+          <span style={{
+            fontWeight: 'bold', fontSize: '16px',
+            color: strain <= 7 ? '#dfe6e9' : strain <= 14 ? '#e67e22' : '#e74c3c',
+          }}>
+            {strain} / {maxStrain}
+          </span>
+        </div>
+      )}
 
       {/* Status effects */}
       {statusEffects.length > 0 && (
